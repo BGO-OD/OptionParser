@@ -374,7 +374,15 @@ void Option<std::string>::fSetFromStream(std::istream& /*aStream*/) {
 	std::cerr << "must not be called" << std::endl;
 	exit(1);
 }
+void OptionMap<std::string>::fSetMe(const char *aArg) {
+	std::string s(aArg);
+	auto dividerPosition = s.find_first_of(':');
+	auto name = s.substr(0, dividerPosition);
+	auto buf = new char[s.length() - dividerPosition];
+	OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
+	lValueMap[name] = buf;
 
+}
 
 class OptionHelp : public Option<bool> {
   private:

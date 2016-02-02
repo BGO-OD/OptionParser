@@ -301,7 +301,10 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		}
 		auto equalsAt = line.find_first_of('=');
 		if (equalsAt == std::string::npos || equalsAt < 1 || equalsAt == line.length()) {
-			std::cerr << aFileName << ":" << lineNumber << ": error: malformed option line '" << line << "'" << std::endl;
+			auto buf = new char[line.length() + 1];
+			fReCaptureEscapedString(buf, line.c_str());
+			fGetInstance()->lUnusedOptions.push_back(buf);
+			delete [] buf;
 			continue;
 		}
 		auto optionName = line.substr(0, equalsAt);

@@ -153,8 +153,12 @@ template <typename T> class OptionMap: public OptionBase {
 	}
 
 	virtual void fWriteDefault(std::ostream& aStream) const {
-		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
-			aStream << it->first << ":" << it->second << "\n";
+		if (lValueMap.empty()) {
+			aStream << "no value";
+		} else {
+			for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+				aStream << it->first << ":" << it->second << " ";
+			}
 		}
 	}
 	virtual void fSetMe(const char *aArg) {
@@ -174,10 +178,10 @@ template <typename T> class OptionMap: public OptionBase {
 	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
-	auto begin() -> decltype(lValueMap.begin()) const {
+	auto begin() const -> decltype(lValueMap.begin()) const {
 		return lValueMap.begin();
 	}
-	auto end() -> decltype(lValueMap.end()) const {
+	auto end() const -> decltype(lValueMap.end()) const {
 		return lValueMap.end();
 	}
 };

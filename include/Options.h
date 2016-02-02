@@ -161,16 +161,16 @@ template <typename T> class OptionMap: public OptionBase {
 	}
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
-	operator const std::map<std::string, T>& () const {
+	operator const decltype(lValueMap)& () const {
 		return lValueMap;
 	}
-	const std::map<std::string, T>& fGetValue() const {
+	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
-	typename std::map<std::string, T>::iterator begin() const {
+	auto begin() -> decltype(lValueMap.begin()) const {
 		return lValueMap.begin();
 	}
-	typename std::map<std::string, T>::iterator end() const {
+	auto end() -> decltype(lValueMap.end()) const {
 		return lValueMap.end();
 	}
 };
@@ -186,20 +186,13 @@ template <> class OptionMap<std::string>: public OptionBase {
 			aStream << it->first << ":" << it->second << "\n";
 		}
 	}
-	virtual void fSetMe(const char *aArg) {
-		std::string s(aArg);
-		auto dividerPosition = s.find_first_of(':');
-		auto name = s.substr(0, dividerPosition);
-		auto buf = new char[s.length() - dividerPosition];
-		OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
-		lValueMap[name] = buf;
-	}
+	virtual void fSetMe(const char *aArg);
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
-	operator const std::map<std::string, std::string>& () const {
+	operator const decltype(lValueMap)& () const {
 		return lValueMap;
 	}
-	const std::map<std::string, std::string>& fGetValue() const {
+	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
 	auto begin() -> decltype(lValueMap.begin()) const {

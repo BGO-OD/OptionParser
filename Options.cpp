@@ -415,7 +415,7 @@ class OptionHelp : public Option<bool> {
 	}
 	virtual void fSetMe(const char * /*aArg*/) {
 		OptionParser::fHelp();
-		exit(1);
+		exit(0);
 	}
 };
 
@@ -429,7 +429,7 @@ class OptionWriteCfgFile : public Option<const char *> {
 	virtual void fSetMe(const char *aArg) {
 		lValue = aArg;
 		OptionParser::fWriteCfgFile(aArg);
-		exit(1);
+		exit(0);
 	}
 };
 class OptionReadCfgFile : public Option<const char *> {

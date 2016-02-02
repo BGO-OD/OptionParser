@@ -261,13 +261,13 @@ void OptionParser::fHelp() {
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
 		const auto opt = it->second;
 		if (opt->lShortName != '\0') {
-			std::cout << "\t-" << opt->lShortName;
+			std::cout << "  -" << opt->lShortName << ", ";
 		} else {
-			std::cout << "\t";
+			std::cout << "      ";
 		}
-		std::cout << "\t--" << std::setw(maxName) << std::left << opt->lLongName
-		          << "\t" << std::setw(maxExplain) << std::left << opt->lExplanation
-		          << "\t default: ";
+		std::cout << "--" << std::setw(maxName) << std::left << opt->lLongName
+		          << " " << std::setw(maxExplain) << std::left << opt->lExplanation
+		          << " default: ";
 		opt->fWriteDefault(std::cout);
 		std::cout << "\n";
 	}

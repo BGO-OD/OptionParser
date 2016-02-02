@@ -178,11 +178,11 @@ template <typename T> class OptionMap: public OptionBase {
 	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
-	auto begin() const -> decltype(lValueMap.begin()) const {
-		return lValueMap.begin();
+	auto begin() const -> decltype(lValueMap.cbegin()) const {
+		return lValueMap.cbegin();
 	}
-	auto end() const -> decltype(lValueMap.end()) const {
-		return lValueMap.end();
+	auto end() const -> decltype(lValueMap.cend()) const {
+		return lValueMap.cend();
 	}
 };
 template <> class OptionMap<std::string>: public OptionBase {
@@ -203,11 +203,11 @@ template <> class OptionMap<std::string>: public OptionBase {
 	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
-	auto begin() const -> decltype(lValueMap.begin()) const {
-		return lValueMap.begin();
+	auto begin() const -> decltype(lValueMap.cbegin()) const {
+		return lValueMap.cbegin();
 	}
-	auto end() const -> decltype(lValueMap.end()) const {
-		return lValueMap.end();
+	auto end() const -> decltype(lValueMap.cend()) const {
+		return lValueMap.cend();
 	}
 };
 

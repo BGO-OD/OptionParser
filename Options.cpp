@@ -395,8 +395,12 @@ void OptionMap<std::string>::fWriteCfgLines(std::ostream& aStream) const {
 	}
 }
 void OptionMap<std::string>::fWriteDefault(std::ostream& aStream) const {
-	for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
-		aStream << it->first << ":" << it->second << "\n";
+	if (lValueMap.empty()) {
+		aStream << "no value";
+	} else {
+		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+			aStream << it->first << ":" << it->second << " ";
+		}
 	}
 }
 

@@ -138,6 +138,77 @@ template <> class Option<std::string> : public OptionBase {
 	}
 };
 
+template <typename T> class OptionMap: public OptionBase {
+  private:
+	std::map<std::string, T> lValueMap;
+  public:
+	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		OptionBase(aShortName, aLongName, aExplanation, 1) {
+	}
+	virtual void fWriteDefault(std::ostream& aStream) const {
+		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+			aStream << it->first << ":" << it->second << "\n";
+		}
+	}
+	virtual void fSetMe(const char *aArg) {
+		std::string s(aArg);
+		auto dividerPosition = s.find_first_of(':');
+		auto name = s.substr(0, dividerPosition);
+		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
+		T value;
+		valueStream >> value;
+		lValueMap[name] = value;
+	}
+	virtual void fSetFromStream(std::istream& /*aStream*/) {
+	}
+	operator const std::map<std::string, T>& () const {
+		return lValueMap;
+	}
+	const std::map<std::string, T>& fGetValue() const {
+		return lValueMap;
+	}
+	typename std::map<std::string, T>::iterator begin() const {
+		return lValueMap.begin();
+	}
+	typename std::map<std::string, T>::iterator end() const {
+		return lValueMap.end();
+	}
+};
+template <> class OptionMap<std::string>: public OptionBase {
+  private:
+	std::map<std::string, std::string> lValueMap;
+  public:
+	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		OptionBase(aShortName, aLongName, aExplanation, 1) {
+	}
+	virtual void fWriteDefault(std::ostream& aStream) const {
+		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+			aStream << it->first << ":" << it->second << "\n";
+		}
+	}
+	virtual void fSetMe(const char *aArg) {
+		std::string s(aArg);
+		auto dividerPosition = s.find_first_of(':');
+		auto name = s.substr(0, dividerPosition);
+		auto buf = new char[s.length() - dividerPosition];
+		OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
+		lValueMap[name] = buf;
+	}
+	virtual void fSetFromStream(std::istream& /*aStream*/) {
+	}
+	operator const std::map<std::string, std::string>& () const {
+		return lValueMap;
+	}
+	const std::map<std::string, std::string>& fGetValue() const {
+		return lValueMap;
+	}
+	auto begin() -> decltype(lValueMap.begin()) const {
+		return lValueMap.begin();
+	}
+	auto end() -> decltype(lValueMap.end()) const {
+		return lValueMap.end();
+	}
+};
 
 
 #endif

@@ -242,6 +242,13 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	lSource = "cmdline: ";
 	lSource += argv[*i];
 }
+
+void OptionBase::fWriteCfgLines(std::ostream& aStream) const {
+	aStream << lLongName << "=";
+	fWriteDefault(aStream);
+}
+
+
 void OptionParser::fHelp() {
 	std::cout << fGetInstance()->lProgName << ": " << fGetInstance()->lDescription << "\n";
 	size_t maxName = 0;
@@ -277,9 +284,7 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 		if (opt->lSource.empty() || opt->lLongName == "readCfgFile") {
 			cfgFile << "# ";
 		}
-		cfgFile << opt->lLongName << "=";
-		opt->fWriteDefault(cfgFile);
-		cfgFile << "\n";
+		opt->fWriteCfgLines(cfgFile);
 	}
 	cfgFile << "\n";
 	cfgFile.close();
@@ -381,8 +386,21 @@ void OptionMap<std::string>::fSetMe(const char *aArg) {
 	auto buf = new char[s.length() - dividerPosition];
 	OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
 	lValueMap[name] = buf;
-
 }
+
+void OptionMap<std::string>::fWriteCfgLines(std::ostream& aStream) const {
+	for (auto it = begin(); it != end(); ++it) {
+		aStream << lLongName << "=" << it->first << ":";
+		OptionParser::fPrintEscapedString(aStream, it->second.c_str());
+	}
+}
+void OptionMap<std::string>::fWriteDefault(std::ostream& aStream) const {
+	for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+		aStream << it->first << ":" << it->second << "\n";
+	}
+}
+
+
 
 class OptionHelp : public Option<bool> {
   private:

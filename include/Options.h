@@ -23,7 +23,7 @@ class OptionBase {
 		static std::map<char, OptionBase*> gShortOptions;
 		return gShortOptions;
 	};
-  private:
+  protected:
 	char lShortName;
 	const std::string lLongName;
 	const std::string lExplanation;
@@ -37,6 +37,7 @@ class OptionBase {
 
   protected:
 	virtual void fWriteDefault(std::ostream& aStream) const = 0;
+	virtual void fWriteCfgLines(std::ostream& aStream) const;
   public:
 	OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs);
 };
@@ -145,6 +146,12 @@ template <typename T> class OptionMap: public OptionBase {
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
+	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+			aStream << lLongName << "=" << it->first << ":" << it->second << "\n";
+		}
+	}
+
 	virtual void fWriteDefault(std::ostream& aStream) const {
 		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
 			aStream << it->first << ":" << it->second << "\n";
@@ -181,11 +188,8 @@ template <> class OptionMap<std::string>: public OptionBase {
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
-	virtual void fWriteDefault(std::ostream& aStream) const {
-		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
-			aStream << it->first << ":" << it->second << "\n";
-		}
-	}
+	virtual void fWriteCfgLines(std::ostream& aStream) const;
+	virtual void fWriteDefault(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
@@ -195,10 +199,10 @@ template <> class OptionMap<std::string>: public OptionBase {
 	auto fGetValue() const -> const decltype(lValueMap)& {
 		return lValueMap;
 	}
-	auto begin() -> decltype(lValueMap.begin()) const {
+	auto begin() const -> decltype(lValueMap.begin()) const {
 		return lValueMap.begin();
 	}
-	auto end() -> decltype(lValueMap.end()) const {
+	auto end() const -> decltype(lValueMap.end()) const {
 		return lValueMap.end();
 	}
 };

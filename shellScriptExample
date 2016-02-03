@@ -18,6 +18,7 @@ p pid $$ the pid of the process
 EOF
 test $? != 0 && echo exit
 )
+echo $# $*
 
 diff $tmpfile <(set) | grep '^>' | grep -v '> _='
 

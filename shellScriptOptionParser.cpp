@@ -47,8 +47,13 @@ int main(int argc, const char *argv[]) {
 	for (auto it = options.begin(); it != options.end(); it++) {
 		std::cout << (*it)->fGetLongName() << "=" << (*it)->fGetValue() << "\n";
 	}
-	for (unsigned int i = 0; i < unusedOptions.size(); i++) {
-		std::cout << "cmdLine[" << i << "]=" << unusedOptions[i] << "\n";
+	std::cout << "shift $#\n";
+	if (unusedOptions.empty() == false) {
+		std::cout << "set --";
+		for (unsigned int i = 0; i < unusedOptions.size(); i++) {
+			std::cout << " " << unusedOptions[i];
+		}
+		std::cout << "\n";
 	}
 
 	return 0;

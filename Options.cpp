@@ -19,6 +19,7 @@ OptionParser::OptionParser(const char *aDescription) {
 	lDescription = aDescription;
 	lMessageStream = &std::cout;
 	lHelpReturnValue = 0;
+	fSetAssignmentChars();
 }
 OptionParser::~OptionParser() {
 	gParser = NULL;
@@ -29,7 +30,10 @@ void OptionParser::fSetMessageStream(std::ostream *aStream) {
 void OptionParser::fSetHelpReturnValue(int aValue) {
 	lHelpReturnValue = aValue;
 }
-
+void OptionParser::fSetAssignmentChars(char aPrimary, char aSecondary) {
+	lPrimaryAssignment = aPrimary;
+	lSecondaryAssignment = aSecondary;
+}
 OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
@@ -78,14 +82,30 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 				}
 				break;
 			} else {
-				auto it = OptionBase::fGetOptionMap().find(argv[i] + 2);
-				if (it == OptionBase::fGetOptionMap().end()) {
-					std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
-					fHelp();
-					exit(1);
+				if (NULL == strchr(argv[i], lPrimaryAssignment)) {
+					auto it = OptionBase::fGetOptionMap().find(argv[i] + 2);
+					if (it == OptionBase::fGetOptionMap().end()) {
+						std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
+						fHelp();
+						exit(1);
+					}
+					auto opt = it->second;
+					opt->fHandleOption(argc, argv, &i);
+				} else {
+					auto buf = strdup(argv[1]);
+					auto equalsAt = strchr(buf, lPrimaryAssignment);
+					*equalsAt = '\0';
+					auto it = OptionBase::fGetOptionMap().find(buf + 2);
+					if (it == OptionBase::fGetOptionMap().end()) {
+						std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
+						fHelp();
+						exit(1);
+					}
+					auto opt = it->second;
+					opt->fSetMe(equalsAt + 1);
+					opt->lSource  = "comdline: ";
+					opt->lSource += argv[i];
 				}
-				auto opt = it->second;
-				opt->fHandleOption(argc, argv, &i);
 			}
 		} else {
 			lUnusedOptions.push_back(argv[i]);
@@ -116,7 +136,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 }
 
 
-void OptionParser::fPrintEscapedString(std::ostream &aStream, const char *aString) {
+void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
 	for (const char *rp = aString; *rp != '\0'; rp++) {
 		switch (*rp) {
 			case '\a':
@@ -214,7 +234,7 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 }
 
 
-OptionBase::OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs) :
+OptionBase::OptionBase(char aShortName, const std::string & aLongName, const std::string & aExplanation, short aNargs) :
 	lShortName(aShortName),
 	lLongName(aLongName),
 	lExplanation(aExplanation),
@@ -252,7 +272,7 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	lSource += argv[*i];
 }
 
-void OptionBase::fWriteCfgLines(std::ostream& aStream) const {
+void OptionBase::fWriteCfgLines(std::ostream & aStream) const {
 	aStream << lLongName << "=";
 	fWriteDefault(aStream);
 }
@@ -275,8 +295,8 @@ void OptionParser::fHelp() {
 			*lMessageStream << "      ";
 		}
 		*lMessageStream << "--" << std::setw(maxName) << std::left << opt->lLongName
-		          << " " << std::setw(maxExplain) << std::left << opt->lExplanation
-		          << " default: ";
+		                << " " << std::setw(maxExplain) << std::left << opt->lExplanation
+		                << " default: ";
 		opt->fWriteDefault(*lMessageStream);
 		*lMessageStream << "\n";
 	}
@@ -341,7 +361,7 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 
 
 
-void Option<bool>::fWriteDefault(std::ostream& aStream) const {
+void Option<bool>::fWriteDefault(std::ostream & aStream) const {
 	aStream << std::boolalpha << lValue;
 }
 void Option<bool>::fSetMe(const char *aArg) {
@@ -351,13 +371,13 @@ void Option<bool>::fSetMe(const char *aArg) {
 		OptionBase::fSetMe(aArg);
 	}
 }
-void Option<bool>::fSetFromStream(std::istream& aStream) {
+void Option<bool>::fSetFromStream(std::istream & aStream) {
 	aStream >> std::boolalpha >> lValue;
 }
 
 
 
-void Option<const char*>::fWriteDefault(std::ostream& aStream) const {
+void Option<const char*>::fWriteDefault(std::ostream & aStream) const {
 	if (lValue == NULL) {
 		aStream << "nullptr";
 	} else {
@@ -375,7 +395,7 @@ void Option<const char*>::fSetFromStream(std::istream& /*aStream*/) {
 	exit(1);
 }
 
-void Option<std::string>::fWriteDefault(std::ostream& aStream) const {
+void Option<std::string>::fWriteDefault(std::ostream & aStream) const {
 	OptionParser::fPrintEscapedString(aStream, lValue.c_str());
 }
 void Option<std::string>::fSetMe(const char *aArg) {
@@ -390,20 +410,20 @@ void Option<std::string>::fSetFromStream(std::istream& /*aStream*/) {
 }
 void OptionMap<std::string>::fSetMe(const char *aArg) {
 	std::string s(aArg);
-	auto dividerPosition = s.find_first_of(':');
+	auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
 	auto name = s.substr(0, dividerPosition);
 	auto buf = new char[s.length() - dividerPosition];
 	OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
 	lValueMap[name] = buf;
 }
 
-void OptionMap<std::string>::fWriteCfgLines(std::ostream& aStream) const {
+void OptionMap<std::string>::fWriteCfgLines(std::ostream & aStream) const {
 	for (auto it = begin(); it != end(); ++it) {
-		aStream << lLongName << "=" << it->first << ":";
+		aStream << lLongName << "=" << it->first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
 		OptionParser::fPrintEscapedString(aStream, it->second.c_str());
 	}
 }
-void OptionMap<std::string>::fWriteDefault(std::ostream& aStream) const {
+void OptionMap<std::string>::fWriteDefault(std::ostream & aStream) const {
 	if (lValueMap.empty()) {
 		aStream << "no value";
 	} else {

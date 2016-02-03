@@ -53,13 +53,21 @@ class OptionParser {
 	const char *lProgName;
 	std::ostream *lMessageStream;
 	int lHelpReturnValue;
+	char lPrimaryAssignment;
+	char lSecondaryAssignment;
 	void fReadConfigFiles();
   public:
 	OptionParser(const char *aDescription = NULL);
 	~OptionParser();
 	void fSetMessageStream(std::ostream* aMessageStream);
 	void fSetHelpReturnValue(int aValue);
-	int fGetHelpReturnValue() const {return lHelpReturnValue;};
+	int fGetHelpReturnValue() const {
+		return lHelpReturnValue;
+	};
+	void fSetAssignmentChars(char aPrimary = '=', char aSecondary = ':');
+	char fGetSecondaryAssignment() const {
+		return lSecondaryAssignment;
+	}
 	const std::vector<std::string>& fParse(int argc, const char *argv[]);
 	static OptionParser* fGetInstance();
 	void fHelp();

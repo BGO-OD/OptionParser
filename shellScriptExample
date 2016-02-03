@@ -1,0 +1,23 @@
+#!/bin/bash
+
+tmpfile=$(mktemp)
+trap "rm $tmpfile" EXIT
+set > $tmpfile
+
+. <(shellScriptOptionParser $0 $*<<EOF
+A shell script to demonstrate option parsing with the shellScriptOptionParser
+the input so shellScriptOptionParser up to the line containing only options:
+will be used as description of the script,
+then follow the options with the sort option character firs, the the long name,
+the the default value and a description up to the end of the line.
+Use - as short name if no short name is desired.
+options:
+n number 55 some number
+p pid $$ the pid of the process
+- test a a test
+EOF
+test $? != 0 && echo exit
+)
+
+diff $tmpfile <(set) | grep '^>' | grep -v '> _='
+

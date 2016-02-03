@@ -40,6 +40,9 @@ class OptionBase {
 	virtual void fWriteCfgLines(std::ostream& aStream) const;
   public:
 	OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs);
+	const std::string& fGetLongName() const {
+		return lLongName;
+	};
 };
 
 class OptionParser {
@@ -48,15 +51,20 @@ class OptionParser {
 	static OptionParser* gParser;
 	const char *lDescription;
 	const char *lProgName;
+	std::ostream *lMessageStream;
+	int lHelpReturnValue;
 	void fReadConfigFiles();
   public:
 	OptionParser(const char *aDescription = NULL);
 	~OptionParser();
+	void fSetMessageStream(std::ostream* aMessageStream);
+	void fSetHelpReturnValue(int aValue);
+	int fGetHelpReturnValue() const {return lHelpReturnValue;};
 	const std::vector<std::string>& fParse(int argc, const char *argv[]);
 	static OptionParser* fGetInstance();
-	static void fHelp();
-	static void fWriteCfgFile(const char *aFileName);
-	static void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
+	void fHelp();
+	void fWriteCfgFile(const char *aFileName);
+	void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
 	static void fPrintEscapedString(std::ostream &aStream, const char *aString);
 	static void fReCaptureEscapedString(char *aDest, const char *aSource);
 };

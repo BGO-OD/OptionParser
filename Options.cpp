@@ -17,10 +17,19 @@ OptionParser::OptionParser(const char *aDescription) {
 	}
 	gParser = this;
 	lDescription = aDescription;
+	lMessageStream = &std::cout;
+	lHelpReturnValue = 0;
 }
 OptionParser::~OptionParser() {
 	gParser = NULL;
 }
+void OptionParser::fSetMessageStream(std::ostream *aStream) {
+	lMessageStream = aStream;
+}
+void OptionParser::fSetHelpReturnValue(int aValue) {
+	lHelpReturnValue = aValue;
+}
+
 OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
@@ -230,7 +239,7 @@ void OptionBase::fSetMe(const char *aArg) {
 void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	if (*i + lNargs >= argc) {
 		std::cerr << "option " << lLongName << " needs " << lNargs << " args, but only " << argc - *i - 1 << " remain." << std::endl;
-		OptionParser::fHelp();
+		OptionParser::fGetInstance()->fHelp();
 		exit(1);
 	}
 	if (lNargs == 0) {
@@ -250,7 +259,7 @@ void OptionBase::fWriteCfgLines(std::ostream& aStream) const {
 
 
 void OptionParser::fHelp() {
-	std::cout << fGetInstance()->lProgName << ": " << fGetInstance()->lDescription << "\n";
+	*lMessageStream << fGetInstance()->lProgName << ": " << fGetInstance()->lDescription << "\n";
 	size_t maxName = 0;
 	size_t maxExplain = 0;
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
@@ -261,17 +270,17 @@ void OptionParser::fHelp() {
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
 		const auto opt = it->second;
 		if (opt->lShortName != '\0') {
-			std::cout << "  -" << opt->lShortName << ", ";
+			*lMessageStream << "  -" << opt->lShortName << ", ";
 		} else {
-			std::cout << "      ";
+			*lMessageStream << "      ";
 		}
-		std::cout << "--" << std::setw(maxName) << std::left << opt->lLongName
+		*lMessageStream << "--" << std::setw(maxName) << std::left << opt->lLongName
 		          << " " << std::setw(maxExplain) << std::left << opt->lExplanation
 		          << " default: ";
-		opt->fWriteDefault(std::cout);
-		std::cout << "\n";
+		opt->fWriteDefault(*lMessageStream);
+		*lMessageStream << "\n";
 	}
-	std::cout << std::endl;
+	*lMessageStream << std::endl;
 }
 void OptionParser::fWriteCfgFile(const char *aFileName) {
 	std::ofstream cfgFile(aFileName);
@@ -414,8 +423,8 @@ class OptionHelp : public Option<bool> {
 		Option('h', "help", "give this help") {
 	}
 	virtual void fSetMe(const char * /*aArg*/) {
-		OptionParser::fHelp();
-		exit(0);
+		OptionParser::fGetInstance()->fHelp();
+		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
 	}
 };
 
@@ -428,7 +437,7 @@ class OptionWriteCfgFile : public Option<const char *> {
 	}
 	virtual void fSetMe(const char *aArg) {
 		lValue = aArg;
-		OptionParser::fWriteCfgFile(aArg);
+		OptionParser::fGetInstance()->fWriteCfgFile(aArg);
 		exit(0);
 	}
 };
@@ -441,7 +450,7 @@ class OptionReadCfgFile : public Option<const char *> {
 	}
 	virtual void fSetMe(const char *aArg) {
 		lValue = aArg;
-		OptionParser::fReadCfgFile(aArg);
+		OptionParser::fGetInstance()->fReadCfgFile(aArg);
 	}
 };
 

@@ -6,18 +6,18 @@ int main(int argc, const char *argv[]) {
 	while (std::cin.good()) {
 		std::string line;
 		std::getline(std::cin, line);
-		if (line.compare("options:")==0) {
+		if (line.compare("options:") == 0) {
 			break;
 		}
 		description += line;
 		description += "\n";
 	}
-	
+
 
 	OptionParser parser(description.c_str());
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
-	
+
 
 	std::vector<Option<std::string>*> options;
 	{
@@ -25,7 +25,7 @@ int main(int argc, const char *argv[]) {
 		std::string longName;
 		std::string defaultValue;
 		std::string description;
-		
+
 		while (std::cin.good()) {
 			std::cin >> shortName;
 			if (std::cin.eof()) {
@@ -39,15 +39,15 @@ int main(int argc, const char *argv[]) {
 				shortName = '\0';
 			}
 
-			options.push_back(new Option<std::string>(shortName,longName.c_str(),description.c_str(),defaultValue));
+			options.push_back(new Option<std::string>(shortName, longName.c_str(), description.c_str(), defaultValue));
 		}
 	}
-	auto unusedOptions = parser.fParse(argc-1,argv+1);
-	
-	for (auto it=options.begin(); it!=options.end(); it++) {
+	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
+
+	for (auto it = options.begin(); it != options.end(); it++) {
 		std::cout << (*it)->fGetLongName() << "=" << (*it)->fGetValue() << "\n";
 	}
-	for (unsigned int i=0; i<unusedOptions.size(); i++) {
+	for (unsigned int i = 0; i < unusedOptions.size(); i++) {
 		std::cout << "cmdLine[" << i << "]=" << unusedOptions[i] << "\n";
 	}
 

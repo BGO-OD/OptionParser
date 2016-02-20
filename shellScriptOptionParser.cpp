@@ -1,10 +1,29 @@
 #include "Options.h"
 
+template <typename T> Option<T>* fOptionFromStream(std::istream &aStream) {
+	char shortName;
+	std::string longName;
+	T defaultValue;
+	std::string description;
+
+	aStream >> shortName;
+	aStream >> longName;
+	aStream >> std::boolalpha >> defaultValue;
+	std::getline(aStream, description);
+
+	if (shortName == '-') {
+		shortName = '\0';
+	}
+	return new Option<T>(shortName, longName.c_str(), description.c_str(), defaultValue);
+}
 
 int main(int argc, const char *argv[]) {
 	std::string description;
 	while (std::cin.good()) {
 		std::string line;
+		if (std::cin.eof()) {
+			break;
+		}
 		std::getline(std::cin, line);
 		if (line.compare("options:") == 0) {
 			break;
@@ -13,39 +32,49 @@ int main(int argc, const char *argv[]) {
 		description += "\n";
 	}
 
+	if (description.empty() || description == "\n") {
+		std::cout << argv[0] << ": shell script option parser.\n"
+		          "\treads description of options from stdandard input and writes shell\n"
+		          "\tcommands that set variables to the parsed options to standard output\n";
+		return (1);
+	}
+
 
 	OptionParser parser(description.c_str());
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
 
 
-	std::vector<Option<std::string>*> options;
+	std::vector<OptionBase*> options;
 	{
-		char shortName;
-		std::string longName;
-		std::string defaultValue;
-		std::string description;
-
+		std::string optionType;
 		while (std::cin.good()) {
-			std::cin >> shortName;
+			std::cin >> optionType;
 			if (std::cin.eof()) {
 				break;
 			}
-			std::cin >> longName;
-			std::cin >> defaultValue;
-			std::getline(std::cin, description);
-
-			if (shortName == '-') {
-				shortName = '\0';
+			if (optionType == "string") {
+				options.push_back(fOptionFromStream<std::string>(std::cin));
+			} else if (optionType == "int") {
+				options.push_back(fOptionFromStream<int>(std::cin));
+			} else if (optionType == "uint") {
+				options.push_back(fOptionFromStream<int>(std::cin));
+			} else if (optionType == "bool") {
+				options.push_back(fOptionFromStream<bool>(std::cin));
+			} else if (optionType == "range") {
+				options.back()->fAddToRangeFromStream(std::cin);
+			} else {
+				std::cerr << "illegal option type '" << optionType << "', giving up" << std::endl;
+				return 1;
 			}
-
-			options.push_back(new Option<std::string>(shortName, longName.c_str(), description.c_str(), defaultValue));
 		}
 	}
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 
 	for (auto it = options.begin(); it != options.end(); it++) {
-		std::cout << (*it)->fGetLongName() << "=" << (*it)->fGetValue() << "\n";
+		std::cout << (*it)->fGetLongName() << "=";
+		(*it)->fWriteValue(std::cout);
+		std::cout << "\n";
 	}
 	std::cout << "shift $#\n";
 	if (unusedOptions.empty() == false) {

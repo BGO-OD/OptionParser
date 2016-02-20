@@ -8,17 +8,31 @@ set > $tmpfile
 A shell script to demonstrate option parsing with the shellScriptOptionParser
 the input so shellScriptOptionParser up to the line containing only options:
 will be used as description of the script,
-then follow the options with the sort option character firs, the the long name,
+then follow the options with the optionn type (int, bool, string) first,
+then the short option character, then the long name,
 the the default value and a description up to the end of the line.
 Use - as short name if no short name is desired.
 options:
-n number 55 some number
-p pid $$ the pid of the process
-- test a a test
+int n number 55 some number
+range $(seq -s ' ' 4 10 100)
+uint p pid $$ the pid of the process
+string - test something a test
+range bla
+range some more stuff
+bool v verbose false be verbose
 EOF
 test $? != 0 && echo exit
 )
-echo $# $*
+if [ $verbose = "true" ]; then
+		echo "Number of leftover parameters is $#, parameters are $*"
+else 
+		echo $# $*
+fi
 
+# show which shell variables were set since startup:
 diff $tmpfile <(set) | grep '^>' | grep -v '> _='
+
+if [ $pid -ne $$ ]; then
+		echo "you were fooled! you can't change the pid of this process."
+fi
 

@@ -36,10 +36,14 @@ class OptionBase {
 	virtual void fHandleOption(int argc, const char *argv[], int *i);
 
   protected:
-	virtual void fWriteDefault(std::ostream& aStream) const = 0;
 	virtual void fWriteCfgLines(std::ostream& aStream) const;
+	virtual bool fCheckRange(std::ostream& aLogStream) const = 0;
+	virtual void fWriteRange(std::ostream &/*aStream*/) const {};
+
   public:
 	OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs);
+	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
+	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	const std::string& fGetLongName() const {
 		return lLongName;
 	};
@@ -80,14 +84,72 @@ class OptionParser {
 template <typename T> class Option : public OptionBase {
   private:
 	T lValue;
+	std::vector<T> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault) :
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>* aRange = NULL) :
 		OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
+		if (aRange != NULL) {
+			fSetRange(*aRange);
+		}
 	}
-	virtual void fWriteDefault(std::ostream& aStream) const {
+	virtual void fSetRange(const std::vector<T>& aRange) {
+		for (auto it = aRange.begin(); it != aRange.end(); ++it) {
+			lRange.push_back(*it);
+		}
+	}
+	virtual void fAddToRangeFromStream(std::istream& aStream) {
+		std::string buf;
+		std::getline(aStream, buf);
+		std::stringstream sbuf(buf);
+		while (!sbuf.eof()) {
+			T value;
+			sbuf >> value;
+			lRange.push_back(value);
+		}
+	}
+	virtual void  fWriteRange(std::ostream &aStream) const {
+		if (! lRange.empty()) {
+			aStream << "# allowed range is";
+			if (lRange.size() == 2) {
+				aStream << " [" << lRange[0] << "," << lRange[1] << "]\n";
+			} else {
+				aStream << ":";
+				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+					aStream << " " << *it;
+				}
+				aStream << "\n";
+			}
+		}
+	}
+
+	virtual void fWriteValue(std::ostream& aStream) const {
 		aStream << lValue;
 	}
+	virtual bool fCheckRange(std::ostream& aLogStream) const {
+		if (lRange.empty()) {
+			return true;
+		} else if (lRange.size() == 2) {
+			if (lRange[0] <= lValue && lValue <= lRange[1]) {
+				return true;
+			} else {
+				aLogStream << fGetLongName() << " out of range (" << lValue << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
+				return false;
+			}
+		} else {
+			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+				if (*it == lValue) {
+					return true;
+				}
+			}
+			aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
+			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+				aLogStream << *it << "\n";
+			}
+			return false;
+		}
+	}
+
 
 	virtual void fSetFromStream(std::istream& aStream) {
 		aStream >> std::noskipws >> lValue;
@@ -107,8 +169,12 @@ template <> class Option<bool> : public OptionBase {
 		OptionBase(aShortName, aLongName, aExplanation, 0),
 		lValue(aDefault) {
 	}
-	virtual void fWriteDefault(std::ostream& aStream) const;
+	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	};
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 
 	virtual void fSetFromStream(std::istream& aStream);
 	operator bool () const {
@@ -121,13 +187,15 @@ template <> class Option<bool> : public OptionBase {
 template <> class Option<const char *> : public OptionBase {
   protected:
 	const char *lValue;
+	std::vector<const char*> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL) :
-		OptionBase(aShortName, aLongName, aExplanation, 1),
-		lValue(aDefault) {
-	}
-	virtual void fWriteDefault(std::ostream& aStream) const;
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>* aRange = NULL);
+	virtual void fSetRange(const std::vector<const char *>& aRange);
+	virtual void fAddToRangeFromStream(std::istream& aStream);
+	virtual void  fWriteRange(std::ostream &aStream) const;
+	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
+	virtual bool fCheckRange(std::ostream& aLogStream) const;
 	virtual void fSetFromStream(std::istream& aStream);
 	operator const char* () const {
 		return lValue;
@@ -139,12 +207,14 @@ template <> class Option<const char *> : public OptionBase {
 template <> class Option<std::string> : public OptionBase {
   protected:
 	std::string lValue;
+	std::vector<std::string> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string aDefault = "") :
-		OptionBase(aShortName, aLongName, aExplanation, 1),
-		lValue(aDefault) {
-	}
-	virtual void fWriteDefault(std::ostream& aStream) const;
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "", const std::vector<std::string>* aRange = NULL);
+	virtual void fSetRange(const std::vector<std::string>& aRange);
+	virtual void fAddToRangeFromStream(std::istream& aStream);
+	virtual void  fWriteRange(std::ostream &aStream) const;
+	virtual bool fCheckRange(std::ostream& aLogStream) const;
+	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
 	virtual void fSetFromStream(std::istream& aStream);
 	operator const std::string& () const {
@@ -162,13 +232,22 @@ template <typename T> class OptionMap: public OptionBase {
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
+
 	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		if (lValueMap.empty()) {
+			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+		}
 		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
-			aStream << lLongName << "=" << it->first << ":" << it->second << "\n";
+			aStream << lLongName << "=" << it->first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it->second << "\n";
 		}
 	}
 
-	virtual void fWriteDefault(std::ostream& aStream) const {
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	}
+
+	virtual void fWriteValue(std::ostream& aStream) const {
 		if (lValueMap.empty()) {
 			aStream << "no value";
 		} else {
@@ -208,9 +287,14 @@ template <> class OptionMap<std::string>: public OptionBase {
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fWriteCfgLines(std::ostream& aStream) const;
-	virtual void fWriteDefault(std::ostream& aStream) const;
+	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	};
+
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
 	operator const decltype(lValueMap)& () const {

@@ -2,6 +2,7 @@
 
 int main(int argc, const char *argv[]) {
 	Option<int> number('n', "number", "some number", 0);
+	Option<int> number2('k', "kumber", "some other number", 0, new std::vector<int> {0, 3, 3});
 	OptionMap<int> numbers('m', "numbers", "several numbers");
 	OptionMap<std::string> strings('s', "strings", "several strings");
 

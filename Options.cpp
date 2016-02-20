@@ -400,11 +400,11 @@ void Option<bool>::fSetFromStream(std::istream & aStream) {
 }
 
 
-Option<const char*>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault, const std::vector<const char *>* aRange) :
+Option<const char*>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault, const std::vector<const char *>& aRange) :
 	OptionBase(aShortName, aLongName, aExplanation, 1),
 	lValue(aDefault) {
-	if (aRange != NULL) {
-		fSetRange(*aRange);
+	if (!aRange.empty()) {
+		fSetRange(aRange);
 	}
 }
 
@@ -487,11 +487,11 @@ bool Option<const char*>::fCheckRange(std::ostream& aLogStream) const {
 
 
 
-Option<std::string>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>* aRange) :
+Option<std::string>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange) :
 	OptionBase(aShortName, aLongName, aExplanation, 1),
 	lValue(aDefault) {
-	if (aRange != NULL) {
-		fSetRange(*aRange);
+	if (!aRange.empty()) {
+		fSetRange(aRange);
 	}
 }
 

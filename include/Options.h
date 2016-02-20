@@ -86,11 +86,11 @@ template <typename T> class Option : public OptionBase {
 	T lValue;
 	std::vector<T> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>* aRange = NULL) :
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
 		OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
-		if (aRange != NULL) {
-			fSetRange(*aRange);
+		if (!aRange.empty()) {
+			fSetRange(aRange);
 		}
 	}
 	virtual void fSetRange(const std::vector<T>& aRange) {
@@ -189,7 +189,7 @@ template <> class Option<const char *> : public OptionBase {
 	const char *lValue;
 	std::vector<const char*> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>* aRange = NULL);
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
 	virtual void fSetRange(const std::vector<const char *>& aRange);
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;
@@ -209,7 +209,7 @@ template <> class Option<std::string> : public OptionBase {
 	std::string lValue;
 	std::vector<std::string> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "", const std::vector<std::string>* aRange = NULL);
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "", const std::vector<std::string>& aRange = {});
 	virtual void fSetRange(const std::vector<std::string>& aRange);
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;

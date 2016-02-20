@@ -137,6 +137,10 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 
 
 void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
+	bool delimit = strchr(aString, ' ') != NULL || strchr(aString, '\t') != NULL;
+	if (delimit) {
+		aStream << '"';
+	}
 	for (const char *rp = aString; *rp != '\0'; rp++) {
 		switch (*rp) {
 			case '\a':
@@ -177,11 +181,21 @@ void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aStri
 				}
 		}
 	}
+	if (delimit) {
+		aStream << '"';
+	}
 }
 
 void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 	auto wp = aDest;
 	auto rp = aSource;
+	auto delimiter = *aSource;
+	if (delimiter == '"' || delimiter == '\'') { // string is enclosed in a pair of delimiters
+		rp++;
+	} else { // skip whitespace
+		delimiter = '\0';
+		rp += strspn(rp, " \t");
+	}
 	for (; *rp;) {
 		if (*rp == '\\') {
 			rp++;
@@ -226,6 +240,8 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 					}
 					break;
 			}
+		} else if (*rp == delimiter) {
+			break;
 		} else {
 			*(wp++) = *(rp++);
 		}

@@ -4,7 +4,7 @@ tmpfile=$(mktemp)
 trap "rm $tmpfile" EXIT
 set > $tmpfile
 
-. <(shellScriptOptionParser $0 $*<<EOF
+. <(shellScriptOptionParser $0 "$@"<<EOF
 A shell script to demonstrate option parsing with the shellScriptOptionParser
 the input so shellScriptOptionParser up to the line containing only options:
 will be used as description of the script,
@@ -18,7 +18,7 @@ range $(seq -s ' ' 4 10 100)
 uint p pid $$ the pid of the process
 string - test something a test
 range bla
-range some more stuff
+range blubb
 bool v verbose false be verbose
 EOF
 test $? != 0 && echo exit

@@ -573,28 +573,29 @@ void OptionMap<std::string>::fSetMe(const char *aArg) {
 	auto name = s.substr(0, dividerPosition);
 	auto buf = new char[s.length() - dividerPosition];
 	OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
-	lValueMap[name] = buf;
+	(*this)[name] = buf;
 }
 
 void OptionMap<std::string>::fWriteCfgLines(std::ostream & aStream) const {
-	if (lValueMap.empty()) {
+	if (this->empty()) {
 		aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 	}
-	for (auto it = begin(); it != end(); ++it) {
+	for (auto it = this->begin(); it != this->end(); ++it) {
 		aStream << lLongName << "=" << it->first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
 		OptionParser::fPrintEscapedString(aStream, it->second.c_str());
 		aStream << "\n";
 	}
 }
 void OptionMap<std::string>::fWriteValue(std::ostream & aStream) const {
-	if (lValueMap.empty()) {
+	if (this->empty()) {
 		aStream << "no value";
 	} else {
-		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+		for (auto it = this->begin(); it != this->end(); ++it) {
 			aStream << it->first << ":" << it->second << " ";
 		}
 	}
 }
+
 
 
 

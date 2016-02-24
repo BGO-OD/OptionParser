@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+#include <string.h>
 #define debug() std::cerr << __FILE__ << ":" << __LINE__ << ":" << std::endl
 
 class OptionBase {
@@ -225,9 +226,7 @@ template <> class Option<std::string> : public OptionBase {
 	}
 };
 
-template <typename T> class OptionMap: public OptionBase {
-  private:
-	std::map<std::string, T> lValueMap;
+template <typename T> class OptionMap: public OptionBase, public std::map<std::string, T> {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
@@ -235,10 +234,10 @@ template <typename T> class OptionMap: public OptionBase {
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 
 	virtual void fWriteCfgLines(std::ostream& aStream) const {
-		if (lValueMap.empty()) {
+		if (this->empty()) {
 			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
-		for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+		for (auto it = this->begin(); it != this->end(); ++it) {
 			aStream << lLongName << "=" << it->first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it->second << "\n";
 		}
 	}
@@ -248,10 +247,10 @@ template <typename T> class OptionMap: public OptionBase {
 	}
 
 	virtual void fWriteValue(std::ostream& aStream) const {
-		if (lValueMap.empty()) {
+		if (this->empty()) {
 			aStream << "no value";
 		} else {
-			for (auto it = lValueMap.begin(); it != lValueMap.end(); ++it) {
+			for (auto it = this->begin(); it != this->end(); ++it) {
 				aStream << it->first << ":" << it->second << " ";
 			}
 		}
@@ -263,26 +262,18 @@ template <typename T> class OptionMap: public OptionBase {
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 		T value;
 		valueStream >> value;
-		lValueMap[name] = value;
+		(*this)[name] = value;
 	}
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
-	operator const decltype(lValueMap)& () const {
-		return lValueMap;
+	operator const std::map<std::string, T> & () const {
+		return *static_cast<const std::map<std::string, T>*>(this);
 	}
-	auto fGetValue() const -> const decltype(lValueMap)& {
-		return lValueMap;
-	}
-	auto begin() const -> decltype(lValueMap.cbegin()) const {
-		return lValueMap.cbegin();
-	}
-	auto end() const -> decltype(lValueMap.cend()) const {
-		return lValueMap.cend();
+	const std::map<std::string, T>& fGetValue() const  {
+		return *static_cast<const std::map<std::string, T>*>(this);
 	}
 };
-template <> class OptionMap<std::string>: public OptionBase {
-  private:
-	std::map<std::string, std::string> lValueMap;
+template <> class OptionMap<std::string>: public OptionBase, public std::map<std::string, std::string> {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
@@ -297,18 +288,159 @@ template <> class OptionMap<std::string>: public OptionBase {
 
 	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
-	operator const decltype(lValueMap)& () const {
-		return lValueMap;
+	operator const std::map<std::string, std::string>& () const {
+		return *static_cast<const std::map<std::string, std::string>*> (this);
 	}
-	auto fGetValue() const -> const decltype(lValueMap)& {
-		return lValueMap;
+	const  std::map<std::string, std::string>& fGetValue() const {
+		return *static_cast<const std::map<std::string, std::string>*> (this);
 	}
-	auto begin() const -> decltype(lValueMap.cbegin()) const {
-		return lValueMap.cbegin();
+};
+
+
+template <typename T, typename Container = std::vector<T>> class OptionContainer: public OptionBase, public Container {
+  public:
+	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
-	auto end() const -> decltype(lValueMap.cend()) const {
-		return lValueMap.cend();
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
+	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << lLongName << "=value\n";
+		}
+		for (auto it = this->begin(); it != this->end(); ++it) {
+			aStream << lLongName << "=" << *it << "\n";
+		}
 	}
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	}
+
+
+	virtual void fWriteValue(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << "no value";
+		} else {
+			for (auto it = this->begin(); it != this->end(); ++it) {
+				aStream << *it << " ";
+			}
+		}
+	}
+	virtual void fSetMe(const char *aArg) {
+		std::stringstream valueStream(aArg);
+		T value;
+		valueStream >> value;
+		this->push_back(value);
+	}
+	virtual void fSetFromStream(std::istream& /*aStream*/) {
+	}
+
+	operator const Container& () const {
+		return *static_cast<const Container*>(this);
+	}
+	const Container& fGetValue() const  {
+		return *static_cast<const Container*>(this);
+	}
+
+};
+
+
+
+
+
+
+template <typename Container> class OptionContainer<const char *, Container>: public OptionBase, public Container {
+  public:
+	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		OptionBase(aShortName, aLongName, aExplanation, 1) {
+	}
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
+	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << lLongName << "=value\n";
+		}
+		for (auto it = this->begin(); it != this->end(); ++it) {
+			aStream << lLongName << "=";
+			OptionParser::fPrintEscapedString(aStream, *it);
+			aStream << "\n";
+		}
+	}
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	}
+
+
+	virtual void fWriteValue(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << "no value";
+		} else {
+			for (auto it = this->begin(); it != this->end(); ++it) {
+				OptionParser::fPrintEscapedString(aStream, *it);
+			}
+		}
+	}
+	virtual void fSetMe(const char *aArg) {
+		auto buf = new char[strlen(aArg) + 1];
+		OptionParser::fReCaptureEscapedString(buf, aArg);
+		this->push_back(buf);
+	}
+	virtual void fSetFromStream(std::istream& /*aStream*/) {
+	}
+
+	operator const Container & () const {
+		return *static_cast<const Container*>(this);
+	}
+	const Container& fGetValue() const  {
+		return *static_cast<const Container*>(this);
+	}
+
+};
+
+
+template <typename Container> class OptionContainer<std::string, Container>: public OptionBase, public Container {
+  public:
+	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		OptionBase(aShortName, aLongName, aExplanation, 1) {
+	}
+	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
+	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << lLongName << "=value\n";
+		}
+		for (auto it = this->begin(); it != this->end(); ++it) {
+			aStream << lLongName << "=";
+			OptionParser::fPrintEscapedString(aStream, it->c_str());
+			aStream << "\n";
+		}
+	}
+	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		return true;
+	}
+
+
+	virtual void fWriteValue(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << "no value";
+		} else {
+			for (auto it = this->begin(); it != this->end(); ++it) {
+				OptionParser::fPrintEscapedString(aStream, it->c_str());
+			}
+		}
+	}
+	virtual void fSetMe(const char* aArg) {
+		auto buf = new char[strlen(aArg) + 1];
+		OptionParser::fReCaptureEscapedString(buf, aArg);
+		this->push_back(buf);
+	}
+	virtual void fSetFromStream(std::istream& /*aStream*/) {
+	}
+
+	operator const Container & () const {
+		return *static_cast<const Container*>(this);
+	}
+	const Container& fGetValue() const  {
+		return *static_cast<const Container*>(this);
+	}
+
 };
 
 

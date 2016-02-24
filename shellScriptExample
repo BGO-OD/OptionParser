@@ -13,10 +13,10 @@ then the short option character, then the long name,
 the the default value and a description up to the end of the line.
 Use - as short name if no short name is desired.
 options:
-int n number 55 some number
+export int n number 55 some number
 range $(seq -s ' ' 4 10 100)
 uint p pid $$ the pid of the process
-string - test something a test
+export string - test something a test
 range bla
 range blubb
 bool v verbose false be verbose
@@ -33,6 +33,8 @@ fi
 
 # show which shell variables were set since startup:
 diff $tmpfile <(set) | grep '^>' | grep -v '> _='
+[ $verbose = "true" ] && echo "exported variables:"
+diff $tmpfile <(bash -c set) | grep '^>' | grep -v '> _=' | grep -v BASH_ | grep -v PPID | grep -v SHLVL
 
 if [ $pid -ne $$ ]; then
 		echo "you were fooled! you can't change the pid of this process."

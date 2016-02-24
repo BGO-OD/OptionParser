@@ -80,6 +80,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 			if (length == 2) { // end of options
 				for (i++; i < argc; i++) {
 					lUnusedOptions.push_back(argv[i]);
+					lStuffAfterMinusMinus.push_back(argv[i]);
 				}
 				break;
 			} else {

@@ -122,6 +122,16 @@ int main(int argc, const char *argv[]) {
 		}
 		std::cout << "\n";
 	}
+	if (parser.fGetStuffAfterMinusMinus().empty() == false) {
+		std::cout << "AfterMinusMinus=\"";
+		for (auto it =  parser.fGetStuffAfterMinusMinus().begin(); it != parser.fGetStuffAfterMinusMinus().end(); ++it) {
+			if (it != parser.fGetStuffAfterMinusMinus().begin()) {
+				std::cout << " ";
+			}
+			std::cout << *it;
+		}
+		std::cout << "\"\n";
+	}
 
 	return 0;
 }

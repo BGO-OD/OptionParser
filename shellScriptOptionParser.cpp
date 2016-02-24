@@ -38,7 +38,17 @@ int main(int argc, const char *argv[]) {
 	if (description.empty() || description == "\n") {
 		std::cout << argv[0] << ": shell script option parser.\n"
 		          "\treads description of options from stdandard input and writes shell\n"
-		          "\tcommands that set variables to the parsed options to standard output\n";
+		          "\tcommands that set variables to the parsed options to standard output\n"
+		          "typical invocation looks like this:\n"
+		          ". <(shellScriptOptionParser $0 \"$@\"<<EOF\n"
+		          "description of script\n"
+		          "options:\n"
+		          "export int n number 55 an example exported integer option\n"
+		          "trailer:\n"
+		          "trailing rest of explanation\n"
+		          "EOF\n"
+		          "test $? != 0 && echo exit\n"
+		          ")\n";
 		return (1);
 	}
 

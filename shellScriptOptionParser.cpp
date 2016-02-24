@@ -1,4 +1,5 @@
 #include "Options.h"
+#include <unistd.h>
 
 template <typename T> Option<T>* fOptionFromStream(std::istream &aStream) {
 	char shortName;
@@ -19,31 +20,26 @@ template <typename T> Option<T>* fOptionFromStream(std::istream &aStream) {
 
 int main(int argc, const char *argv[]) {
 	std::string description;
-	while (std::cin.good()) {
-		std::string line;
-		if (std::cin.eof()) {
-			break;
+	if (isatty(0) != 1) {
+		while (std::cin.good()) {
+			std::string line;
+			if (std::cin.eof()) {
+				break;
+			}
+			std::getline(std::cin, line);
+			if (line.compare("options:") == 0) {
+				break;
+			}
+			description += line;
+			description += "\n";
 		}
-		std::getline(std::cin, line);
-		if (line.compare("options:") == 0) {
-			break;
-		}
-		description += line;
-		description += "\n";
 	}
-
 	if (description.empty() || description == "\n") {
 		std::cout << argv[0] << ": shell script option parser.\n"
 		          "\treads description of options from stdandard input and writes shell\n"
 		          "\tcommands that set variables to the parsed options to standard output\n";
 		return (1);
 	}
-
-
-	OptionParser parser(description.c_str());
-	parser.fSetMessageStream(&std::cerr);
-	parser.fSetHelpReturnValue(1);
-
 
 	std::vector<OptionBase*> options;
 	{
@@ -63,12 +59,30 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<bool>(std::cin));
 			} else if (optionType == "range") {
 				options.back()->fAddToRangeFromStream(std::cin);
+			} else if (optionType == "trailer:") {
+				break;
 			} else {
 				std::cerr << "illegal option type '" << optionType << "', giving up" << std::endl;
 				return 1;
 			}
 		}
 	}
+	std::string trailer;
+	while (std::cin.good()) {
+		std::string line;
+		if (std::cin.eof()) {
+			break;
+		}
+		std::getline(std::cin, line);
+		trailer += line;
+		trailer += "\n";
+	}
+
+	OptionParser parser(description.c_str(), trailer.c_str());
+	parser.fSetMessageStream(&std::cerr);
+	parser.fSetHelpReturnValue(1);
+
+
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 
 	for (auto it = options.begin(); it != options.end(); it++) {

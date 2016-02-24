@@ -51,17 +51,19 @@ class OptionBase {
 
 class OptionParser {
   protected:
-	std::vector<std::string> lUnusedOptions;
 	static OptionParser* gParser;
 	const char *lDescription;
-	const char *lProgName;
+	const char *lTrailer;
+	const std::vector<std::string> lSearchPaths;
+	std::vector<std::string> lUnusedOptions;
 	std::ostream *lMessageStream;
+	const char *lProgName;
 	int lHelpReturnValue;
 	char lPrimaryAssignment;
 	char lSecondaryAssignment;
 	void fReadConfigFiles();
   public:
-	OptionParser(const char *aDescription = NULL);
+	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string> aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();
 	void fSetMessageStream(std::ostream* aMessageStream);
 	void fSetHelpReturnValue(int aValue);

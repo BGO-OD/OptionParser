@@ -10,13 +10,15 @@ static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
 OptionParser* OptionParser::gParser = NULL;
 
-OptionParser::OptionParser(const char *aDescription) {
+OptionParser::OptionParser(const char *aDescription, const char *aTrailer, std::vector<std::string> aSearchPaths):
+	lDescription(aDescription),
+	lTrailer(aTrailer),
+	lSearchPaths(aSearchPaths) {
 	if (gParser != NULL) {
 		std::cerr << "there may be only one parser" << std::endl;
 		exit(1);
 	}
 	gParser = this;
-	lDescription = aDescription;
 	lMessageStream = &std::cout;
 	lHelpReturnValue = 0;
 	fSetAssignmentChars();
@@ -38,9 +40,8 @@ OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
 void OptionParser::fReadConfigFiles() {
-	const char *dirs[] = {"/etc/", "~/.", "~/.config/", "./."};
-	for (unsigned int i = 0; i < sizeof(dirs) / sizeof(dirs[0]); i++) {
-		std::string f(dirs[i]);
+	for (auto it = lSearchPaths.begin(); it != lSearchPaths.end(); ++it) {
+		std::string f(*it);
 		auto tildePosition = f.find_first_of('~');
 		if (tildePosition != std::string::npos) {
 			f.replace(tildePosition, 1, getenv("HOME"));
@@ -314,6 +315,9 @@ void OptionParser::fHelp() {
 		                << " default: ";
 		opt->fWriteValue(*lMessageStream);
 		*lMessageStream << "\n";
+	}
+	if (fGetInstance()->lTrailer != NULL) {
+		*lMessageStream << fGetInstance()->lTrailer;
 	}
 	*lMessageStream << std::endl;
 }

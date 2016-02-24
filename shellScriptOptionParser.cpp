@@ -1,4 +1,5 @@
 #include "Options.h"
+#include <set>
 #include <unistd.h>
 
 template <typename T> Option<T>* fOptionFromStream(std::istream &aStream) {
@@ -42,8 +43,10 @@ int main(int argc, const char *argv[]) {
 	}
 
 	std::vector<OptionBase*> options;
+	std::set<const OptionBase*> exportedOptions;
 	{
 		std::string optionType;
+		bool exportNextOption = false;
 		while (std::cin.good()) {
 			std::cin >> optionType;
 			if (std::cin.eof()) {
@@ -59,12 +62,19 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<bool>(std::cin));
 			} else if (optionType == "range") {
 				options.back()->fAddToRangeFromStream(std::cin);
+			} else if (optionType == "export") {
+				exportNextOption = true;
+				continue;
 			} else if (optionType == "trailer:") {
 				break;
 			} else {
 				std::cerr << "illegal option type '" << optionType << "', giving up" << std::endl;
 				return 1;
 			}
+			if (exportNextOption) {
+				exportedOptions.insert(options.back());
+			}
+			exportNextOption = false;
 		}
 	}
 	std::string trailer;
@@ -86,8 +96,12 @@ int main(int argc, const char *argv[]) {
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 
 	for (auto it = options.begin(); it != options.end(); it++) {
-		std::cout << (*it)->fGetLongName() << "=";
-		(*it)->fWriteValue(std::cout);
+		auto option = *it;
+		if (exportedOptions.find(option) != exportedOptions.end()) {
+			std::cout << "export ";
+		}
+		std::cout << option->fGetLongName() << "=";
+		option->fWriteValue(std::cout);
 		std::cout << "\n";
 	}
 	std::cout << "shift $#\n";

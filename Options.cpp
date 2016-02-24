@@ -268,10 +268,6 @@ OptionBase::OptionBase(char aShortName, const std::string & aLongName, const std
 }
 
 
-void OptionBase::fSetMe(const char *aArg) {
-	std::stringstream buf(aArg);
-	fSetFromStream(buf);
-}
 void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	if (*i + lNargs >= argc) {
 		std::cerr << "option " << lLongName << " needs " << lNargs << " args, but only " << argc - *i - 1 << " remain." << std::endl;
@@ -392,11 +388,9 @@ void Option<bool>::fSetMe(const char *aArg) {
 	if (aArg == 0) {
 		lValue = ! lValue;
 	} else {
-		OptionBase::fSetMe(aArg);
+		std::stringstream buf(aArg);
+		buf >> std::boolalpha >> lValue;
 	}
-}
-void Option<bool>::fSetFromStream(std::istream & aStream) {
-	aStream >> std::boolalpha >> lValue;
 }
 
 
@@ -456,10 +450,6 @@ void Option<const char*>::fSetMe(const char *aArg) {
 	lValue = buf;
 }
 
-void Option<const char*>::fSetFromStream(std::istream& /*aStream*/) {
-	std::cerr << "must not be called" << std::endl;
-	exit(1);
-}
 bool Option<const char*>::fCheckRange(std::ostream& aLogStream) const {
 	if (lRange.empty()) {
 		return true;
@@ -541,10 +531,6 @@ void Option<std::string>::fSetMe(const char *aArg) {
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 	delete[] buf;
-}
-void Option<std::string>::fSetFromStream(std::istream& /*aStream*/) {
-	std::cerr << "must not be called" << std::endl;
-	exit(1);
 }
 
 void  Option<std::string>::fWriteRange(std::ostream &aStream) const {

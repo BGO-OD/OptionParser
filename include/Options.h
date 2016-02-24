@@ -31,8 +31,7 @@ class OptionBase {
 	std::string lSource;
   protected:
 	short lNargs;
-	virtual void fSetMe(const char *aArg);
-	virtual void fSetFromStream(std::istream& aStream) = 0;
+	virtual void fSetMe(const char *aArg) = 0;
   private:
 	virtual void fHandleOption(int argc, const char *argv[], int *i);
 
@@ -152,8 +151,9 @@ template <typename T> class Option : public OptionBase {
 	}
 
 
-	virtual void fSetFromStream(std::istream& aStream) {
-		aStream >> std::noskipws >> lValue;
+	virtual void fSetMe(const char* aArg) {
+		std::stringstream buf(aArg);
+		buf >> std::noskipws >> lValue;
 	}
 	operator T () const {
 		return lValue;
@@ -177,7 +177,6 @@ template <> class Option<bool> : public OptionBase {
 	};
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 
-	virtual void fSetFromStream(std::istream& aStream);
 	operator bool () const {
 		return lValue;
 	}
@@ -197,7 +196,6 @@ template <> class Option<const char *> : public OptionBase {
 	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
 	virtual bool fCheckRange(std::ostream& aLogStream) const;
-	virtual void fSetFromStream(std::istream& aStream);
 	operator const char* () const {
 		return lValue;
 	}
@@ -217,7 +215,6 @@ template <> class Option<std::string> : public OptionBase {
 	virtual bool fCheckRange(std::ostream& aLogStream) const;
 	virtual void fWriteValue(std::ostream& aStream) const;
 	virtual void fSetMe(const char *aArg);
-	virtual void fSetFromStream(std::istream& aStream);
 	operator const std::string& () const {
 		return lValue;
 	}
@@ -264,8 +261,6 @@ template <typename T> class OptionMap: public OptionBase, public std::map<std::s
 		valueStream >> value;
 		(*this)[name] = value;
 	}
-	virtual void fSetFromStream(std::istream& /*aStream*/) {
-	}
 	operator const std::map<std::string, T> & () const {
 		return *static_cast<const std::map<std::string, T>*>(this);
 	}
@@ -286,8 +281,6 @@ template <> class OptionMap<std::string>: public OptionBase, public std::map<std
 		return true;
 	};
 
-	virtual void fSetFromStream(std::istream& /*aStream*/) {
-	}
 	operator const std::map<std::string, std::string>& () const {
 		return *static_cast<const std::map<std::string, std::string>*> (this);
 	}
@@ -330,8 +323,6 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 		T value;
 		valueStream >> value;
 		this->push_back(value);
-	}
-	virtual void fSetFromStream(std::istream& /*aStream*/) {
 	}
 
 	operator const Container& () const {
@@ -383,9 +374,6 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 		OptionParser::fReCaptureEscapedString(buf, aArg);
 		this->push_back(buf);
 	}
-	virtual void fSetFromStream(std::istream& /*aStream*/) {
-	}
-
 	operator const Container & () const {
 		return *static_cast<const Container*>(this);
 	}
@@ -431,9 +419,6 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 		OptionParser::fReCaptureEscapedString(buf, aArg);
 		this->push_back(buf);
 	}
-	virtual void fSetFromStream(std::istream& /*aStream*/) {
-	}
-
 	operator const Container & () const {
 		return *static_cast<const Container*>(this);
 	}

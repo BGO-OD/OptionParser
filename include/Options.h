@@ -263,9 +263,6 @@ template <typename T> class OptionMap: public OptionBase, public std::map<std::s
 		valueStream >> value;
 		(*this)[name] = value;
 	}
-	operator const std::map<std::string, T> & () const {
-		return *static_cast<const std::map<std::string, T>*>(this);
-	}
 	const std::map<std::string, T>& fGetValue() const  {
 		return *static_cast<const std::map<std::string, T>*>(this);
 	}
@@ -283,9 +280,6 @@ template <> class OptionMap<std::string>: public OptionBase, public std::map<std
 		return true;
 	};
 
-	operator const std::map<std::string, std::string>& () const {
-		return *static_cast<const std::map<std::string, std::string>*> (this);
-	}
 	const  std::map<std::string, std::string>& fGetValue() const {
 		return *static_cast<const std::map<std::string, std::string>*> (this);
 	}

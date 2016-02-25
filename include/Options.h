@@ -57,6 +57,7 @@ class OptionParser {
 	const std::vector<std::string> lSearchPaths;
 	std::vector<std::string> lUnusedOptions;
 	std::vector<std::string> lStuffAfterMinusMinus;
+	bool lMinusMinusJustEndsOptions;
 	std::ostream *lMessageStream;
 	const char *lProgName;
 	int lHelpReturnValue;
@@ -80,12 +81,15 @@ class OptionParser {
 	void fHelp();
 	void fWriteCfgFile(const char *aFileName);
 	void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
+	void fSetMinusMinusStartsExtraList();
 	const std::vector<std::string>& fGetStuffAfterMinusMinus() {
 		return lStuffAfterMinusMinus;
 	};
 	static void fPrintEscapedString(std::ostream &aStream, const char *aString);
 	static void fReCaptureEscapedString(char *aDest, const char *aSource);
 };
+
+
 
 template <typename T> class Option : public OptionBase {
   private:

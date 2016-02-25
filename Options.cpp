@@ -22,6 +22,7 @@ OptionParser::OptionParser(const char *aDescription, const char *aTrailer, std::
 	lMessageStream = &std::cout;
 	lHelpReturnValue = 0;
 	fSetAssignmentChars();
+	lMinusMinusJustEndsOptions = true;
 }
 OptionParser::~OptionParser() {
 	gParser = NULL;
@@ -79,8 +80,11 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 			auto length = strlen(argv[i]);
 			if (length == 2) { // end of options
 				for (i++; i < argc; i++) {
-					lUnusedOptions.push_back(argv[i]);
-					lStuffAfterMinusMinus.push_back(argv[i]);
+					if (lMinusMinusJustEndsOptions) {
+						lUnusedOptions.push_back(argv[i]);
+					} else {
+						lStuffAfterMinusMinus.push_back(argv[i]);
+					}
 				}
 				break;
 			} else {
@@ -136,7 +140,9 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 	}
 	return lUnusedOptions;
 }
-
+void OptionParser::fSetMinusMinusStartsExtraList() {
+	lMinusMinusJustEndsOptions = false;
+}
 
 void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
 	bool delimit = strchr(aString, ' ') != NULL || strchr(aString, '\t') != NULL;

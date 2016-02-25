@@ -43,17 +43,30 @@ int main(int argc, const char *argv[]) {
 		          ". <(shellScriptOptionParser $0 \"$@\"<<EOF\n"
 		          "description of script\n"
 		          "options:\n"
-		          "export int n number 55 an example exported integer option\n"
+		          "<options>\n"
 		          "trailer:\n"
 		          "trailing rest of explanation\n"
 		          "EOF\n"
 		          "test $? != 0 && echo exit\n"
-		          ")\n";
+		          ")\n"
+		          "Option sytax is:\n"
+		          "[export] type shortOpt longOpt default descripton\n"
+		          "\ttype may be one of int, uint bool or string\n"
+		          "\tshortOpt is the one-letter variant, use - to have none\n"
+		          "\tlongOpt is the long variant and the name of the shell variabl\n"
+		          "\tdefault is the defalut value (surprise, surprise!)\n"
+		          "\tthe rest of the line is the description\n"
+		          "\tif the next line starts with range the values following are added to the\n"
+		          "\tallowed value range of the option, many range lines may follow!\n"
+		          "\tif only two are given they denote a true range in the closed interval\n"
+		          "\tThe keyword minusMinusSpecialTreatment will put the parameters following --\n"
+		          "\tinto the shell variable AfterMinusMinus\n";
 		return (1);
 	}
 
 	std::vector<OptionBase*> options;
 	std::set<const OptionBase*> exportedOptions;
+	bool minusMinusSpecialTreatment = false;
 	{
 		std::string optionType;
 		bool exportNextOption = false;
@@ -74,6 +87,9 @@ int main(int argc, const char *argv[]) {
 				options.back()->fAddToRangeFromStream(std::cin);
 			} else if (optionType == "export") {
 				exportNextOption = true;
+				continue;
+			} else if (optionType == "minusMinusSpecialTreatment") {
+				minusMinusSpecialTreatment = true;
 				continue;
 			} else if (optionType == "trailer:") {
 				break;
@@ -101,7 +117,9 @@ int main(int argc, const char *argv[]) {
 	OptionParser parser(description.c_str(), trailer.c_str());
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
-
+	if (minusMinusSpecialTreatment) {
+		parser.fSetMinusMinusStartsExtraList();
+	}
 
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 

@@ -60,13 +60,13 @@ int main(int argc, const char *argv[]) {
 		          "\tallowed value range of the option, many range lines may follow!\n"
 		          "\tif only two are given they denote a true range in the closed interval\n"
 		          "\tThe keyword minusMinusSpecialTreatment will put the parameters following --\n"
-		          "\tinto the shell variable AfterMinusMinus\n";
+		          "\tinto the shell variable following that keyword\n";
 		return (1);
 	}
 
 	std::vector<OptionBase*> options;
 	std::set<const OptionBase*> exportedOptions;
-	bool minusMinusSpecialTreatment = false;
+	std::string minusMinusSpecialTreatment = "";
 	{
 		std::string optionType;
 		bool exportNextOption = false;
@@ -89,7 +89,7 @@ int main(int argc, const char *argv[]) {
 				exportNextOption = true;
 				continue;
 			} else if (optionType == "minusMinusSpecialTreatment") {
-				minusMinusSpecialTreatment = true;
+				std::cin >> minusMinusSpecialTreatment;
 				continue;
 			} else if (optionType == "trailer:") {
 				break;
@@ -117,7 +117,7 @@ int main(int argc, const char *argv[]) {
 	OptionParser parser(description.c_str(), trailer.c_str());
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
-	if (minusMinusSpecialTreatment) {
+	if (! minusMinusSpecialTreatment.empty()) {
 		parser.fSetMinusMinusStartsExtraList();
 	}
 
@@ -141,7 +141,7 @@ int main(int argc, const char *argv[]) {
 		std::cout << "\n";
 	}
 	if (parser.fGetStuffAfterMinusMinus().empty() == false) {
-		std::cout << "AfterMinusMinus=\"";
+		std::cout << minusMinusSpecialTreatment << "=\"";
 		for (auto it =  parser.fGetStuffAfterMinusMinus().begin(); it != parser.fGetStuffAfterMinusMinus().end(); ++it) {
 			if (it != parser.fGetStuffAfterMinusMinus().begin()) {
 				std::cout << " ";

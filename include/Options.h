@@ -168,7 +168,7 @@ template <typename T> class Option : public OptionBase {
 	operator T () const {
 		return lValue;
 	}
-	T &fGetValue() const {
+	const T &fGetValue() const {
 		return lValue;
 	}
 };

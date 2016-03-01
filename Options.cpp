@@ -354,8 +354,10 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 	std::ofstream cfgFile(aFileName, std::ofstream::out | std::ofstream::trunc);
 	if (lExecutableName.empty()) {
 		char buf[128];
-		readlink("/proc/self/exe", buf, sizeof(buf));
-		cfgFile << "#!" << buf << " --readCfgFile\n";
+		auto result = readlink("/proc/self/exe", buf, sizeof(buf));
+		if (result > 0 && result < sizeof(buf)) {
+			cfgFile << "#!" << buf << " --readCfgFile\n";
+		}
 	} else {
 		cfgFile << "#!" << lExecutableName << " --readCfgFile\n";
 	}

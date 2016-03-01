@@ -11,7 +11,7 @@
 #include <sstream>
 #include <fstream>
 #include <string.h>
-#define debug() std::cerr << __FILE__ << ":" << __LINE__ << ":" << std::endl
+
 
 class OptionBase {
 	friend class OptionParser;
@@ -59,7 +59,8 @@ class OptionParser {
 	std::vector<std::string> lStuffAfterMinusMinus;
 	bool lMinusMinusJustEndsOptions;
 	std::ostream *lMessageStream;
-	const char *lProgName;
+	std::string lProgName;
+	std::string lExecutableName;
 	int lHelpReturnValue;
 	char lPrimaryAssignment;
 	char lSecondaryAssignment;
@@ -83,6 +84,7 @@ class OptionParser {
 	void fWriteCfgFile(const char *aFileName);
 	void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
 	void fSetMinusMinusStartsExtraList();
+	void fSetExecutableName(const char *aName);
 	const std::vector<std::string>& fGetStuffAfterMinusMinus() {
 		return lStuffAfterMinusMinus;
 	};

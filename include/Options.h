@@ -238,7 +238,7 @@ template <> class Option<std::string> : public OptionBase {
 	}
 };
 
-template <typename T> class OptionMap: public OptionBase, public std::map<std::string, T> {
+template <typename T, typename Container = std::map<std::string, T>> class OptionMap: public OptionBase, public Container {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
@@ -249,8 +249,8 @@ template <typename T> class OptionMap: public OptionBase, public std::map<std::s
 		if (this->empty()) {
 			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
-		for (auto it = this->begin(); it != this->end(); ++it) {
-			aStream << lLongName << "=" << it->first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it->second << "\n";
+		for (const auto& it : *this) {
+			aStream << lLongName << "=" << it.first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
 		}
 	}
 
@@ -262,8 +262,8 @@ template <typename T> class OptionMap: public OptionBase, public std::map<std::s
 		if (this->empty()) {
 			aStream << "no value";
 		} else {
-			for (auto it = this->begin(); it != this->end(); ++it) {
-				aStream << it->first << ":" << it->second << " ";
+			for (const auto& it : *this) {
+				aStream << it.first << ":" << it.second << " ";
 			}
 		}
 	}
@@ -274,21 +274,46 @@ template <typename T> class OptionMap: public OptionBase, public std::map<std::s
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 		T value;
 		valueStream >> value;
-		(*this)[name] = value;
+		(*this).insert(this->end(), std::make_pair(name, value));
 	}
 	const std::map<std::string, T>& fGetValue() const  {
 		return *static_cast<const std::map<std::string, T>*>(this);
 	}
 };
-template <> class OptionMap<std::string>: public OptionBase, public std::map<std::string, std::string> {
+template <typename Container> class OptionMap<std::string, Container>: public OptionBase, public Container {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 		OptionBase(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-	virtual void fWriteCfgLines(std::ostream& aStream) const;
-	virtual void fWriteValue(std::ostream& aStream) const;
-	virtual void fSetMe(const char *aArg);
+	virtual void fWriteCfgLines(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+		}
+		for (const auto & it : *this) {
+			aStream << lLongName << "=" << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
+			OptionParser::fPrintEscapedString(aStream, it.second.c_str());
+			aStream << "\n";
+		}
+	};
+	virtual void fWriteValue(std::ostream& aStream) const {
+		if (this->empty()) {
+			aStream << "no value";
+		} else {
+			for (const auto & it : *this) {
+				aStream << it.first << ":" << it.second << " ";
+			}
+		}
+	};
+
+	virtual void fSetMe(const char *aArg) {
+		std::string s(aArg);
+		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
+		auto name = s.substr(0, dividerPosition);
+		auto buf = new char[s.length() - dividerPosition];
+		OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
+		(*this).insert(this->end(), std::make_pair(name, buf));
+	};
 	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
 		return true;
 	};

@@ -4,8 +4,8 @@
 int main(int argc, const char *argv[]) {
 	Option<int> number('n', "number", "some number", 0);
 	Option<int> number2('k', "kumber", "some other number", 0, {0, 3, 3});
-	OptionMap<int> numbers('m', "numbers", "several numbers");
-	OptionMap<std::string> strings('s', "strings", "several strings");
+	OptionMap<int, std::vector<std::pair<std::string, int> > > numbers('m', "numbers", "several numbers");
+	OptionMap<std::string, std::list<std::pair<std::string, std::string> > > strings('s', "strings", "several strings");
 	Option<const char *>cs('c', "cstring", "a c string", nullptr, {"bla", "blubb"});
 	Option<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
 	OptionContainer<double> dnums('d', "doubles", "double numbers");

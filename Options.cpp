@@ -385,6 +385,7 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 			continue;
 		}
 		if (opt->lPreserveWorthyStuff != nullptr) {
+			cfgFile << "\n";
 			for (const auto& line : * (opt->lPreserveWorthyStuff)) {
 				cfgFile << line;
 			}

@@ -355,7 +355,7 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 	if (lExecutableName.empty()) {
 		char buf[128];
 		auto result = readlink("/proc/self/exe", buf, sizeof(buf));
-		if (result > 0 && result < sizeof(buf)) {
+		if (result > 0 && result < 128-2-14) {
 			cfgFile << "#!" << buf << " --readCfgFile\n";
 		}
 	} else {

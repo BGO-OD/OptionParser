@@ -424,6 +424,17 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 					preserveWorthyStuff = new std::vector<std::string>;
 				}
 				preserveWorthyStuff->push_back(line);
+			} else if (preserveWorthyStuff != nullptr) {
+				auto equalsAt = line.find_first_of('=');
+				if (equalsAt != std::string::npos) {
+					auto optionName = line.substr(2, equalsAt - 2);
+					auto it = OptionBase::fGetOptionMap().find(optionName);
+					if (it != OptionBase::fGetOptionMap().end()) {
+						auto option = it->second;
+						option->fSetPreserveWorthyStuff(preserveWorthyStuff);
+						preserveWorthyStuff = nullptr;
+					}
+				}
 			}
 			continue;
 		}

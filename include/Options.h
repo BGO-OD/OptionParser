@@ -42,7 +42,7 @@ class OptionBase {
 	void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
 
   public:
-	OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs);
+	OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	const std::string& fGetLongName() const {
@@ -69,7 +69,7 @@ class OptionParser {
   public:
 	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string> aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();
-	void fSetMessageStream(std::ostream* aMessageStream);
+	void fSetMessageStream(std::ostream* aStream);
 	void fSetHelpReturnValue(int aValue);
 	int fGetHelpReturnValue() const {
 		return lHelpReturnValue;
@@ -222,7 +222,7 @@ template <> class Option<std::string> : public OptionBase {
 	std::string lValue;
 	std::vector<std::string> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "", const std::vector<std::string>& aRange = {});
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault = "", const std::vector<std::string>& aRange = {});
 	virtual void fSetRange(const std::vector<std::string>& aRange);
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;

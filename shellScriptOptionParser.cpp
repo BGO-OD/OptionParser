@@ -137,9 +137,8 @@ int main(int argc, const char *argv[]) {
 
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 
-	for (auto it = options.begin(); it != options.end(); it++) {
-		auto option = *it;
-		if (exportedOptions.find(option) != exportedOptions.end()) {
+	for (auto option : options) {
+			if (exportedOptions.find(option) != exportedOptions.end()) {
 			std::cout << "export ";
 		}
 		std::cout << option->fGetLongName() << "=";
@@ -149,8 +148,8 @@ int main(int argc, const char *argv[]) {
 	std::cout << "shift $#\n";
 	if (unusedOptions.empty() == false) {
 		std::cout << "set --";
-		for (unsigned int i = 0; i < unusedOptions.size(); i++) {
-			std::cout << " " << unusedOptions[i];
+		for (auto & unusedOption : unusedOptions) {
+			std::cout << " " << unusedOption;
 		}
 		std::cout << "\n";
 	}

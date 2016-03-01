@@ -8,13 +8,13 @@
 
 static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
-OptionParser* OptionParser::gParser = NULL;
+OptionParser* OptionParser::gParser = nullptr;
 
 OptionParser::OptionParser(const char *aDescription, const char *aTrailer, std::vector<std::string> aSearchPaths):
 	lDescription(aDescription),
 	lTrailer(aTrailer),
-	lSearchPaths(aSearchPaths) {
-	if (gParser != NULL) {
+	lSearchPaths(std::move(aSearchPaths)) {
+	if (gParser != nullptr) {
 		std::cerr << "there may be only one parser" << std::endl;
 		exit(1);
 	}
@@ -25,7 +25,7 @@ OptionParser::OptionParser(const char *aDescription, const char *aTrailer, std::
 	lMinusMinusJustEndsOptions = true;
 }
 OptionParser::~OptionParser() {
-	gParser = NULL;
+	gParser = nullptr;
 }
 void OptionParser::fSetMessageStream(std::ostream *aStream) {
 	lMessageStream = aStream;
@@ -46,9 +46,8 @@ OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
 void OptionParser::fReadConfigFiles() {
-	for (auto it = lSearchPaths.begin(); it != lSearchPaths.end(); ++it) {
-		std::string f(*it);
-		auto tildePosition = f.find_first_of('~');
+	for (auto f : lSearchPaths) {
+			auto tildePosition = f.find_first_of('~');
 		if (tildePosition != std::string::npos) {
 			f.replace(tildePosition, 1, getenv("HOME"));
 		}
@@ -102,7 +101,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 				}
 				break;
 			} else {
-				if (NULL == strchr(argv[i], lPrimaryAssignment)) {
+				if (nullptr == strchr(argv[i], lPrimaryAssignment)) {
 					auto it = OptionBase::fGetOptionMap().find(argv[i] + 2);
 					if (it == OptionBase::fGetOptionMap().end()) {
 						std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
@@ -136,8 +135,8 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 		fReadConfigFiles();
 	}
 	if (gOptionDebugOptions) {
-		for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
-			auto opt = it->second;
+		for (auto & it : OptionBase::fGetOptionMap()) {
+			auto opt = it.second;
 			std::cerr << "option " << opt->lLongName << " has value '";
 			opt->fWriteValue(std::cerr);
 			std::cerr << "' ";
@@ -148,8 +147,8 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 			}
 			std::cerr << std::endl;
 		}
-		for (auto it = lUnusedOptions.begin(); it != lUnusedOptions.end(); ++it) {
-			std::cerr << "unused option '" << *it << "'" << std::endl;
+		for (auto & unusedOption : lUnusedOptions) {
+			std::cerr << "unused option '" << unusedOption << "'" << std::endl;
 		}
 	}
 	return lUnusedOptions;
@@ -159,7 +158,7 @@ void OptionParser::fSetMinusMinusStartsExtraList() {
 }
 
 void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
-	bool delimit = strchr(aString, ' ') != NULL || strchr(aString, '\t') != NULL;
+	bool delimit = strchr(aString, ' ') != nullptr || strchr(aString, '\t') != nullptr;
 	if (delimit) {
 		aStream << '"';
 	}
@@ -272,10 +271,10 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 }
 
 
-OptionBase::OptionBase(char aShortName, const std::string & aLongName, const std::string & aExplanation, short aNargs) :
+OptionBase::OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 	lShortName(aShortName),
-	lLongName(aLongName),
-	lExplanation(aExplanation),
+	lLongName(std::move(aLongName)),
+	lExplanation(std::move(aExplanation)),
 	lNargs(aNargs) {
 	if (fGetOptionMap().find(lLongName) != fGetOptionMap().end()) {
 		throw (lLongName + " already set");
@@ -298,7 +297,7 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 		exit(1);
 	}
 	if (lNargs == 0) {
-		fSetMe(NULL);
+		fSetMe(nullptr);
 	} else if (lNargs == 1) {
 		fSetMe(argv[*i + 1]);
 		*i += lNargs;
@@ -324,13 +323,13 @@ void OptionParser::fHelp() {
 	*lMessageStream << lProgName << ": " << lDescription << "\n";
 	size_t maxName = 0;
 	size_t maxExplain = 0;
-	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
-		const auto opt = it->second;
+	for (auto & it : OptionBase::fGetOptionMap()) {
+		const auto opt = it.second;
 		maxName = std::max(opt->lLongName.length(), maxName);
 		maxExplain = std::max(opt->lExplanation.length(), maxExplain);
 	}
-	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
-		const auto opt = it->second;
+	for (auto & it : OptionBase::fGetOptionMap()) {
+		const auto opt = it.second;
 		if (opt->lShortName != '\0') {
 			*lMessageStream << "  -" << opt->lShortName << ", ";
 		} else {
@@ -344,13 +343,13 @@ void OptionParser::fHelp() {
 	}
 	if (!lSearchPaths.empty()) {
 		*lMessageStream << "Looking for config files in ";
-		for (auto it = lSearchPaths.begin(); it != lSearchPaths.end(); ++it) {
-			*lMessageStream << *it << " ";
+		for (const auto & searchPath : lSearchPaths) {
+			*lMessageStream << searchPath << " ";
 		}
 		*lMessageStream << "\n";
 	}
 
-	if (lTrailer != NULL) {
+	if (lTrailer != nullptr) {
 		*lMessageStream << lTrailer;
 	}
 	*lMessageStream << std::endl;
@@ -368,7 +367,7 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 	}
 	{
 		cfgFile << "# written ";
-		std::time_t t = std::time(NULL);
+		std::time_t t = std::time(nullptr);
 		char mbstr[100];
 		if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&t))) {
 			cfgFile << mbstr;
@@ -376,8 +375,8 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 		cfgFile << " by " << getenv("USER") << " using " << lProgName << "\n";
 		cfgFile << "# only comments started by ## will be preserved on a re-write!\n";
 	}
-	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
-		const auto opt = it->second;
+	for (auto & it : OptionBase::fGetOptionMap()) {
+		const auto opt = it.second;
 		if (opt->lLongName == "writeCfgFile") {
 			continue;
 		}
@@ -462,7 +461,7 @@ void Option<bool>::fWriteValue(std::ostream & aStream) const {
 	aStream << std::boolalpha << lValue;
 }
 void Option<bool>::fSetMe(const char *aArg) {
-	if (aArg == 0) {
+	if (aArg == nullptr) {
 		lValue = ! lValue;
 	} else {
 		std::stringstream buf(aArg);
@@ -481,14 +480,14 @@ Option<const char*>::Option(char aShortName, const std::string& aLongName, const
 
 
 void Option<const char*>::fSetRange(const std::vector<const char *>& aRange) {
-	for (auto it = aRange.begin(); it != aRange.end(); ++it) {
-		lRange.push_back(strdup(*it));
+	for (auto it : aRange) {
+		lRange.push_back(strdup(it));
 	}
 }
 void Option<const char*>::fAddToRangeFromStream(std::istream& aStream) {
 	std::string buf1;
 	std::getline(aStream, buf1);
-	char *buf2 = new char[buf1.length() + 1];
+	auto buf2 = new char[buf1.length() + 1];
 	OptionParser::fReCaptureEscapedString(buf2, buf1.c_str());
 	lRange.push_back(buf2);
 }
@@ -503,9 +502,9 @@ void  Option<const char*>::fWriteRange(std::ostream &aStream) const {
 			aStream << "]\n";
 		} else {
 			aStream << ":";
-			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+			for (auto it : lRange) {
 				aStream << "\n# ";
-				OptionParser::fPrintEscapedString(aStream, *it);
+				OptionParser::fPrintEscapedString(aStream, it);
 			}
 			aStream << "\n# end of range\n#\n";
 		}
@@ -515,14 +514,14 @@ void  Option<const char*>::fWriteRange(std::ostream &aStream) const {
 
 
 void Option<const char*>::fWriteValue(std::ostream & aStream) const {
-	if (lValue == NULL) {
+	if (lValue == nullptr) {
 		aStream << "nullptr";
 	} else {
 		OptionParser::fPrintEscapedString(aStream, lValue);
 	}
 }
 void Option<const char*>::fSetMe(const char *aArg) {
-	char *buf = new char[strlen(aArg + 1)];
+	auto buf = new char[strlen(aArg + 1)];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 }
@@ -538,14 +537,14 @@ bool Option<const char*>::fCheckRange(std::ostream& aLogStream) const {
 			return false;
 		}
 	} else {
-		for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-			if (strcmp(*it, lValue) == 0) {
+		for (auto it : lRange) {
+			if (strcmp(it, lValue) == 0) {
 				return true;
 			}
 		}
 		aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
-		for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-			aLogStream << *it << "\n";
+		for (auto it : lRange) {
+			aLogStream << it << "\n";
 		}
 		return false;
 	}
@@ -554,23 +553,23 @@ bool Option<const char*>::fCheckRange(std::ostream& aLogStream) const {
 
 
 
-Option<std::string>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange) :
+Option<std::string>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault, const std::vector<std::string>& aRange) :
 	OptionBase(aShortName, aLongName, aExplanation, 1),
-	lValue(aDefault) {
+	lValue(std::move(aDefault)) {
 	if (!aRange.empty()) {
 		fSetRange(aRange);
 	}
 }
 
 void Option<std::string>::fSetRange( const std::vector<std::string>& aRange) {
-	for (auto it = aRange.begin(); it != aRange.end(); ++it) {
-		lRange.push_back(*it);
+	for (const auto & it : aRange) {
+		lRange.push_back(it);
 	}
 }
 void Option<std::string>::fAddToRangeFromStream(std::istream& aStream) {
 	std::string buf1;
 	std::getline(aStream, buf1);
-	char *buf2 = new char[buf1.length() + 1];
+	auto buf2 = new char[buf1.length() + 1];
 	OptionParser::fReCaptureEscapedString(buf2, buf1.c_str());
 	lRange.push_back(buf2);
 }
@@ -586,14 +585,14 @@ bool Option<std::string>::fCheckRange(std::ostream& aLogStream) const {
 			return false;
 		}
 	} else {
-		for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-			if (*it == lValue) {
+		for (const auto & it : lRange) {
+			if (it == lValue) {
 				return true;
 			}
 		}
 		aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
-		for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-			aLogStream << *it << "\n";
+		for (const auto & it : lRange) {
+			aLogStream << it << "\n";
 		}
 		return false;
 	}
@@ -604,7 +603,7 @@ void Option<std::string>::fWriteValue(std::ostream & aStream) const {
 	OptionParser::fPrintEscapedString(aStream, lValue.c_str());
 }
 void Option<std::string>::fSetMe(const char *aArg) {
-	char *buf = new char[strlen(aArg + 1)];
+	auto buf = new char[strlen(aArg + 1)];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 	delete[] buf;
@@ -621,9 +620,9 @@ void  Option<std::string>::fWriteRange(std::ostream &aStream) const {
 			aStream << "]\n";
 		} else {
 			aStream << ":";
-			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+			for (const auto & it : lRange) {
 				aStream << "\n# ";
-				OptionParser::fPrintEscapedString(aStream, it->c_str());
+				OptionParser::fPrintEscapedString(aStream, it.c_str());
 			}
 			aStream << "\n# end of range\n#\n";
 		}
@@ -643,9 +642,9 @@ void OptionMap<std::string>::fWriteCfgLines(std::ostream & aStream) const {
 	if (this->empty()) {
 		aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 	}
-	for (auto it = this->begin(); it != this->end(); ++it) {
-		aStream << lLongName << "=" << it->first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
-		OptionParser::fPrintEscapedString(aStream, it->second.c_str());
+	for (const auto & it : *this) {
+		aStream << lLongName << "=" << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
+		OptionParser::fPrintEscapedString(aStream, it.second.c_str());
 		aStream << "\n";
 	}
 }
@@ -653,8 +652,8 @@ void OptionMap<std::string>::fWriteValue(std::ostream & aStream) const {
 	if (this->empty()) {
 		aStream << "no value";
 	} else {
-		for (auto it = this->begin(); it != this->end(); ++it) {
-			aStream << it->first << ":" << it->second << " ";
+		for (const auto & it : *this) {
+			aStream << it.first << ":" << it.second << " ";
 		}
 	}
 }
@@ -669,7 +668,7 @@ class OptionHelp : public Option<bool> {
 	OptionHelp():
 		Option('h', "help", "give this help") {
 	}
-	virtual void fSetMe(const char * /*aArg*/) {
+	void fSetMe(const char * /*aArg*/) override {
 		OptionParser::fGetInstance()->fHelp();
 		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
 	}
@@ -682,7 +681,7 @@ class OptionWriteCfgFile : public Option<const char *> {
 	OptionWriteCfgFile():
 		Option('\0', "writeCfgFile", "write a config file") {
 	}
-	virtual void fSetMe(const char *aArg) {
+	void fSetMe(const char *aArg) override {
 		lValue = aArg;
 		OptionParser::fGetInstance()->fWriteCfgFile(aArg);
 		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
@@ -695,7 +694,7 @@ class OptionReadCfgFile : public Option<const char *> {
 	OptionReadCfgFile():
 		Option('\0', "readCfgFile", "read a config file") {
 	}
-	virtual void fSetMe(const char *aArg) {
+	void fSetMe(const char *aArg) override {
 		lValue = aArg;
 		OptionParser::fGetInstance()->fReadCfgFile(aArg);
 	}

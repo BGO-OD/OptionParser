@@ -29,8 +29,8 @@ class OptionBase {
 	const std::string lLongName;
 	const std::string lExplanation;
 	std::string lSource;
-  protected:
 	short lNargs;
+	std::vector<std::string>* lPreserveWorthyStuff;
 	virtual void fSetMe(const char *aArg) = 0;
   private:
 	virtual void fHandleOption(int argc, const char *argv[], int *i);
@@ -39,6 +39,7 @@ class OptionBase {
 	virtual void fWriteCfgLines(std::ostream& aStream) const;
 	virtual bool fCheckRange(std::ostream& aLogStream) const = 0;
 	virtual void fWriteRange(std::ostream &/*aStream*/) const {};
+	void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
 
   public:
 	OptionBase(char aShortName, const std::string& aLongName, const std::string& aExplanation, short aNargs);

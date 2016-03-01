@@ -43,6 +43,7 @@ class OptionBase {
 
   public:
 	OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
+	~OptionBase();
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	const std::string& fGetLongName() const {
@@ -67,7 +68,7 @@ class OptionParser {
 	char lSecondaryAssignment;
 	void fReadConfigFiles();
   public:
-	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string> aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
+	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();
 	void fSetMessageStream(std::ostream* aStream);
 	void fSetHelpReturnValue(int aValue);

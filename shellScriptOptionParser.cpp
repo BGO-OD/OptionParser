@@ -138,7 +138,7 @@ int main(int argc, const char *argv[]) {
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
 
 	for (auto option : options) {
-			if (exportedOptions.find(option) != exportedOptions.end()) {
+		if (exportedOptions.find(option) != exportedOptions.end()) {
 			std::cout << "export ";
 		}
 		std::cout << option->fGetLongName() << "=";

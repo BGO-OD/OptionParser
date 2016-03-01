@@ -10,10 +10,10 @@ static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
 OptionParser* OptionParser::gParser = nullptr;
 
-OptionParser::OptionParser(const char *aDescription, const char *aTrailer, std::vector<std::string> aSearchPaths):
+OptionParser::OptionParser(const char *aDescription, const char *aTrailer, const std::vector<std::string>& aSearchPaths):
 	lDescription(aDescription),
 	lTrailer(aTrailer),
-	lSearchPaths(std::move(aSearchPaths)) {
+	lSearchPaths(aSearchPaths) {
 	if (gParser != nullptr) {
 		std::cerr << "there may be only one parser" << std::endl;
 		exit(1);
@@ -47,7 +47,7 @@ OptionParser* OptionParser::fGetInstance() {
 }
 void OptionParser::fReadConfigFiles() {
 	for (auto f : lSearchPaths) {
-			auto tildePosition = f.find_first_of('~');
+		auto tildePosition = f.find_first_of('~');
 		if (tildePosition != std::string::npos) {
 			f.replace(tildePosition, 1, getenv("HOME"));
 		}
@@ -273,8 +273,8 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 
 OptionBase::OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 	lShortName(aShortName),
-	lLongName(std::move(aLongName)),
-	lExplanation(std::move(aExplanation)),
+	lLongName(aLongName),
+	lExplanation(aExplanation),
 	lNargs(aNargs) {
 	if (fGetOptionMap().find(lLongName) != fGetOptionMap().end()) {
 		throw (lLongName + " already set");
@@ -288,7 +288,11 @@ OptionBase::OptionBase(char aShortName, std::string  aLongName, std::string  aEx
 	}
 	lPreserveWorthyStuff = nullptr;
 }
-
+OptionBase::~OptionBase() {
+	fGetOptionMap().clear();
+	fGetShortOptionMap().clear();
+	delete lPreserveWorthyStuff;
+}
 
 void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	if (*i + lNargs >= argc) {

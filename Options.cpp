@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
-
+#include <ctime>
 
 static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
@@ -287,6 +287,7 @@ OptionBase::OptionBase(char aShortName, const std::string & aLongName, const std
 		};
 		fGetShortOptionMap().insert(std::make_pair(lShortName, this));
 	}
+	lPreserveWorthyStuff = nullptr;
 }
 
 
@@ -312,8 +313,12 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 void OptionBase::fWriteCfgLines(std::ostream & aStream) const {
 	aStream << lLongName << "=";
 	fWriteValue(aStream);
+	aStream << "\n";
 }
 
+void OptionBase::fSetPreserveWorthyStuff(std::vector<std::string>* aStuff) {
+	lPreserveWorthyStuff = aStuff;
+}
 
 void OptionParser::fHelp() {
 	*lMessageStream << lProgName << ": " << lDescription << "\n";
@@ -355,24 +360,41 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 	if (lExecutableName.empty()) {
 		char buf[128];
 		auto result = readlink("/proc/self/exe", buf, sizeof(buf));
-		if (result > 0 && result < 128-2-14) {
+		if (result > 0 && result < 128 - 2 - 14) {
 			cfgFile << "#!" << buf << " --readCfgFile\n";
 		}
 	} else {
 		cfgFile << "#!" << lExecutableName << " --readCfgFile\n";
+	}
+	{
+		cfgFile << "# written ";
+		std::time_t t = std::time(NULL);
+		char mbstr[100];
+		if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&t))) {
+			cfgFile << mbstr;
+		}
+		cfgFile << " by " << getenv("USER") << " using " << lProgName << "\n";
+		cfgFile << "# only comments started by ## will be preserved on a re-write!\n";
 	}
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
 		const auto opt = it->second;
 		if (opt->lLongName == "writeCfgFile") {
 			continue;
 		}
+		if (opt->lPreserveWorthyStuff != nullptr) {
+			for (const auto& line : * (opt->lPreserveWorthyStuff)) {
+				cfgFile << line;
+			}
+		}
 		cfgFile << "\n# " << opt->lExplanation << "\n";
 		if (opt->lSource.empty() || opt->lLongName == "readCfgFile") {
 			cfgFile << "# ";
 		}
 		opt->fWriteCfgLines(cfgFile);
-		cfgFile << "\n";
 		opt->fWriteRange(cfgFile);
+		if (!opt->lSource.empty()) {
+			cfgFile << "# set from " << opt->lSource << "\n";
+		}
 	}
 	cfgFile << "#\n";
 	cfgFile.close();
@@ -385,11 +407,20 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		exit(1);
 	}
 	int lineNumber = 0;
+	std::vector<std::string>* preserveWorthyStuff = nullptr;
 	while (cfgFile.good()) {
 		std::string line;
 		std::getline(cfgFile, line);
 		lineNumber++;
-		if (line[0] == '#' || line.length() == 0) {
+		if (line.length() == 0) {
+			continue;
+		} else if (line[0] == '#') {
+			if (line[1] == '#') {
+				if (preserveWorthyStuff == nullptr) {
+					preserveWorthyStuff = new std::vector<std::string>;
+				}
+				preserveWorthyStuff->push_back(line);
+			}
 			continue;
 		}
 		auto equalsAt = line.find_first_of('=');
@@ -409,6 +440,10 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		auto option = it->second;
 		{
 			option->fSetMe(line.substr(equalsAt + 1).c_str());
+			if (preserveWorthyStuff != nullptr) {
+				option->fSetPreserveWorthyStuff(preserveWorthyStuff);
+				preserveWorthyStuff = nullptr;
+			}
 			option->lSource = aFileName;
 			char blubb[128];
 			sprintf(blubb, ":%d: ", lineNumber);

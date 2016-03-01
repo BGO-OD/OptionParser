@@ -37,6 +37,11 @@ void OptionParser::fSetAssignmentChars(char aPrimary, char aSecondary) {
 	lPrimaryAssignment = aPrimary;
 	lSecondaryAssignment = aSecondary;
 }
+void OptionParser::fSetExecutableName(const char *aName) {
+	lExecutableName = aName;
+}
+
+
 OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
@@ -57,7 +62,11 @@ const std::vector<std::string>& OptionParser::fParse(int argc, char *argv[]) {
 }
 
 const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[]) {
-	lProgName = basename(strdup(argv[0]));
+	{
+		auto buf = strdup(argv[0]);
+		lProgName = basename(buf);
+		free(buf);
+	}
 	bool firstOptionNotSeen = true;
 	for (int i = 1; i < argc; i++) {
 		if (firstOptionNotSeen && !(argv[i][0] == '-' && argv[i][1] == '-' && gOptionNoCfgFiles.lLongName.compare(argv[i] + 2) == 0)) {
@@ -307,7 +316,7 @@ void OptionBase::fWriteCfgLines(std::ostream & aStream) const {
 
 
 void OptionParser::fHelp() {
-	*lMessageStream << fGetInstance()->lProgName << ": " << fGetInstance()->lDescription << "\n";
+	*lMessageStream << lProgName << ": " << lDescription << "\n";
 	size_t maxName = 0;
 	size_t maxExplain = 0;
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
@@ -328,7 +337,7 @@ void OptionParser::fHelp() {
 		opt->fWriteValue(*lMessageStream);
 		*lMessageStream << "\n";
 	}
-	if (!fGetInstance()->lSearchPaths.empty()) {
+	if (!lSearchPaths.empty()) {
 		*lMessageStream << "Looking for config files in ";
 		for (auto it = lSearchPaths.begin(); it != lSearchPaths.end(); ++it) {
 			*lMessageStream << *it << " ";
@@ -336,13 +345,20 @@ void OptionParser::fHelp() {
 		*lMessageStream << "\n";
 	}
 
-	if (fGetInstance()->lTrailer != NULL) {
-		*lMessageStream << fGetInstance()->lTrailer;
+	if (lTrailer != NULL) {
+		*lMessageStream << lTrailer;
 	}
 	*lMessageStream << std::endl;
 }
 void OptionParser::fWriteCfgFile(const char *aFileName) {
-	std::ofstream cfgFile(aFileName);
+	std::ofstream cfgFile(aFileName, std::ofstream::out | std::ofstream::trunc);
+	if (lExecutableName.empty()) {
+		char buf[128];
+		readlink("/proc/self/exe", buf, sizeof(buf));
+		cfgFile << "#!" << buf << " --readCfgFile\n";
+	} else {
+		cfgFile << "#!" << lExecutableName << " --readCfgFile\n";
+	}
 	for (auto it = OptionBase::fGetOptionMap().begin(); it != OptionBase::fGetOptionMap().end(); ++it) {
 		const auto opt = it->second;
 		if (opt->lLongName == "writeCfgFile") {
@@ -378,7 +394,7 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		if (equalsAt == std::string::npos || equalsAt < 1 || equalsAt == line.length()) {
 			auto buf = new char[line.length() + 1];
 			fReCaptureEscapedString(buf, line.c_str());
-			fGetInstance()->lUnusedOptions.push_back(buf);
+			lUnusedOptions.push_back(buf);
 			delete [] buf;
 			continue;
 		}
@@ -632,7 +648,7 @@ class OptionWriteCfgFile : public Option<const char *> {
 	virtual void fSetMe(const char *aArg) {
 		lValue = aArg;
 		OptionParser::fGetInstance()->fWriteCfgFile(aArg);
-		exit(0);
+		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
 	}
 };
 class OptionReadCfgFile : public Option<const char *> {

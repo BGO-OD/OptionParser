@@ -77,6 +77,7 @@ class OptionParser {
 		return lSecondaryAssignment;
 	}
 	const std::vector<std::string>& fParse(int argc, const char *argv[]);
+	const std::vector<std::string>& fParse(int argc, char *argv[]);
 	static OptionParser* fGetInstance();
 	void fHelp();
 	void fWriteCfgFile(const char *aFileName);

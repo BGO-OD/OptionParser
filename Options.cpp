@@ -51,6 +51,11 @@ void OptionParser::fReadConfigFiles() {
 		fReadCfgFile(f.c_str(), true);
 	}
 }
+
+const std::vector<std::string>& OptionParser::fParse(int argc, char *argv[]) {
+	return fParse(argc, const_cast<const char**>(argv));
+}
+
 const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[]) {
 	lProgName = basename(strdup(argv[0]));
 	bool firstOptionNotSeen = true;
@@ -323,6 +328,14 @@ void OptionParser::fHelp() {
 		opt->fWriteValue(*lMessageStream);
 		*lMessageStream << "\n";
 	}
+	if (!fGetInstance()->lSearchPaths.empty()) {
+		*lMessageStream << "Looking for config files in ";
+		for (auto it = lSearchPaths.begin(); it != lSearchPaths.end(); ++it) {
+			*lMessageStream << *it << " ";
+		}
+		*lMessageStream << "\n";
+	}
+
 	if (fGetInstance()->lTrailer != NULL) {
 		*lMessageStream << fGetInstance()->lTrailer;
 	}

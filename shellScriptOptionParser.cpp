@@ -53,48 +53,61 @@ int main(int argc, const char *argv[]) {
 		          "[export] type shortOpt longOpt default descripton\n"
 		          "\ttype may be one of int, uint bool or string\n"
 		          "\tshortOpt is the one-letter variant, use - to have none\n"
-		          "\tlongOpt is the long variant and the name of the shell variabl\n"
-		          "\tdefault is the defalut value (surprise, surprise!)\n"
+		          "\tlongOpt is the long variant and the name of the shell variable\n"
+		          "\tdefault is the default value (surprise, surprise!)\n"
 		          "\tthe rest of the line is the description\n"
 		          "\tif the next line starts with range the values following are added to the\n"
 		          "\tallowed value range of the option, many range lines may follow!\n"
 		          "\tif only two are given they denote a true range in the closed interval\n"
-		          "\tThe keyword minusMinusSpecialTreatment will put the parameters following --\n"
-		          "\tinto the shell variable following that keyword\n";
+		          "\tThe keyword minusMinusSpecialTreatment will put the parameters\n"
+		          "\tfollowing -- into the shell variable following that keyword\n"
+		          "\tThe keyword noPath clears the search path for config files\n"
+		          "\tThe keyword path adds the (escaped) rest of the line\n"
+		          "\tto the search path for config files\n";
 		return (1);
 	}
 
 	std::vector<OptionBase*> options;
 	std::set<const OptionBase*> exportedOptions;
 	std::string minusMinusSpecialTreatment = "";
+	std::vector<std::string> searchPath({"/etc/", "~/.", "~/.config/", "./."});
 	{
-		std::string optionType;
+		std::string keyWord;
 		bool exportNextOption = false;
 		while (std::cin.good()) {
-			std::cin >> optionType;
+			std::cin >> keyWord;
 			if (std::cin.eof()) {
 				break;
 			}
-			if (optionType == "string") {
+			if (keyWord == "string") {
 				options.push_back(fOptionFromStream<std::string>(std::cin));
-			} else if (optionType == "int") {
+			} else if (keyWord == "int") {
 				options.push_back(fOptionFromStream<int>(std::cin));
-			} else if (optionType == "uint") {
+			} else if (keyWord == "uint") {
 				options.push_back(fOptionFromStream<int>(std::cin));
-			} else if (optionType == "bool") {
+			} else if (keyWord == "bool") {
 				options.push_back(fOptionFromStream<bool>(std::cin));
-			} else if (optionType == "range") {
+			} else if (keyWord == "range") {
 				options.back()->fAddToRangeFromStream(std::cin);
-			} else if (optionType == "export") {
+			} else if (keyWord == "export") {
 				exportNextOption = true;
 				continue;
-			} else if (optionType == "minusMinusSpecialTreatment") {
+			} else if (keyWord == "minusMinusSpecialTreatment") {
 				std::cin >> minusMinusSpecialTreatment;
 				continue;
-			} else if (optionType == "trailer:") {
+			} else if (keyWord == "noPath") {
+				searchPath.clear();
+				continue;
+			} else if (keyWord == "path") {
+				std::string buffer;
+				std::getline(std::cin, buffer);
+				char buffer2[buffer.length() + 1];
+				OptionParser::fReCaptureEscapedString(buffer2, buffer.c_str());
+				searchPath.push_back(buffer2);
+			} else if (keyWord == "trailer:") {
 				break;
 			} else {
-				std::cerr << "illegal option type '" << optionType << "', giving up" << std::endl;
+				std::cerr << "illegal option type '" << keyWord << "', giving up" << std::endl;
 				return 1;
 			}
 			if (exportNextOption) {
@@ -114,7 +127,7 @@ int main(int argc, const char *argv[]) {
 		trailer += "\n";
 	}
 
-	OptionParser parser(description.c_str(), trailer.c_str());
+	OptionParser parser(description.c_str(), trailer.c_str(), searchPath);
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
 	if (! minusMinusSpecialTreatment.empty()) {

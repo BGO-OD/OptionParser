@@ -378,6 +378,9 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 		}
 		cfgFile << " by " << getenv("USER") << " using " << lProgName << "\n";
 		cfgFile << "# only comments started by ## will be preserved on a re-write!\n";
+		cfgFile << "# to rewrite this file for a different executable location, use:\n";
+		cfgFile << "# " << lProgName << " --readCfgFile " << aFileName << " --writeCfgFile " << aFileName << "\n";
+		cfgFile << "# Assuming " << lProgName << " is in your PATH\n";
 	}
 	for (auto & it : OptionBase::fGetOptionMap()) {
 		const auto opt = it.second;

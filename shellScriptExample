@@ -22,6 +22,8 @@ range bla
 range blubb
 bool v verbose false be verbose
 minusMinusSpecialTreatment ParametersAfterMinuMinus
+minUnusedParameters 2
+maxUnusedParameters 4
 trailer:
 It is also possible to add text to the help output after the list of options.
 EOF

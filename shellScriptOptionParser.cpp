@@ -1,5 +1,6 @@
 #include "Options.h"
 #include <set>
+#include <limits>
 #include <unistd.h>
 
 template <typename T> Option<T>* fOptionFromStream(std::istream &aStream) {
@@ -63,6 +64,8 @@ int main(int argc, const char *argv[]) {
 		          "\tfollowing -- into the shell variable following that keyword\n"
 		          "\tThe keyword noPath clears the search path for config files\n"
 		          "\tThe keyword path adds the (escaped) rest of the line\n"
+		          "\tThe keyword minUnusedParameters sets the min number of params\n"
+		          "\tThe keyword maxUnusedParameters sets the max number of params\n"
 		          "\tto the search path for config files\n";
 		return (1);
 	}
@@ -71,6 +74,9 @@ int main(int argc, const char *argv[]) {
 	std::set<const OptionBase*> exportedOptions;
 	std::string minusMinusSpecialTreatment = "";
 	std::vector<std::string> searchPath({"/etc/", "~/.", "~/.config/", "./."});
+
+	unsigned int minUnusedParameters = 0;
+	unsigned int maxUnusedParameters = std::numeric_limits<unsigned int>::max();
 	{
 		std::string keyWord;
 		bool exportNextOption = false;
@@ -94,6 +100,12 @@ int main(int argc, const char *argv[]) {
 				continue;
 			} else if (keyWord == "minusMinusSpecialTreatment") {
 				std::cin >> minusMinusSpecialTreatment;
+				continue;
+			} else if (keyWord == "minUnusedParameters") {
+				std::cin >> minUnusedParameters;
+				continue;
+			} else if (keyWord == "maxUnusedParameters") {
+				std::cin >> maxUnusedParameters;
 				continue;
 			} else if (keyWord == "noPath") {
 				searchPath.clear();
@@ -136,6 +148,14 @@ int main(int argc, const char *argv[]) {
 	}
 
 	auto unusedOptions = parser.fParse(argc - 1, argv + 1);
+
+	if (unusedOptions.size() < minUnusedParameters ||
+	        unusedOptions.size() > maxUnusedParameters) {
+		std::cerr << "illegal number of non-option parameters " << unusedOptions.size() << ", must be between " << minUnusedParameters << " and " << maxUnusedParameters << std::endl;
+		parser.fHelp();
+		return (1);
+	}
+
 
 	for (auto option : options) {
 		if (exportedOptions.find(option) != exportedOptions.end()) {

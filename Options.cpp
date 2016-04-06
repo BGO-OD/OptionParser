@@ -111,7 +111,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 					auto opt = it->second;
 					opt->fHandleOption(argc, argv, &i);
 				} else {
-					auto buf = strdup(argv[1]);
+					auto buf = strdup(argv[i]);
 					auto equalsAt = strchr(buf, lPrimaryAssignment);
 					*equalsAt = '\0';
 					auto it = OptionBase::fGetOptionMap().find(buf + 2);

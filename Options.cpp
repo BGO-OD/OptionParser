@@ -122,7 +122,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 					}
 					auto opt = it->second;
 					opt->fSetMe(equalsAt + 1);
-					opt->lSource  = "comdline: ";
+					opt->lSource  = "cmdline: ";
 					opt->lSource += argv[i];
 				}
 			}

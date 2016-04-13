@@ -277,12 +277,14 @@ OptionBase::OptionBase(char aShortName, std::string  aLongName, std::string  aEx
 	lExplanation(aExplanation),
 	lNargs(aNargs) {
 	if (fGetOptionMap().find(lLongName) != fGetOptionMap().end()) {
-		throw (lLongName + " already set");
+		std::string exceptionText(lLongName + " already set");
+		throw std::invalid_argument(exceptionText);
 	};
 	fGetOptionMap().insert(std::make_pair(lLongName, this));
 	if (lShortName != '\0') {
 		if (fGetShortOptionMap().find(lShortName) != fGetShortOptionMap().end()) {
-			throw (lLongName + " short name already set");
+			std::string exceptionText(lLongName + ": short name '" + lShortName + "' already set");
+			throw std::invalid_argument(exceptionText);
 		};
 		fGetShortOptionMap().insert(std::make_pair(lShortName, this));
 	}

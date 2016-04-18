@@ -258,7 +258,7 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 						}
 						*(wp++) = c;
 					} else {
-						*(wp++) = *rp;
+						*(wp++) = *(rp++);
 					}
 					break;
 			}

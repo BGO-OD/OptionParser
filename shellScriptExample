@@ -11,16 +11,20 @@ the input so shellScriptOptionParser up to the line containing only options:
 will be used as description of the script,
 then follow the options with the optionn type (int, bool, string) first,
 then the short option character, then the long name,
-the the default value and a description up to the end of the line.
+a description up to the end of the line.
 Use - as short name if no short name is desired.
 options:
-export int n number 55 some number
+export int n number some number
 range $(seq -s ' ' 4 10 100)
-uint p pid $$ the pid of the process
-export string - test something a test
+uint p pid the pid of the process
+default $$
+export string - test a test
 range bla
 range blubb
-bool v verbose false be verbose
+bool v verbose be verbose
+list l list list of strings
+default string1
+default string2
 minusMinusSpecialTreatment ParametersAfterMinuMinus
 minUnusedParameters 2
 maxUnusedParameters 4

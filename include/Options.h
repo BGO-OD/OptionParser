@@ -36,7 +36,7 @@ class OptionBase {
 	virtual void fHandleOption(int argc, const char *argv[], int *i);
 
   protected:
-	virtual void fWriteCfgLines(std::ostream& aStream) const;
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const;
 	virtual bool fCheckRange(std::ostream& aLogStream) const = 0;
 	virtual void fWriteRange(std::ostream &/*aStream*/) const {};
 	void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
@@ -255,12 +255,12 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
-	virtual void fWriteCfgLines(std::ostream& aStream) const {
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+			aStream << aPrefix << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
 		for (const auto& it : *this) {
-			aStream << lLongName << "=" << it.first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
+			aStream << aPrefix << lLongName << "=" << it.first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
 		}
 	}
 
@@ -298,12 +298,12 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
-	virtual void fWriteCfgLines(std::ostream& aStream) const {
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+			aStream << aPrefix << lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
 		for (const auto & it : *this) {
-			aStream << lLongName << "=" << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
+			aStream << aPrefix << lLongName << "=" << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
 			OptionParser::fPrintEscapedString(aStream, it.second.c_str());
 			aStream << "\n";
 		}
@@ -344,12 +344,12 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
-	virtual void fWriteCfgLines(std::ostream& aStream) const {
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << lLongName << "=value\n";
+			aStream << aPrefix << lLongName << "=value\n";
 		}
 		for (auto it = this->begin(); it != this->end(); ++it) {
-			aStream << lLongName << "=" << *it << "\n";
+			aStream << aPrefix << lLongName << "=" << *it << "\n";
 		}
 	}
 	virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
@@ -395,12 +395,12 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
-	virtual void fWriteCfgLines(std::ostream& aStream) const {
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << lLongName << "=value\n";
+			aStream << aPrefix << lLongName << "=value\n";
 		}
 		for (auto it = this->begin(); it != this->end(); ++it) {
-			aStream << lLongName << "=";
+			aStream << aPrefix << lLongName << "=";
 			OptionParser::fPrintEscapedString(aStream, *it);
 			aStream << "\n";
 		}
@@ -452,12 +452,12 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 		fSetMe(buf1.c_str());
 	};
 
-	virtual void fWriteCfgLines(std::ostream& aStream) const {
+	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << lLongName << "=value\n";
+			aStream << aPrefix << lLongName << "=value\n";
 		}
 		for (auto it = this->begin(); it != this->end(); ++it) {
-			aStream << lLongName << "=";
+			aStream << aPrefix << lLongName << "=";
 			OptionParser::fPrintEscapedString(aStream, it->c_str());
 			aStream << "\n";
 		}

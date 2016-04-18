@@ -157,9 +157,9 @@ void OptionParser::fSetMinusMinusStartsExtraList() {
 }
 
 void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
-	bool delimit = strchr(aString, ' ') != nullptr
-	               || strchr(aString, '\t') != nullptr
-	               || strchr(aString, ',') != nullptr;
+	bool delimit = (strchr(aString, ' ') != nullptr)
+	               || (strchr(aString, '\t') != nullptr)
+	               || (strchr(aString, ',') != nullptr);
 	if (delimit) {
 		aStream << '"';
 	}

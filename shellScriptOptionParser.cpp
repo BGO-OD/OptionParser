@@ -10,6 +10,7 @@ template <typename T> Option<T>* fOptionFromStream(std::istream &aStream, T defa
 
 	aStream >> shortName;
 	aStream >> longName;
+	aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
 	std::getline(aStream, description);
 
 	if (shortName == '-') {
@@ -24,6 +25,7 @@ template <typename T> OptionContainer<T>* fContainerOptionFromStream(std::istrea
 
 	aStream >> shortName;
 	aStream >> longName;
+	aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
 	std::getline(aStream, description);
 
 	if (shortName == '-') {

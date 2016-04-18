@@ -483,11 +483,14 @@ void Option<bool>::fWriteValue(std::ostream & aStream) const {
 }
 void Option<bool>::fSetMe(const char *aArg) {
 	if (aArg == nullptr) {
-		lValue = ! lValue;
+		lValue = ! lDefault;
 	} else {
 		std::stringstream buf(aArg);
 		buf >> std::boolalpha >> lValue;
 	}
+}
+void Option<bool>::fAddDefaultFromStream(std::istream& aStream) {
+	aStream >> std::boolalpha >> lValue;
 }
 
 
@@ -509,7 +512,7 @@ Option<const char*>::~Option() {
 
 void Option<const char*>::fSetRange(const std::vector<const char *>& aRange) {
 	for (auto it : aRange) {
-		auto stringCopy = new char[strlen(it)+1];
+		auto stringCopy = new char[strlen(it) + 1];
 		strcpy(stringCopy, it);
 		lRange.push_back(stringCopy);
 	}
@@ -521,6 +524,12 @@ void Option<const char*>::fAddToRangeFromStream(std::istream& aStream) {
 	OptionParser::fReCaptureEscapedString(buf2, buf1.c_str());
 	lRange.push_back(buf2);
 }
+void Option<const char*>::fAddDefaultFromStream(std::istream& aStream) {
+	std::string buf1;
+	std::getline(aStream, buf1);
+	fSetMe(buf1.c_str());
+}
+
 void  Option<const char*>::fWriteRange(std::ostream &aStream) const {
 	if (! lRange.empty()) {
 		aStream << "# allowed range is";
@@ -551,7 +560,7 @@ void Option<const char*>::fWriteValue(std::ostream & aStream) const {
 	}
 }
 void Option<const char*>::fSetMe(const char *aArg) {
-	auto buf = new char[strlen(aArg)+1];
+	auto buf = new char[strlen(aArg) + 1];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 }
@@ -603,6 +612,11 @@ void Option<std::string>::fAddToRangeFromStream(std::istream& aStream) {
 	OptionParser::fReCaptureEscapedString(buf2, buf1.c_str());
 	lRange.push_back(buf2);
 }
+void Option<std::string>::fAddDefaultFromStream(std::istream& aStream) {
+	std::string buf1;
+	std::getline(aStream, buf1);
+	fSetMe(buf1.c_str());
+}
 
 bool Option<std::string>::fCheckRange(std::ostream& aLogStream) const {
 	if (lRange.empty()) {
@@ -633,7 +647,7 @@ void Option<std::string>::fWriteValue(std::ostream & aStream) const {
 	OptionParser::fPrintEscapedString(aStream, lValue.c_str());
 }
 void Option<std::string>::fSetMe(const char *aArg) {
-	auto buf = new char[strlen(aArg + 1)];
+	auto buf = new char[strlen(aArg) + 1];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 	delete[] buf;

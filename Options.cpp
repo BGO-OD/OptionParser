@@ -121,10 +121,8 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 						exit(1);
 					}
 					auto opt = it->second;
-					opt->fSetMe(equalsAt + 1);
+					opt->fSetMe(equalsAt + 1, "cmdline");
 					free(buf);
-					opt->lSource  = "cmdline: ";
-					opt->lSource += argv[i];
 				}
 			}
 		} else {
@@ -159,7 +157,9 @@ void OptionParser::fSetMinusMinusStartsExtraList() {
 }
 
 void OptionParser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
-	bool delimit = strchr(aString, ' ') != nullptr || strchr(aString, '\t') != nullptr;
+	bool delimit = strchr(aString, ' ') != nullptr
+	               || strchr(aString, '\t') != nullptr
+	               || strchr(aString, ',') != nullptr;
 	if (delimit) {
 		aStream << '"';
 	}
@@ -304,13 +304,11 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 		exit(1);
 	}
 	if (lNargs == 0) {
-		fSetMe(nullptr);
+		fSetMe(nullptr, "cmdline: ");
 	} else if (lNargs == 1) {
-		fSetMe(argv[*i + 1]);
+		fSetMe(argv[*i + 1], "cmdline: ");
 		*i += lNargs;
 	}
-	lSource = "cmdline: ";
-	lSource += argv[*i];
 	if (fCheckRange(std::cerr) == false) {
 		exit(1);
 	}
@@ -398,7 +396,7 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 		cfgFile << "\n# " << opt->lExplanation << "\n";
 		auto prefix = "";
 		if (opt->lSource.empty() || opt->lLongName == "readCfgFile") {
-			prefix= "# ";
+			prefix = "# ";
 		}
 		opt->fWriteCfgLines(cfgFile, prefix);
 		opt->fWriteRange(cfgFile);
@@ -460,15 +458,13 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		}
 		auto option = it->second;
 		{
-			option->fSetMe(line.substr(equalsAt + 1).c_str());
+			char blubb[1028];
+			sprintf(blubb, "%s:%d: ", aFileName, lineNumber);
+			option->fSetMe(line.substr(equalsAt + 1).c_str(), blubb);
 			if (preserveWorthyStuff != nullptr) {
 				option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 				preserveWorthyStuff = nullptr;
 			}
-			option->lSource = aFileName;
-			char blubb[128];
-			sprintf(blubb, ":%d: ", lineNumber);
-			option->lSource += blubb;
 			if (option->fCheckRange(std::cerr) == false) {
 				exit(1);
 			}
@@ -482,13 +478,14 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 void Option<bool>::fWriteValue(std::ostream & aStream) const {
 	aStream << std::boolalpha << lValue;
 }
-void Option<bool>::fSetMe(const char *aArg) {
+void Option<bool>::fSetMe(const char *aArg, const char *aSource) {
 	if (aArg == nullptr) {
 		lValue = ! lDefault;
 	} else {
 		std::stringstream buf(aArg);
 		buf >> std::boolalpha >> lValue;
 	}
+	lSource = aSource;
 }
 void Option<bool>::fAddDefaultFromStream(std::istream& aStream) {
 	aStream >> std::boolalpha >> lValue;
@@ -529,7 +526,7 @@ void Option<const char*>::fAddToRangeFromStream(std::istream& aStream) {
 void Option<const char*>::fAddDefaultFromStream(std::istream& aStream) {
 	std::string buf1;
 	std::getline(aStream, buf1);
-	fSetMe(buf1.c_str());
+	fSetMe(buf1.c_str(), nullptr);
 }
 
 void  Option<const char*>::fWriteRange(std::ostream &aStream) const {
@@ -561,10 +558,11 @@ void Option<const char*>::fWriteValue(std::ostream & aStream) const {
 		OptionParser::fPrintEscapedString(aStream, lValue);
 	}
 }
-void Option<const char*>::fSetMe(const char *aArg) {
+void Option<const char*>::fSetMe(const char *aArg, const char *aSource) {
 	auto buf = new char[strlen(aArg) + 1];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
+	lSource = aSource;
 }
 
 bool Option<const char*>::fCheckRange(std::ostream& aLogStream) const {
@@ -617,7 +615,7 @@ void Option<std::string>::fAddToRangeFromStream(std::istream& aStream) {
 void Option<std::string>::fAddDefaultFromStream(std::istream& aStream) {
 	std::string buf1;
 	std::getline(aStream, buf1);
-	fSetMe(buf1.c_str());
+	fSetMe(buf1.c_str(), nullptr);
 }
 
 bool Option<std::string>::fCheckRange(std::ostream& aLogStream) const {
@@ -648,11 +646,12 @@ bool Option<std::string>::fCheckRange(std::ostream& aLogStream) const {
 void Option<std::string>::fWriteValue(std::ostream & aStream) const {
 	OptionParser::fPrintEscapedString(aStream, lValue.c_str());
 }
-void Option<std::string>::fSetMe(const char *aArg) {
+void Option<std::string>::fSetMe(const char *aArg, const char *aSource) {
 	auto buf = new char[strlen(aArg) + 1];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 	delete[] buf;
+	lSource = aSource;
 }
 
 void  Option<std::string>::fWriteRange(std::ostream &aStream) const {
@@ -686,7 +685,7 @@ class OptionHelp : public Option<bool> {
 	OptionHelp():
 		Option('h', "help", "give this help") {
 	}
-	void fSetMe(const char * /*aArg*/) override {
+	void fSetMe(const char * /*aArg*/, const char * /*aSource*/) override {
 		OptionParser::fGetInstance()->fHelp();
 		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
 	}
@@ -699,7 +698,7 @@ class OptionWriteCfgFile : public Option<const char *> {
 	OptionWriteCfgFile():
 		Option('\0', "writeCfgFile", "write a config file") {
 	}
-	void fSetMe(const char *aArg) override {
+	void fSetMe(const char *aArg, const char */* aSource */) override {
 		lValue = aArg;
 		OptionParser::fGetInstance()->fWriteCfgFile(aArg);
 		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
@@ -712,7 +711,7 @@ class OptionReadCfgFile : public Option<const char *> {
 	OptionReadCfgFile():
 		Option('\0', "readCfgFile", "read a config file") {
 	}
-	void fSetMe(const char *aArg) override {
+	void fSetMe(const char *aArg, const char */*aSource*/) override {
 		lValue = aArg;
 		OptionParser::fGetInstance()->fReadCfgFile(aArg);
 	}

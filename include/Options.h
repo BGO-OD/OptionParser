@@ -295,7 +295,7 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 
 	virtual void fWriteValue(std::ostream& aStream) const {
 		if (this->empty()) {
-			aStream << "no value";
+			aStream << "\"\"";
 		} else {
 			for (const auto& it : *this) {
 				aStream << it.first << ":" << it.second << " ";
@@ -341,7 +341,7 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 	};
 	virtual void fWriteValue(std::ostream& aStream) const {
 		if (this->empty()) {
-			aStream << "no value";
+			aStream << "\"\"";
 		} else {
 			for (auto it = this->begin(); it != this->end(); ++it) {
 				if (it != this->begin()) {
@@ -406,7 +406,7 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 
 	virtual void fWriteValue(std::ostream& aStream) const {
 		if (this->empty()) {
-			aStream << "no value";
+			aStream << "\"\"";
 		} else {
 			for (auto it = this->begin(); it != this->end(); ++it) {
 				if (it != this->begin()) {
@@ -467,7 +467,7 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 
 	virtual void fWriteValue(std::ostream& aStream) const {
 		if (this->empty()) {
-			aStream << "no value";
+			aStream << "\"\"";
 		} else {
 			for (auto it = this->begin(); it != this->end(); ++it) {
 				if (it != this->begin()) {
@@ -532,7 +532,7 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 
 	virtual void fWriteValue(std::ostream& aStream) const {
 		if (this->empty()) {
-			aStream << "no value";
+			aStream << "\"\"";
 		} else {
 			for (auto it = this->begin(); it != this->end(); ++it) {
 				if (it != this->begin()) {

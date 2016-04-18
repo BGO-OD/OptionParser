@@ -316,8 +316,8 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	}
 }
 
-void OptionBase::fWriteCfgLines(std::ostream & aStream) const {
-	aStream << lLongName << "=";
+void OptionBase::fWriteCfgLines(std::ostream & aStream, const char *aPrefix) const {
+	aStream << aPrefix << lLongName << "=";
 	fWriteValue(aStream);
 	aStream << "\n";
 }
@@ -396,10 +396,11 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 			}
 		}
 		cfgFile << "\n# " << opt->lExplanation << "\n";
+		auto prefix = "";
 		if (opt->lSource.empty() || opt->lLongName == "readCfgFile") {
-			cfgFile << "# ";
+			prefix= "# ";
 		}
-		opt->fWriteCfgLines(cfgFile);
+		opt->fWriteCfgLines(cfgFile, prefix);
 		opt->fWriteRange(cfgFile);
 		if (!opt->lSource.empty()) {
 			cfgFile << "# set from " << opt->lSource << "\n";

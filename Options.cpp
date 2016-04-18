@@ -491,6 +491,7 @@ void Option<bool>::fSetMe(const char *aArg) {
 }
 void Option<bool>::fAddDefaultFromStream(std::istream& aStream) {
 	aStream >> std::boolalpha >> lValue;
+	lDefault = lValue;
 }
 
 

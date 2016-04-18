@@ -122,6 +122,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 					}
 					auto opt = it->second;
 					opt->fSetMe(equalsAt + 1);
+					free(buf);
 					opt->lSource  = "cmdline: ";
 					opt->lSource += argv[i];
 				}
@@ -498,10 +499,19 @@ Option<const char*>::Option(char aShortName, const std::string& aLongName, const
 	}
 }
 
+Option<const char*>::~Option() {
+	auto i = std::begin(lRange);
+	while (i != std::end(lRange)) {
+		delete [] *i;
+		i = lRange.erase(i);
+	}
+}
 
 void Option<const char*>::fSetRange(const std::vector<const char *>& aRange) {
 	for (auto it : aRange) {
-		lRange.push_back(strdup(it));
+		auto stringCopy = new char[strlen(it)+1];
+		strcpy(stringCopy, it);
+		lRange.push_back(stringCopy);
 	}
 }
 void Option<const char*>::fAddToRangeFromStream(std::istream& aStream) {

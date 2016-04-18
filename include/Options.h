@@ -43,7 +43,7 @@ class OptionBase {
 
   public:
 	OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
-	~OptionBase();
+	virtual ~OptionBase();
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	const std::string& fGetLongName() const {
@@ -205,6 +205,7 @@ template <> class Option<const char *> : public OptionBase {
 	std::vector<const char*> lRange;
   public:
 	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
+	virtual ~Option();
 	virtual void fSetRange(const std::vector<const char *>& aRange);
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;

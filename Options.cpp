@@ -551,7 +551,7 @@ void Option<const char*>::fWriteValue(std::ostream & aStream) const {
 	}
 }
 void Option<const char*>::fSetMe(const char *aArg) {
-	auto buf = new char[strlen(aArg + 1)];
+	auto buf = new char[strlen(aArg)+1];
 	OptionParser::fReCaptureEscapedString(buf, aArg);
 	lValue = buf;
 }

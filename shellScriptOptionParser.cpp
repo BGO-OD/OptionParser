@@ -131,9 +131,9 @@ int main(int argc, const char *argv[]) {
 			} else if (keyWord == "path") {
 				std::string buffer;
 				std::getline(std::cin, buffer);
-				char buffer2[buffer.length() + 1];
-				OptionParser::fReCaptureEscapedString(buffer2, buffer.c_str());
-				searchPath.push_back(buffer2);
+				std::vector<char> buffer2(buffer.length() + 1);
+				OptionParser::fReCaptureEscapedString(buffer2.data(), buffer.c_str());
+				searchPath.push_back(buffer2.data());
 			} else if (keyWord == "trailer:") {
 				break;
 			} else {

@@ -32,6 +32,7 @@ class OptionBase {
 	short lNargs;
 	std::vector<std::string>* lPreserveWorthyStuff;
 	virtual void fSetMe(const char *aArg, const char *aSource) = 0;
+	virtual void fSetSource(const char *aSource);
   private:
 	virtual void fHandleOption(int argc, const char *argv[], int *i);
 
@@ -173,7 +174,7 @@ template <typename T> class Option : public OptionBase {
 	virtual void fSetMe(const char* aArg, const char* aSource) {
 		std::stringstream buf(aArg);
 		buf >> std::noskipws >> lValue;
-		lSource = aSource;
+		fSetSource(aSource);
 	}
 	operator T () const {
 		return lValue;

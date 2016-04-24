@@ -4,6 +4,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6.0 FATAL_ERROR)
 # Set project name
 PROJECT(OptionParser)
 
+OPTION(OptionParser_BUILD_EXAMPLES "Build optionParserExample" ON)
+OPTION(OptionParser_INSTALL_EXAMPLES "Install optionParserExample" OFF)
+OPTION(BUILD_SHARED_LIBS "Build the dynamic libraries" ON)
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)

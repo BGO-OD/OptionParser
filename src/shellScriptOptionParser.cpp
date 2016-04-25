@@ -72,7 +72,7 @@ int main(int argc, const char *argv[]) {
 		          "\treads description of options from stdandard input and writes shell\n"
 		          "\tcommands that set variables to the parsed options to standard output\n"
 		          "typical invocation looks like this:\n"
-		          ". <(shellScriptOptionParser $(cd $(dirname $0); echo \"$(pwd)/$(basename $0)\") \"$@\"<<EOF\n"
+		          ". <(shellScriptOptionParser $\"(cd \"$(dirname \"$0\")\"; echo \"$(pwd)/$(basename \"$0\")\")\" \"$@\"<<EOF\n"
 		          "description of script\n"
 		          "options:\n"
 		          "<options>\n"

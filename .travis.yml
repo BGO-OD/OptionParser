@@ -33,4 +33,4 @@ script:
   - make install
   - cd ${TRAVIS_BUILD_DIR}/install
   - optionExample --help
-  - shellScriptOptionParser --help
+  - ${TRAVIS_BUILD_DIR}/src/shellScriptExample --help

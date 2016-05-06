@@ -86,6 +86,8 @@ class OptionParser {
 	char lPrimaryAssignment;
 	char lSecondaryAssignment;
 	void fReadConfigFiles();
+	void fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain) const;
+
   public:
 	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();

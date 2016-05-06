@@ -4,8 +4,8 @@ libdir=${exec_prefix}/lib
 includedir=${prefix}/include
 
 Name: @CMAKE_PROJECT_NAME@
-Description: templated C++ command line option parser with executable to be used in shell scripts
-Version: @OPTIONPARSER_LATEST_TAG@
+Description: @PROJECT_DESCRIPTION@
+Version: @PROJECT_VERSION@
 Libs: -L${libdir} -loptions
 Libs.private: @PRIVATE_LIBS@
 Cflags: -I${includedir}

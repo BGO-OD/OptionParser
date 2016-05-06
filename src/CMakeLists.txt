@@ -4,20 +4,12 @@ IF(BUILD_SHARED_LIBS)
 	add_library(options SHARED Options.cpp)
 	install(TARGETS options DESTINATION lib)
 	set_property(TARGET options PROPERTY VERSION ${PROJECT_VERSION})
-	include(CMakePackageConfigHelpers)
-	write_basic_package_version_file(
-		"${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake"
-		VERSION ${PROJECT_VERSION}
-		COMPATIBILITY AnyNewerVersion
-		)
 ENDIF(BUILD_SHARED_LIBS)
 INSTALL(
 	FILES
 	include/Options.h
 	DESTINATION
-	include
-	COMPONENT
-	Devel)
+	include)
 
 IF(OptionParser_BUILD_EXAMPLES)
 	add_executable(optionExample optionExample.cpp)

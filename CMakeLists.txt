@@ -6,7 +6,8 @@ PROJECT(OptionParser)
 
 OPTION(OptionParser_BUILD_EXAMPLES "Build optionParserExample" ON)
 OPTION(OptionParser_INSTALL_EXAMPLES "Install optionParserExample" OFF)
-OPTION(BUILD_SHARED_LIBS "Build the dynamic libraries" ON)
+OPTION(BUILD_SHARED_LIBS "Build and install the dynamic library" ON)
+OPTION(INSTALL_STATIC_LIBS "Install the static library" OFF)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 

@@ -1,5 +1,8 @@
 include_directories("include")
-add_library(optionsBuild STATIC Options.cpp)
+add_library(options_static STATIC Options.cpp)
+IF(INSTALL_STATIC_LIBS)
+	install(TARGETS options_static DESTINATION lib)
+ENDIF(INSTALL_STATIC_LIBS)
 IF(BUILD_SHARED_LIBS)
 	add_library(options SHARED Options.cpp)
 	install(TARGETS options DESTINATION lib)
@@ -13,14 +16,14 @@ INSTALL(
 
 IF(OptionParser_BUILD_EXAMPLES)
 	add_executable(optionExample optionExample.cpp)
-	target_link_libraries(optionExample optionsBuild)
+	target_link_libraries(optionExample options_static)
 ENDIF(OptionParser_BUILD_EXAMPLES)
 IF(OptionParser_BUILD_EXAMPLES AND OptionParser_INSTALL_EXAMPLES)
 	install(TARGETS optionExample DESTINATION bin)
 ENDIF(OptionParser_BUILD_EXAMPLES AND OptionParser_INSTALL_EXAMPLES)
 
 add_executable(shellScriptOptionParser shellScriptOptionParser.cpp)
-target_link_libraries(shellScriptOptionParser optionsBuild)
+target_link_libraries(shellScriptOptionParser options_static)
 install(TARGETS shellScriptOptionParser DESTINATION bin)
 
 IF(OptionParser_INSTALL_EXAMPLES)

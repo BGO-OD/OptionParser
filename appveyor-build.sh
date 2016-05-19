@@ -3,6 +3,7 @@ set -e
 
 export DEST_OS=win32
 export CC=gcc
+export CXX=g++
 export PKG_CONFIG=/usr/bin/pkg-config
 export TOPDIR=$(pwd)
 

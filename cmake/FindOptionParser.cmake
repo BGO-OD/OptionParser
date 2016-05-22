@@ -36,7 +36,7 @@ endif()
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set OptionParser_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(OptionParser  "Could NOT find OptionParser. Install it, or specifiy the component MAYBEBUILTIN to find_package to allow for builtin-build."
+find_package_handle_standard_args(OptionParser  "Could NOT find OptionParser. Install it, or specify the component MAYBEBUILTIN to find_package to allow for builtin-build."
                                   OptionParser_LIBRARY OptionParser_INCLUDE_DIR)
 
 mark_as_advanced(OptionParser_INCLUDE_DIR OptionParser_LIBRARY)

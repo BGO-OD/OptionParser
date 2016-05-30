@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-#set -e
+set -e
 set -x
 
 export DEST_OS=win32

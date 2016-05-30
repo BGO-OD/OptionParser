@@ -22,8 +22,6 @@ else()
   message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-ADD_SUBDIRECTORY(src)
-
 # Get latest tagged version.
 INCLUDE(GetLatestTag)
 
@@ -33,3 +31,6 @@ SET(PROJECT_VERSION "${${CMAKE_PROJECT_NAME}_LATEST_TAG}")
 
 # Write and install pkg-config file. 
 INCLUDE(WritePkgConfig)
+
+# Finally, the main compilation... 
+ADD_SUBDIRECTORY(src)

@@ -36,5 +36,9 @@ SET(PROJECT_VERSION "${${CMAKE_PROJECT_NAME}_LATEST_TAG}")
 # Write and install pkg-config file. 
 INCLUDE(WritePkgConfig)
 
+# Install CMake find + external build macro. 
+set(ConfigPackageLocation lib/cmake/OptionParser)
+install(FILES cmake/FindOptionParser.cmake DESTINATION ${ConfigPackageLocation})
+
 # Finally, the main compilation... 
 ADD_SUBDIRECTORY(src)

@@ -18,7 +18,11 @@
 #ifndef __Options_H__
 #define __Options_H__
 
-
+// Macro needed to get GNU-implementation of basename() on non-glibc systems
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <string.h>
 
 #include <string>
 #include <map>
@@ -27,8 +31,6 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
-#include <string.h>
-
 
 class OptionBase {
 	friend class OptionParser;

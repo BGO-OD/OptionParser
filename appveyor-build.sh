@@ -20,7 +20,7 @@ export PATH=${PATH}:${TOPDIR}/install/bin
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TOPDIR}/install/lib
 
 cd ${TOPDIR}/build
-cmake -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX:PATH=${TOPDIR}/install -DOptionParser_INSTALL_EXAMPLES=ON ${TOPDIR}/
+cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX:PATH=${TOPDIR}/install -DOptionParser_INSTALL_EXAMPLES=ON ${TOPDIR}/
 make
 make install
 cd ${TOPDIR}/install

@@ -8,4 +8,4 @@ Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
 Libs: -L${libdir} -loptions
 Libs.private: @PRIVATE_LIBS@
-Cflags: -I${includedir}
+Cflags: @CXX_STD_FLAG@ -I${includedir}

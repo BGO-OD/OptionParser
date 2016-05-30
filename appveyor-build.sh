@@ -1,11 +1,20 @@
 #!/usr/bin/bash
-set -e
+#set -e
+set -x
 
 export DEST_OS=win32
-export CC=gcc
-export CXX=g++
+export CC=C:/MinGW/bin/gcc
+export CXX=C:/MinGW/bin/g++
 export PKG_CONFIG=/usr/bin/pkg-config
 export TOPDIR=$(pwd)
+
+which gcc
+which g++
+ls C:
+ls /usr/bin
+env
+ls C:\MinGW
+ls C:/MinGW
 
 mkdir ${TOPDIR}/build
 mkdir ${TOPDIR}/install

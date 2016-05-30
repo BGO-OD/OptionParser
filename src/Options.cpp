@@ -181,15 +181,15 @@ bool OptionParser::fCheckConsistency() {
 			optionsThatWereSet.insert(opt);
 		}
 	}
-	for (auto opt: optionsThatWereSet) {
-		for (auto forbidden: opt->lForbiddenOptions) {
+	for (auto opt : optionsThatWereSet) {
+		for (auto forbidden : opt->lForbiddenOptions) {
 			if (optionsThatWereSet.count(forbidden) != 0) {
 				std::cerr << "The option " << opt->fGetLongName() << " forbids the use of " << forbidden->fGetLongName() << " but it is given.\n";
 				fHelp();
 				exit(1);
 			}
 		}
-		for (auto required: opt->lRequiredOptions) {
+		for (auto required : opt->lRequiredOptions) {
 			if (optionsThatWereSet.count(required) == 0) {
 				std::cerr << "The option " << opt->fGetLongName() << " requires the use of " << required->fGetLongName() << " but it is not given.\n";
 				fHelp();
@@ -381,17 +381,17 @@ void OptionBase::fSetPreserveWorthyStuff(std::vector<std::string>* aStuff) {
 }
 
 
-void OptionBase::fRequire(const OptionBase* aOtherOption){
+void OptionBase::fRequire(const OptionBase* aOtherOption) {
 	lRequiredOptions.push_back(aOtherOption);
 }
-void OptionBase::fRequire(std::vector<const OptionBase*> aOtherOptions){
-	lRequiredOptions.insert(lRequiredOptions.end(),aOtherOptions.cbegin(), aOtherOptions.cend());
+void OptionBase::fRequire(std::vector<const OptionBase*> aOtherOptions) {
+	lRequiredOptions.insert(lRequiredOptions.end(), aOtherOptions.cbegin(), aOtherOptions.cend());
 }
-void OptionBase::fForbid(const OptionBase* aOtherOption){
+void OptionBase::fForbid(const OptionBase* aOtherOption) {
 	lForbiddenOptions.push_back(aOtherOption);
 }
-void OptionBase::fForbid(std::vector<const OptionBase*> aOtherOptions){
-	lForbiddenOptions.insert(lForbiddenOptions.end(),aOtherOptions.cbegin(), aOtherOptions.cend());
+void OptionBase::fForbid(std::vector<const OptionBase*> aOtherOptions) {
+	lForbiddenOptions.insert(lForbiddenOptions.end(), aOtherOptions.cbegin(), aOtherOptions.cend());
 }
 
 
@@ -447,13 +447,13 @@ void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBa
 	} while (explanation.length() > 0);
 	if (! aOption.lRequiredOptions.empty()) {
 		aMessageStream << "      " << std::setw(aMaxName) << " " << " Requires the following other options:\n";
-		for (auto opt: aOption.lRequiredOptions) {
+		for (auto opt : aOption.lRequiredOptions) {
 			aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
 		}
 	}
 	if (! aOption.lForbiddenOptions.empty()) {
 		aMessageStream << "      " << std::setw(aMaxName) << " " << " Forbids the following other options:\n";
-		for (auto opt: aOption.lForbiddenOptions) {
+		for (auto opt : aOption.lForbiddenOptions) {
 			aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
 		}
 	}
@@ -466,7 +466,7 @@ void OptionParser::fHelp() {
 	size_t lineLenght = 132;
 	{
 		struct winsize window;
-		if (ioctl(0, TIOCGWINSZ, &window)==0) {
+		if (ioctl(0, TIOCGWINSZ, &window) == 0) {
 			lineLenght = window.ws_col;
 		}
 	}

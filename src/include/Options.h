@@ -69,7 +69,9 @@ class OptionBase {
 	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
 	virtual void fForbid(const OptionBase* aOtherOption);
 	virtual void fForbid(std::vector<const OptionBase*> aOtherOptions);
-	virtual bool fIsSet() const {return ! lSource.empty();};
+	virtual bool fIsSet() const {
+		return ! lSource.empty();
+	};
 	const std::string& fGetLongName() const {
 		return lLongName;
 	};
@@ -94,7 +96,7 @@ class OptionParser {
 	bool fCeckConsistency();
 	void fReadConfigFiles();
 	void fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
-  bool fCheckConsistency();
+	bool fCheckConsistency();
   public:
 	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();

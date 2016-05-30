@@ -18,9 +18,12 @@
 #include "Options.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <ctime>
+#include <set>
 
 static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
@@ -166,8 +169,36 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 			std::cerr << "unused option '" << unusedOption << "'" << std::endl;
 		}
 	}
+	fCheckConsistency();
 	return lUnusedOptions;
 }
+
+bool OptionParser::fCheckConsistency() {
+	std::set<const OptionBase*> optionsThatWereSet;
+	for (auto & it : OptionBase::fGetOptionMap()) {
+		auto opt = it.second;
+		if (opt->fIsSet()) {
+			optionsThatWereSet.insert(opt);
+		}
+	}
+	for (auto opt: optionsThatWereSet) {
+		for (auto forbidden: opt->lForbiddenOptions) {
+			if (optionsThatWereSet.count(forbidden) != 0) {
+				std::cerr << "The option " << opt->fGetLongName() << " forbids the use of " << forbidden->fGetLongName() << " but it is given.\n";
+				fHelp();
+				exit(1);
+			}
+		}
+		for (auto required: opt->lRequiredOptions) {
+			if (optionsThatWereSet.count(required) == 0) {
+				std::cerr << "The option " << opt->fGetLongName() << " requires the use of " << required->fGetLongName() << " but it is not given.\n";
+				fHelp();
+				exit(1);
+			}
+		}
+	}
+}
+
 void OptionParser::fSetMinusMinusStartsExtraList() {
 	lMinusMinusJustEndsOptions = false;
 }
@@ -349,9 +380,24 @@ void OptionBase::fSetPreserveWorthyStuff(std::vector<std::string>* aStuff) {
 	lPreserveWorthyStuff = aStuff;
 }
 
-void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain) const {
+
+void OptionBase::fRequire(const OptionBase* aOtherOption){
+	lRequiredOptions.push_back(aOtherOption);
+}
+void OptionBase::fRequire(std::vector<const OptionBase*> aOtherOptions){
+	lRequiredOptions.insert(lRequiredOptions.end(),aOtherOptions.cbegin(), aOtherOptions.cend());
+}
+void OptionBase::fForbid(const OptionBase* aOtherOption){
+	lForbiddenOptions.push_back(aOtherOption);
+}
+void OptionBase::fForbid(std::vector<const OptionBase*> aOtherOptions){
+	lForbiddenOptions.insert(lForbiddenOptions.end(),aOtherOptions.cbegin(), aOtherOptions.cend());
+}
+
+
+void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const {
 	std::size_t fullNameLength = 8 + aMaxName;
-	std::size_t descLength = std::min(100 - fullNameLength, aMaxExplain);
+	std::size_t descLength = std::min(lineLenght - 20 - fullNameLength, aMaxExplain);
 	if (aOption.lShortName != '\0') {
 		aMessageStream << "  -" << aOption.lShortName << ", ";
 	} else {
@@ -399,12 +445,31 @@ void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBa
 		}
 		aMessageStream << "\n";
 	} while (explanation.length() > 0);
+	if (! aOption.lRequiredOptions.empty()) {
+		aMessageStream << "      " << std::setw(aMaxName) << " " << " Requires the following other options:\n";
+		for (auto opt: aOption.lRequiredOptions) {
+			aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
+		}
+	}
+	if (! aOption.lForbiddenOptions.empty()) {
+		aMessageStream << "      " << std::setw(aMaxName) << " " << " Forbids the following other options:\n";
+		for (auto opt: aOption.lForbiddenOptions) {
+			aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
+		}
+	}
 }
 
 void OptionParser::fHelp() {
 	*lMessageStream << lProgName << ": " << lDescription << "\n";
 	size_t maxName = 0;
 	size_t maxExplain = 0;
+	size_t lineLenght = 132;
+	{
+		struct winsize window;
+		if (ioctl(0, TIOCGWINSZ, &window)==0) {
+			lineLenght = window.ws_col;
+		}
+	}
 	for (auto & it : OptionBase::fGetOptionMap()) {
 		const auto opt = it.second;
 		maxName = std::max(opt->lLongName.length(), maxName);
@@ -412,7 +477,7 @@ void OptionParser::fHelp() {
 	}
 	for (auto & it : OptionBase::fGetOptionMap()) {
 		const auto opt = it.second;
-		fPrintOptionHelp(*lMessageStream, *opt, maxName, maxExplain);
+		fPrintOptionHelp(*lMessageStream, *opt, maxName, maxExplain, lineLenght);
 	}
 	if (!lSearchPaths.empty()) {
 		*lMessageStream << "Looking for config files in ";

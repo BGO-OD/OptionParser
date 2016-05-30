@@ -45,6 +45,9 @@ class OptionBase {
 	std::string lSource;
 	short lNargs;
 	std::vector<std::string>* lPreserveWorthyStuff;
+
+	std::vector<const OptionBase*> lRequiredOptions;
+	std::vector<const OptionBase*> lForbiddenOptions;
 	virtual void fSetMe(const char *aArg, const char *aSource) = 0;
 	virtual void fSetSource(const char *aSource);
   private:
@@ -62,6 +65,11 @@ class OptionBase {
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
 	virtual void fAddDefaultFromStream(std::istream& aStream) = 0;
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
+	virtual void fRequire(const OptionBase* aOtherOption);
+	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
+	virtual void fForbid(const OptionBase* aOtherOption);
+	virtual void fForbid(std::vector<const OptionBase*> aOtherOptions);
+	virtual bool fIsSet() const {return ! lSource.empty();};
 	const std::string& fGetLongName() const {
 		return lLongName;
 	};
@@ -82,9 +90,11 @@ class OptionParser {
 	int lHelpReturnValue;
 	char lPrimaryAssignment;
 	char lSecondaryAssignment;
-	void fReadConfigFiles();
-	void fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain) const;
 
+	bool fCeckConsistency();
+	void fReadConfigFiles();
+	void fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
+  bool fCheckConsistency();
   public:
 	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();

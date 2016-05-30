@@ -14,6 +14,10 @@ int main(int argc, const char *argv[]) {
 	Option<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
 	Option<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
 	Option<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
+
+	cs.fForbid(&Cs);
+	Cs.fForbid(&cs);
+
 	OptionParser parser("option parsing example");
 	auto unusedOptions = parser.fParse(argc, argv);
 

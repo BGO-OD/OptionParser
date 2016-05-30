@@ -403,7 +403,6 @@ void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBa
 	} else {
 		aMessageStream << "      ";
 	}
-	std::size_t explPosition = 0;
 	auto explanation = aOption.lExplanation;
 	bool firstLine = true;
 	do {

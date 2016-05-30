@@ -350,6 +350,58 @@ void OptionBase::fSetPreserveWorthyStuff(std::vector<std::string>* aStuff) {
 	lPreserveWorthyStuff = aStuff;
 }
 
+void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain) const {
+	std::size_t fullNameLength = 8 + aMaxName;
+	std::size_t descLength = std::min(100 - fullNameLength, aMaxExplain);
+	if (aOption.lShortName != '\0') {
+		aMessageStream << "  -" << aOption.lShortName << ", ";
+	} else {
+		aMessageStream << "      ";
+	}
+	std::size_t explPosition = 0;
+	auto explanation = aOption.lExplanation;
+	bool firstLine = true;
+	do {
+		if (firstLine) {
+			aMessageStream << "--" << std::setw(aMaxName) << std::left << aOption.lLongName
+			               << " ";
+		} else {
+			aMessageStream << "        " << std::setw(aMaxName) << " " << "  ";
+		}
+		if (explanation.length() > descLength) {
+			// Need to linebreak.
+			bool keepBrokenChar = false;
+			bool hardBreak = false;
+			auto breakPos = explanation.find_last_of(" -", descLength - 1);
+			if (breakPos == std::string::npos) {
+				// No space, use hard break. In this case, keep the broken character.
+				// -2 since we add a "-" separator for readability.
+				breakPos = descLength - 2;
+				hardBreak = true;
+				keepBrokenChar = true;
+			} else {
+				// We also want to keep the broken character in case it's not a whitespace.
+				if (explanation[breakPos] != ' ') {
+					breakPos++;
+					keepBrokenChar = true;
+				}
+			}
+			aMessageStream << std::setw(descLength) << std::left << explanation.substr(0, breakPos) + (hardBreak ? "-" : "");
+			explanation = explanation.substr(breakPos + (keepBrokenChar ? 0 : 1));
+		} else {
+			aMessageStream << std::setw(descLength) << std::left << explanation;
+			// Trigger delayed break.
+			explanation.clear();
+		}
+		if (firstLine) {
+			aMessageStream << " default: ";
+			aOption.fWriteValue(aMessageStream);
+			firstLine = false;
+		}
+		aMessageStream << "\n";
+	} while (explanation.length() > 0);
+}
+
 void OptionParser::fHelp() {
 	*lMessageStream << lProgName << ": " << lDescription << "\n";
 	size_t maxName = 0;
@@ -361,16 +413,7 @@ void OptionParser::fHelp() {
 	}
 	for (auto & it : OptionBase::fGetOptionMap()) {
 		const auto opt = it.second;
-		if (opt->lShortName != '\0') {
-			*lMessageStream << "  -" << opt->lShortName << ", ";
-		} else {
-			*lMessageStream << "      ";
-		}
-		*lMessageStream << "--" << std::setw(maxName) << std::left << opt->lLongName
-		                << " " << std::setw(maxExplain) << std::left << opt->lExplanation
-		                << " default: ";
-		opt->fWriteValue(*lMessageStream);
-		*lMessageStream << "\n";
+		fPrintOptionHelp(*lMessageStream, *opt, maxName, maxExplain);
 	}
 	if (!lSearchPaths.empty()) {
 		*lMessageStream << "Looking for config files in ";

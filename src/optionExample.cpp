@@ -11,7 +11,7 @@ int main(int argc, const char *argv[]) {
 	OptionContainer<double> dnums('d', "doubles", "double numbers");
 	OptionContainer<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
 	OptionContainer<std::string, std::list<std::string>> stringS('x', "liststring", "list of std::strings");
-	Option<double> complexDescription('\0', "ComplexDescription", "Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate", 84.);
+	Option<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
 	Option<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
 	Option<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
 	OptionParser parser("option parsing example");

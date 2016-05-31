@@ -173,7 +173,7 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 	return lUnusedOptions;
 }
 
-bool OptionParser::fCheckConsistency() {
+void OptionParser::fCheckConsistency() {
 	std::set<const OptionBase*> optionsThatWereSet;
 	for (auto & it : OptionBase::fGetOptionMap()) {
 		auto opt = it.second;

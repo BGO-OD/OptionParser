@@ -35,9 +35,10 @@ OptionParser::OptionParser(const char *aDescription, const char *aTrailer, const
 	lSearchPaths(aSearchPaths) {
 	if (gParser != nullptr) {
 		std::cerr << "there may be only one parser" << std::endl;
-		exit(1);
+		fComplainAndLeave(false);
 	}
 	gParser = this;
+	lErrorStream = &std::cerr;
 	lMessageStream = &std::cout;
 	lHelpReturnValue = 0;
 	fSetAssignmentChars();
@@ -48,6 +49,12 @@ OptionParser::~OptionParser() {
 }
 void OptionParser::fSetMessageStream(std::ostream *aStream) {
 	lMessageStream = aStream;
+}
+void OptionParser::fSetErrorStream(std::ostream *aStream) {
+	lErrorStream = aStream;
+}
+std::ostream& OptionParser::fGetErrorStream() const {
+	return *lErrorStream;
 }
 void OptionParser::fSetHelpReturnValue(int aValue) {
 	lHelpReturnValue = aValue;
@@ -95,15 +102,13 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 			for (unsigned int j = 1; j < length; j++) {
 				auto it =  OptionBase::fGetShortOptionMap().find(argv[i][j]);
 				if (it == OptionBase::fGetShortOptionMap().end()) {
-					std::cerr << "unknown short option '" << argv[i][j] << "'"  << std::endl;
-					fHelp();
-					exit(1);
+					fGetErrorStream() << "unknown short option '" << argv[i][j] << "'"  << std::endl;
+					fComplainAndLeave();
 				} else {
 					auto opt = it->second;
 					if (opt->lNargs > 0 && strlen(argv[i]) > 2) {
-						std::cerr << "run-together short options may not use parameters" << std::endl;
-						fHelp();
-						exit(1);
+						fGetErrorStream() << "run-together short options may not use parameters" << std::endl;
+						fComplainAndLeave();
 					}
 					opt->fHandleOption(argc, argv, &i);
 				}
@@ -123,9 +128,8 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 				if (nullptr == strchr(argv[i], lPrimaryAssignment)) {
 					auto it = OptionBase::fGetOptionMap().find(argv[i] + 2);
 					if (it == OptionBase::fGetOptionMap().end()) {
-						std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
-						fHelp();
-						exit(1);
+						fGetErrorStream() << "unknown long option '" << argv[i] << "'"  << std::endl;
+						fComplainAndLeave();
 					}
 					auto opt = it->second;
 					opt->fHandleOption(argc, argv, &i);
@@ -135,9 +139,8 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 					*equalsAt = '\0';
 					auto it = OptionBase::fGetOptionMap().find(buf + 2);
 					if (it == OptionBase::fGetOptionMap().end()) {
-						std::cerr << "unknown long option '" << argv[i] << "'"  << std::endl;
-						fHelp();
-						exit(1);
+						fGetErrorStream() << "unknown long option '" << argv[i] << "'"  << std::endl;
+						fComplainAndLeave();
 					}
 					auto opt = it->second;
 					opt->fSetMe(equalsAt + 1, "cmdline");
@@ -155,18 +158,18 @@ const std::vector<std::string>& OptionParser::fParse(int argc, const char *argv[
 	if (gOptionDebugOptions) {
 		for (auto & it : OptionBase::fGetOptionMap()) {
 			auto opt = it.second;
-			std::cerr << "option " << opt->lLongName << " has value '";
-			opt->fWriteValue(std::cerr);
-			std::cerr << "' ";
+			fGetErrorStream() << "option " << opt->lLongName << " has value '";
+			opt->fWriteValue(fGetErrorStream());
+			fGetErrorStream() << "' ";
 			if (opt->lSource.empty()) {
-				std::cerr << " (default) ";
+				fGetErrorStream() << " (default) ";
 			} else {
-				std::cerr << " from " << opt->lSource;
+				fGetErrorStream() << " from " << opt->lSource;
 			}
-			std::cerr << std::endl;
+			fGetErrorStream() << std::endl;
 		}
 		for (auto & unusedOption : lUnusedOptions) {
-			std::cerr << "unused option '" << unusedOption << "'" << std::endl;
+			fGetErrorStream() << "unused option '" << unusedOption << "'" << std::endl;
 		}
 	}
 	fCheckConsistency();
@@ -184,19 +187,24 @@ void OptionParser::fCheckConsistency() {
 	for (auto opt : optionsThatWereSet) {
 		for (auto forbidden : opt->lForbiddenOptions) {
 			if (optionsThatWereSet.count(forbidden) != 0) {
-				std::cerr << "The option " << opt->fGetLongName() << " forbids the use of " << forbidden->fGetLongName() << " but it is given.\n";
-				fHelp();
-				exit(1);
+				fGetErrorStream() << "The option " << opt->fGetLongName() << " forbids the use of " << forbidden->fGetLongName() << " but it is given.\n";
+				fComplainAndLeave();
 			}
 		}
 		for (auto required : opt->lRequiredOptions) {
 			if (optionsThatWereSet.count(required) == 0) {
-				std::cerr << "The option " << opt->fGetLongName() << " requires the use of " << required->fGetLongName() << " but it is not given.\n";
-				fHelp();
-				exit(1);
+				fGetErrorStream() << "The option " << opt->fGetLongName() << " requires the use of " << required->fGetLongName() << " but it is not given.\n";
+				fComplainAndLeave();
 			}
 		}
 	}
+}
+
+void OptionParser::fComplainAndLeave(bool aWithHelp) {
+	if (aWithHelp) {
+		fHelp();
+	}
+	exit(1);
 }
 
 void OptionParser::fSetMinusMinusStartsExtraList() {
@@ -355,9 +363,8 @@ void OptionBase::fSetSource(const char *aSource) {
 
 void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 	if (*i + lNargs >= argc) {
-		std::cerr << "option " << lLongName << " needs " << lNargs << " args, but only " << argc - *i - 1 << " remain." << std::endl;
-		OptionParser::fGetInstance()->fHelp();
-		exit(1);
+		OptionParser::fGetInstance()->fGetErrorStream() << "option " << lLongName << " needs " << lNargs << " args, but only " << argc - *i - 1 << " remain." << std::endl;
+		OptionParser::fGetInstance()->fComplainAndLeave();
 	}
 	if (lNargs == 0) {
 		fSetMe(nullptr, "cmdline: ");
@@ -365,8 +372,8 @@ void OptionBase::fHandleOption(int argc, const char *argv[], int *i) {
 		fSetMe(argv[*i + 1], "cmdline: ");
 		*i += lNargs;
 	}
-	if (fCheckRange(std::cerr) == false) {
-		exit(1);
+	if (fCheckRange(OptionParser::fGetInstance()->fGetErrorStream()) == false) {
+		OptionParser::fGetInstance()->fComplainAndLeave(false);
 	}
 }
 
@@ -543,8 +550,8 @@ void OptionParser::fWriteCfgFile(const char *aFileName) {
 void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 	std::ifstream cfgFile(aFileName);
 	if (!cfgFile.good() && !aMayBeAbsent) {
-		std::cerr << "can't acccess config file '" << aFileName << "', reason is " << strerror(errno) << std::endl;
-		exit(1);
+		fGetErrorStream() << "can't acccess config file '" << aFileName << "', reason is " << strerror(errno) << std::endl;
+		fComplainAndLeave(false);
 	}
 	int lineNumber = 0;
 	std::vector<std::string>* preserveWorthyStuff = nullptr;
@@ -585,7 +592,7 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 		auto optionName = line.substr(0, equalsAt);
 		auto it = OptionBase::fGetOptionMap().find(optionName);
 		if (it == OptionBase::fGetOptionMap().end()) {
-			std::cerr << aFileName << ":" << lineNumber << ": error: unknown option '" << optionName << "' ,line is '" << line << "'" << std::endl;
+			fGetErrorStream() << aFileName << ":" << lineNumber << ": error: unknown option '" << optionName << "' ,line is '" << line << "'" << std::endl;
 			continue;
 		}
 		auto option = it->second;
@@ -597,8 +604,8 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 				option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 				preserveWorthyStuff = nullptr;
 			}
-			if (option->fCheckRange(std::cerr) == false) {
-				exit(1);
+			if (option->fCheckRange(fGetErrorStream()) == false) {
+				fComplainAndLeave();
 			}
 		}
 	}

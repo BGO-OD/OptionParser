@@ -87,6 +87,7 @@ class OptionParser {
 	std::vector<std::string> lStuffAfterMinusMinus;
 	bool lMinusMinusJustEndsOptions;
 	std::ostream *lMessageStream;
+	std::ostream *lErrorStream;
 	std::string lProgName;
 	std::string lExecutableName;
 	int lHelpReturnValue;
@@ -100,10 +101,13 @@ class OptionParser {
 	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 	~OptionParser();
 	void fSetMessageStream(std::ostream* aStream);
+	void fSetErrorStream(std::ostream* aStream);
+	std::ostream& fGetErrorStream() const;
 	void fSetHelpReturnValue(int aValue);
 	int fGetHelpReturnValue() const {
 		return lHelpReturnValue;
 	};
+	virtual void fComplainAndLeave(bool aWithHelp = true);
 	void fSetAssignmentChars(char aPrimary = '=', char aSecondary = ':');
 	char fGetSecondaryAssignment() const {
 		return lSecondaryAssignment;

@@ -22,6 +22,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <set>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -85,6 +86,9 @@ class OptionParser {
 	const std::vector<std::string> lSearchPaths;
 	std::vector<std::string> lUnusedOptions;
 	std::vector<std::string> lStuffAfterMinusMinus;
+
+	std::set<const OptionBase*> lRequiredOptions;
+
 	bool lMinusMinusJustEndsOptions;
 	std::ostream *lMessageStream;
 	std::ostream *lErrorStream;
@@ -107,11 +111,14 @@ class OptionParser {
 	int fGetHelpReturnValue() const {
 		return lHelpReturnValue;
 	};
-	virtual void fComplainAndLeave(bool aWithHelp = true);
+	[[noreturn]] virtual void fComplainAndLeave(bool aWithHelp = true);
 	void fSetAssignmentChars(char aPrimary = '=', char aSecondary = ':');
 	char fGetSecondaryAssignment() const {
 		return lSecondaryAssignment;
 	}
+	virtual void fRequire(const OptionBase* aOtherOption);
+	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
+
 	const std::vector<std::string>& fParse(int argc, const char *argv[]);
 	const std::vector<std::string>& fParse(int argc, char *argv[]);
 	static OptionParser* fGetInstance();

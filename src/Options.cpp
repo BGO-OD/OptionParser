@@ -23,7 +23,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <ctime>
-#include <set>
+#include <iterator>
+#include <algorithm>
 
 static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
@@ -66,6 +67,14 @@ void OptionParser::fSetAssignmentChars(char aPrimary, char aSecondary) {
 void OptionParser::fSetExecutableName(const char *aName) {
 	lExecutableName = aName;
 }
+
+void OptionParser::fRequire(const OptionBase* aOption) {
+	lRequiredOptions.insert(aOption);
+}
+void OptionParser::fRequire(std::vector<const OptionBase*> aOptions) {
+	lRequiredOptions.insert(aOptions.cbegin(), aOptions.cend());
+}
+
 
 
 OptionParser* OptionParser::fGetInstance() {
@@ -182,6 +191,20 @@ void OptionParser::fCheckConsistency() {
 		auto opt = it.second;
 		if (opt->fIsSet()) {
 			optionsThatWereSet.insert(opt);
+		}
+	}
+	if (! lRequiredOptions.empty()) {
+		std::vector<const OptionBase*> missing;
+		std::set_difference(lRequiredOptions.cbegin(), lRequiredOptions.cend(),
+		                    optionsThatWereSet.cbegin(), optionsThatWereSet.cend(),
+		                    std::inserter(missing, missing.begin()));
+		if (! missing.empty()) {
+			fGetErrorStream() << "The following options are required but were not given:";
+			for (auto opt: missing) {
+				fGetErrorStream() << " " << opt->fGetLongName();
+			}
+			fGetErrorStream() << "\n";
+			fComplainAndLeave();
 		}
 	}
 	for (auto opt : optionsThatWereSet) {
@@ -462,6 +485,9 @@ void OptionParser::fPrintOptionHelp(std::ostream& aMessageStream, const OptionBa
 		for (auto opt : aOption.lForbiddenOptions) {
 			aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
 		}
+	}
+	if (lRequiredOptions.count(&aOption)) {
+		aMessageStream << "      " << std::setw(aMaxName) << " " << "   this option is required\n";
 	}
 }
 

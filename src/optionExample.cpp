@@ -19,6 +19,9 @@ int main(int argc, const char *argv[]) {
 	Cs.fForbid(&cs);
 
 	OptionParser parser("option parsing example");
+
+	parser.fRequire(&number);
+
 	auto unusedOptions = parser.fParse(argc, argv);
 
 	for (auto & unusedOption : unusedOptions) {

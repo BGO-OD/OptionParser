@@ -13,6 +13,15 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
 include(CheckCXXCompilerFlag)
 
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+MESSAGE("Selected build type: ${CMAKE_BUILD_TYPE}")
+
+
+
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 SET(CXX_STD_FLAG "")
@@ -25,7 +34,7 @@ else()
 endif()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STD_FLAG}")
-
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wunused -Woverloaded-virtual -Wshadow -Wextra -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wvla -Wsuggest-attribute=noreturn")
 # Get latest tagged version.
 INCLUDE(GetLatestTag)
 

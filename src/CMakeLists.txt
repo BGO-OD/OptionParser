@@ -1,5 +1,5 @@
 include_directories("include")
-add_library(options_static STATIC Options.cpp)
+add_library(options_static STATIC Options.cpp OptionsWithForeignParser.cpp OptionsForTApplication.cpp)
 IF(INSTALL_STATIC_LIBS)
 	install(TARGETS options_static DESTINATION lib)
 ENDIF(INSTALL_STATIC_LIBS)
@@ -10,7 +10,7 @@ IF(BUILD_SHARED_LIBS)
 ENDIF(BUILD_SHARED_LIBS)
 INSTALL(
 	FILES
-	include/Options.h
+	include/Options.h include/OptionsWithForeignParser.h include/OptionsForTApplication.h
 	DESTINATION
 	include)
 

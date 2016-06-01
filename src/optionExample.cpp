@@ -1,8 +1,10 @@
 #include "Options.h"
 #include <list>
+#include "OptionsForTApplication.h"
+
 
 int main(int argc, const char *argv[]) {
-	Option<int> number('n', "number", "some number", 0);
+	Option<int> number('N', "number", "some number", 0);
 	Option<int> number2('k', "kumber", "some other number", 0, {0, 3, 3});
 	OptionMap<int, std::vector<std::pair<std::string, int> > > numbers('m', "numbers", "several numbers");
 	OptionMap<std::string, std::list<std::pair<std::string, std::string> > > strings('s', "strings", "several strings");
@@ -10,7 +12,7 @@ int main(int argc, const char *argv[]) {
 	Option<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
 	OptionContainer<double> dnums('d', "doubles", "double numbers");
 	OptionContainer<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
-	OptionContainer<std::string, std::list<std::string>> stringS('x', "liststring", "list of std::strings");
+	OptionContainer<std::string, std::list<std::string>> stringS('X', "liststring", "list of std::strings");
 	Option<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
 	Option<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
 	Option<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
@@ -18,11 +20,15 @@ int main(int argc, const char *argv[]) {
 	cs.fForbid(&Cs);
 	Cs.fForbid(&cs);
 
+	OptionsForTApplication TApplicationOptions(argv[0]);
+
 	OptionParser parser("option parsing example");
 
 	parser.fRequire(&number);
 
 	auto unusedOptions = parser.fParse(argc, argv);
+
+	TApplicationOptions.fFinalize(unusedOptions.begin(), unusedOptions.end());
 
 	for (auto & unusedOption : unusedOptions) {
 		std::cout << "unused option : '" << unusedOption << "'" << std::endl;

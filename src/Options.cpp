@@ -80,6 +80,12 @@ void OptionParser::fRequire(std::vector<const OptionBase*> aOptions) {
 OptionParser* OptionParser::fGetInstance() {
 	return gParser;
 }
+
+/// read config files if present
+
+/// this function iterates over the list of config file search paths,
+/// replacing ~ by the home directory and then appends the program name
+/// to the path, and if a file is found it is then read as config file.
 void OptionParser::fReadConfigFiles() {
 	for (auto f : lSearchPaths) {
 		auto tildePosition = f.find_first_of('~');
@@ -200,7 +206,7 @@ void OptionParser::fCheckConsistency() {
 		                    std::inserter(missing, missing.begin()));
 		if (! missing.empty()) {
 			fGetErrorStream() << "The following options are required but were not given:";
-			for (auto opt: missing) {
+			for (auto opt : missing) {
 				fGetErrorStream() << " " << opt->fGetLongName();
 			}
 			fGetErrorStream() << "\n";
@@ -223,6 +229,10 @@ void OptionParser::fCheckConsistency() {
 	}
 }
 
+/// print help (if required) and exit.
+
+/// this function can be overloaded in a class derived from OptionParser, for example when one instead of calling exit() wants to throw an exception.
+/// as normaly the call to exit() is what is required this is the default action.
 void OptionParser::fComplainAndLeave(bool aWithHelp) {
 	if (aWithHelp) {
 		fHelp();

@@ -28,6 +28,12 @@
 #include <sstream>
 #include <fstream>
 
+
+/// base class for options
+
+/// Only the templated classes that derive from this base class can contain values.
+/// This base class only contains members that are generally usable and do not depend
+/// on the type of the option.
 class OptionBase {
 	friend class OptionParser;
   protected:
@@ -63,8 +69,11 @@ class OptionBase {
   public:
 	OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
 	virtual ~OptionBase();
-	virtual void fAddToRangeFromStream(std::istream& aStream) = 0;
-	virtual void fAddDefaultFromStream(std::istream& aStream) = 0;
+
+	/// special for use in the shellScriptOptionParser
+	virtual void fAddToRangeFromStream(std::istream& aStream) = 0; ///< read values from aStream and add them to the range vector
+	/// special for use in the shellScriptOptionParser
+	virtual void fAddDefaultFromStream(std::istream& aStream) = 0; ///< read a value from aStram and set that as default
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	virtual void fRequire(const OptionBase* aOtherOption);
 	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
@@ -77,6 +86,14 @@ class OptionBase {
 		return lLongName;
 	};
 };
+
+
+
+/// class that contains the parser, i.e. does that option handling
+
+/// once contructed with the header part and the trailer part of the help text,
+/// together with the list of search paths for config files the option parser
+/// can then be used to parse the command line options.
 
 class OptionParser {
   protected:
@@ -119,14 +136,30 @@ class OptionParser {
 	virtual void fRequire(const OptionBase* aOtherOption);
 	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
 
+
+	/// parse the options on the command line
+
+	/// The command line is passed via the argc and argv parameres, which will reamain unchanged.
+	/// Also reads config files, using fReadConfigFiles() and all files which are explicitly requested by  --readCfgFile options.
+	/// \result vector of strings containing all the unhandled string from the original command line
 	const std::vector<std::string>& fParse(int argc, const char *argv[]);
+
+	/// other signature for fParse, when argv needs to be without const due to external constraints
 	const std::vector<std::string>& fParse(int argc, char *argv[]);
+
+
+	/// get the only allwed instance of the option parser.
 	static OptionParser* fGetInstance();
+
+	/// print help, normally automatically called by the --help option or in case of problems.
 	void fHelp();
 	void fWriteCfgFile(const char *aFileName);
 	void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
-	void fSetMinusMinusStartsExtraList();
 	void fSetExecutableName(const char *aName);
+
+	/// switch on use of -- to separate a trailer on the command line that is not to be parsed
+	void fSetMinusMinusStartsExtraList();
+	/// get trailong part of command line as a vector od strings, requires that fSetMinusMinusStartsExtraList was called before parsing.
 	const std::vector<std::string>& fGetStuffAfterMinusMinus() {
 		return lStuffAfterMinusMinus;
 	};
@@ -287,6 +320,10 @@ template <> class Option<std::string> : public OptionBase {
 	}
 };
 
+
+
+/// This class is an intermediate helper class for options that
+/// are map-based. It is not to be used directly.
 template <typename T> class OptionBaseForMap: public OptionBase {
   protected:
 	std::map<const T*, std::string> lSources;
@@ -304,9 +341,16 @@ template <typename T> class OptionBaseForMap: public OptionBase {
 			return nullptr;
 		}
 	};
+	virtual bool fIsSet() const {
+		return ! lSources.empty();
+	};
 };
 
-
+/// template for map-based options. The map key is always a std::string but the mapped value is arbitrary.
+/// the container is by defalt a std::map. It is assumed that the container always containds std::pairs
+/// of a std::string as first and the valye type T as second, e.g. a
+/// std::list<std::pair<std::string,int>> which, in contrast to the map would preserve the order in
+/// which the items were specified.
 template <typename T, typename Container = std::map<std::string, T>> class OptionMap: public OptionBaseForMap<T>, public Container {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
@@ -355,6 +399,11 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 		return *static_cast<const std::map<std::string, T>*>(this);
 	}
 };
+
+
+
+
+/// template specialisation for maps where the values are also std::strings
 template <typename Container> class OptionMap<std::string, Container>: public OptionBaseForMap<std::string>, public Container {
   public:
 	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
@@ -409,15 +458,22 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 	}
 };
 
+/// This class is an intermediate helper class for options that
+/// are container-based. It is not to be used directly.
 class OptionBaseForContainer: public OptionBase {
   protected:
 	std::vector<std::string> lSources;
   public:
 	OptionBaseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 		OptionBase(aShortName, aLongName, aExplanation, aNargs) {};
+	virtual bool fIsSet() const {
+		return ! lSources.empty();
+	};
 };
 
-
+/// template for container-based options.
+/// the container is by defalt a std::vector.
+/// If a non-vector container is used it needs to have a push_back.
 template <typename T, typename Container = std::vector<T>> class OptionContainer: public OptionBaseForContainer, public Container {
   public:
 	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
@@ -476,7 +532,7 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 
 
 
-
+/// template specialisation for container based options that contain const char* strings
 template <typename Container> class OptionContainer<const char *, Container>: public OptionBaseForContainer, public Container {
   public:
 	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
@@ -531,7 +587,7 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 
 };
 
-
+/// template specialisation for container based options that contain std::strings
 template <typename Container> class OptionContainer<std::string, Container>: public OptionBaseForContainer, public Container {
   public:
 	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :

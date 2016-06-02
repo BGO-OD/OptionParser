@@ -359,7 +359,15 @@ void OptionParser::fReCaptureEscapedString(char *aDest, const char *aSource) {
 	*wp = '\0';
 }
 
+/// construct an opbect of type OptionBase
 
+/// The newluy created object is inserted into the maps sorted by long name and by short name,
+/// (short name only if it is not '\0')
+/// If a clash wopuld occur, i.e. either long or short name is already taken an exception is thrown.
+/// \param [in] aShortName short option without the -, use '\0' to have only a long form
+/// \param [in] aLongName long option without the --, must always be given
+/// \param [in] aExplanation explanation for help output
+/// \param [in] aNargs number of arguments/parameters. May be 0 ot 1.
 OptionBase::OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 	lShortName(aShortName),
 	lLongName(aLongName),
@@ -649,6 +657,12 @@ void OptionParser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
 }
 
 
+/// \class  Option<bool>
+/// in this class in cases that there is no argument, i.e. when parsing the comand line
+/// the value is set to the oppsoite of the default value.
+/// If an argument is given, which is always the case in config files,
+/// then the value is read as std::boolalpha (when no locale nonsense is done 'true' or 'false')
+
 
 void Option<bool>::fWriteValue(std::ostream & aStream) const {
 	aStream << std::boolalpha << lValue;
@@ -667,12 +681,12 @@ void Option<bool>::fAddDefaultFromStream(std::istream& aStream) {
 	lDefault = lValue;
 }
 
-
+/// \copydetails Option::Option() 
 Option<const char*>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault, const std::vector<const char *>& aRange) :
 	OptionBase(aShortName, aLongName, aExplanation, 1),
 	lValue(aDefault) {
 	if (!aRange.empty()) {
-		fSetRange(aRange);
+		fAddToRange(aRange);
 	}
 }
 
@@ -683,14 +697,17 @@ Option<const char*>::~Option() {
 		i = lRange.erase(i);
 	}
 }
-
-void Option<const char*>::fSetRange(const std::vector<const char *>& aRange) {
-	for (auto it : aRange) {
-		auto stringCopy = new char[strlen(it) + 1];
-		strcpy(stringCopy, it);
+/// add a copy of the given string to the range of allowe values
+void Option<const char*>::fAddToRange(const char *aValue) {
+		auto stringCopy = new char[strlen(aValue) + 1];
+		strcpy(stringCopy, aValue);
 		lRange.push_back(stringCopy);
-	}
 }
+/// \copydoc Option::fAddToRange(const std::vector< T > &)
+void Option<const char*>::fAddToRange(const std::vector<const char *>& aRange) {
+	fAddToRange(aRange.cbegin(), aRange.cend());
+}
+/// \details read a line from aStream and undo any escapes found using 	OptionParser::fReCaptureEscapedString()
 void Option<const char*>::fAddToRangeFromStream(std::istream& aStream) {
 	std::string buf1;
 	std::getline(aStream, buf1);
@@ -771,14 +788,14 @@ Option<std::string>::Option(char aShortName, const std::string& aLongName, const
 	OptionBase(aShortName, aLongName, aExplanation, 1),
 	lValue(std::move(aDefault)) {
 	if (!aRange.empty()) {
-		fSetRange(aRange);
+		fAddToRange(aRange);
 	}
 }
-
-void Option<std::string>::fSetRange( const std::vector<std::string>& aRange) {
-	for (const auto & it : aRange) {
-		lRange.push_back(it);
-	}
+void Option<std::string>::fAddToRange( const std::string& aValue) {
+	lRange.push_back(aValue);
+}
+void Option<std::string>::fAddToRange( const std::vector<std::string>& aRange) {
+	fAddToRange(aRange.cbegin(), aRange.cend());
 }
 void Option<std::string>::fAddToRangeFromStream(std::istream& aStream) {
 	std::string buf1;
@@ -852,7 +869,7 @@ void  Option<std::string>::fWriteRange(std::ostream &aStream) const {
 
 
 
-
+/// special derived class used to give help
 class OptionHelp : public Option<bool> {
   private:
 	static OptionHelp gHelp;
@@ -866,6 +883,7 @@ class OptionHelp : public Option<bool> {
 	}
 };
 
+/// special derived class used to write out config files
 class OptionWriteCfgFile : public Option<const char *> {
   private:
 	static OptionWriteCfgFile gWriteCfgFile;
@@ -879,6 +897,8 @@ class OptionWriteCfgFile : public Option<const char *> {
 		exit(OptionParser::fGetInstance()->fGetHelpReturnValue());
 	}
 };
+
+/// special derived class used to read in config files
 class OptionReadCfgFile : public Option<const char *> {
   private:
 	static OptionReadCfgFile gReadCfgFile;

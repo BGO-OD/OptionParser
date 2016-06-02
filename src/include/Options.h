@@ -74,14 +74,34 @@ class OptionBase {
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0; ///< read values from aStream and add them to the range vector
 	/// special for use in the shellScriptOptionParser
 	virtual void fAddDefaultFromStream(std::istream& aStream) = 0; ///< read a value from aStram and set that as default
+	/// write textual representation of value to a std::ostream
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
+	/// require aOtherOption when this option is set
 	virtual void fRequire(const OptionBase* aOtherOption);
+	/// add vector of other options, particlularly nice for use with initializer list
 	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
+
+	/// add all options from the pair of iterators [aBegin,aEnd) to the list of required options
+	template <typename InputIt> void fRequire(InputIt aBegin, InputIt aEnd) {
+		for (auto it = aBegin; it != aEnd; ++it) {
+			fRequire(*it);
+		}
+	}
+	/// forbid aOtherOption when this option is set
 	virtual void fForbid(const OptionBase* aOtherOption);
+	/// add vector of other options, particlularly nice for use with initializer list
 	virtual void fForbid(std::vector<const OptionBase*> aOtherOptions);
+	/// add all options from the pair of iterators [aBegin,aEnd) to the list of forbidden options
+	template <typename InputIt> void fForbid(InputIt aBegin, InputIt aEnd) {
+		for (auto it = aBegin; it != aEnd; ++it) {
+			fForbid(*it);
+		}
+	}
+	/// check if this option was set, regardless of from command line or config file
 	virtual bool fIsSet() const {
 		return ! lSource.empty();
 	};
+	/// returns long name of option, usually only for internal use.
 	const std::string& fGetLongName() const {
 		return lLongName;
 	};
@@ -168,24 +188,38 @@ class OptionParser {
 };
 
 
-
+/// generic option class with any type that can be used with std::istram and std::ostream
 template <typename T> class Option : public OptionBase {
   private:
 	T lValue;
 	std::vector<T> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
-		OptionBase(aShortName, aLongName, aExplanation, 1),
+	/// \brief construct an object of Option<T>
+	/// \copydetails OptionBase::OptionBase() This generic case always demands one parameter for the option!
+	/// \param [in] aDefault default value that the option has if not set otherwise
+	/// \param [in] aRange range of allowes values, can be given as initializer list. If only two values are given then [first,last] is the allowd interval.
+ Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
+	OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
-		if (!aRange.empty()) {
-			fSetRange(aRange);
+			if (!aRange.empty()) {
+				fAddToRange(aRange);
+			}
+		};
+	/// add an value to the range of allowed values
+	virtual void fAddToRange(T aValue) {
+		lRange.push_back(aValue);
+	};
+	/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
+	template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
+		for (auto it = aBegin; it != aEnd; ++it) {
+			fAddToRange(*it);
 		}
+	};
+	/// add values from a vector (may be given as initializer list) to the range of allowed values
+	virtual void fAddToRange(const std::vector<T>& aRange) {
+		fAddToRange(aRange.cbegin(), aRange.cend());
 	}
-	virtual void fSetRange(const std::vector<T>& aRange) {
-		for (auto it = aRange.begin(); it != aRange.end(); ++it) {
-			lRange.push_back(*it);
-		}
-	}
+	/// \details read a line from aStream and then add as many values as can be read from that line to the list of allowed values
 	virtual void fAddToRangeFromStream(std::istream& aStream) {
 		std::string buf;
 		std::getline(aStream, buf);
@@ -193,9 +227,9 @@ template <typename T> class Option : public OptionBase {
 		while (!sbuf.eof()) {
 			T value;
 			sbuf >> value;
-			lRange.push_back(value);
+			fAddToRange(value);
 		}
-	}
+	};
 	virtual void fAddDefaultFromStream(std::istream& aStream) {
 		aStream >> lValue;
 	}
@@ -254,6 +288,8 @@ template <typename T> class Option : public OptionBase {
 		return lValue;
 	}
 };
+
+/// class specialisation for options of type bool
 template <> class Option<bool> : public OptionBase {
   private:
 	bool lValue;
@@ -278,6 +314,8 @@ template <> class Option<bool> : public OptionBase {
 		return lValue;
 	}
 };
+
+/// template specialisation for options that represent simple c-style strings
 template <> class Option<const char *> : public OptionBase {
   protected:
 	const char *lValue;
@@ -285,7 +323,14 @@ template <> class Option<const char *> : public OptionBase {
   public:
 	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
 	virtual ~Option();
-	virtual void fSetRange(const std::vector<const char *>& aRange);
+	virtual void fAddToRange(const char *aValue);
+	virtual void fAddToRange(const std::vector<const char *>& aRange);
+	/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
+	template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
+		for (auto it = aBegin; it != aEnd; ++it) {
+			fAddToRange(*it);
+		}
+	};
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void fAddDefaultFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;
@@ -299,13 +344,21 @@ template <> class Option<const char *> : public OptionBase {
 		return lValue;
 	}
 };
+/// template specialisation for options that are std::strings
 template <> class Option<std::string> : public OptionBase {
   protected:
 	std::string lValue;
 	std::vector<std::string> lRange;
   public:
 	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault = "", const std::vector<std::string>& aRange = {});
-	virtual void fSetRange(const std::vector<std::string>& aRange);
+	virtual void fAddToRange(const std::string& aValue);
+	/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
+	template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
+		for (auto it = aBegin; it != aEnd; ++it) {
+			fAddToRange(*it);
+		}
+	};
+	virtual void fAddToRange(const std::vector<std::string>& aRange);
 	virtual void fAddToRangeFromStream(std::istream& aStream);
 	virtual void fAddDefaultFromStream(std::istream& aStream);
 	virtual void  fWriteRange(std::ostream &aStream) const;

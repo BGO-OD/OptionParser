@@ -8,8 +8,7 @@ OPTION(OptionParser_BUILD_EXAMPLES "Build optionParserExample" ON)
 OPTION(OptionParser_INSTALL_EXAMPLES "Install optionParserExample" OFF)
 OPTION(BUILD_SHARED_LIBS "Build and install the dynamic library" ON)
 OPTION(INSTALL_STATIC_LIBS "Install the static library" OFF)
-OPTION(BUILD_DOCUMENTATION "Create the HTML based API documentation (requires Doxygen)" OFF)
-OPTION(INSTALL_DOCUMENTATION "Install the HTML based API documentation (if build is on)" OFF)
+OPTION(INSTALL_DOCUMENTATION "Also install the HTML based API documentation (you first need to make the doc-target)" OFF)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -53,25 +52,23 @@ install(FILES cmake/FindOptionParser.cmake DESTINATION ${ConfigPackageLocation})
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 
-if(BUILD_DOCUMENTATION)
-    if(NOT DOXYGEN_FOUND)
-        message(FATAL_ERROR "Doxygen is needed to build the documentation.")
-    endif()
+if(DOXYGEN_FOUND)
+  set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+  set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+  configure_file(${doxyfile_in} ${doxyfile} @ONLY)
 
-    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+  add_custom_target(doc ALL
+    COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen"
+    VERBATIM)
 
-    add_custom_target(doc ALL
-        COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen"
-        VERBATIM)
-
-    IF(INSTALL_DOCUMENTATION)
-        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
-    ENDIF()
+	IF(INSTALL_DOCUMENTATION)
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc OPTIONAL)
+	ENDIF()
+ELSE()
+  message(STATUS "Doxygen not found, not adding 'doc' target.")
 endif()
 
 

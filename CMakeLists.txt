@@ -8,6 +8,7 @@ OPTION(OptionParser_BUILD_EXAMPLES "Build optionParserExample" ON)
 OPTION(OptionParser_INSTALL_EXAMPLES "Install optionParserExample" OFF)
 OPTION(BUILD_SHARED_LIBS "Build and install the dynamic library" ON)
 OPTION(INSTALL_STATIC_LIBS "Install the static library" OFF)
+OPTION(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -53,7 +54,6 @@ install(FILES cmake/FindOptionParser.cmake DESTINATION ${ConfigPackageLocation})
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
-option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
 
 if(BUILD_DOCUMENTATION)
     if(NOT DOXYGEN_FOUND)

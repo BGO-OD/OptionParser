@@ -8,7 +8,8 @@ OPTION(OptionParser_BUILD_EXAMPLES "Build optionParserExample" ON)
 OPTION(OptionParser_INSTALL_EXAMPLES "Install optionParserExample" OFF)
 OPTION(BUILD_SHARED_LIBS "Build and install the dynamic library" ON)
 OPTION(INSTALL_STATIC_LIBS "Install the static library" OFF)
-OPTION(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
+OPTION(BUILD_DOCUMENTATION "Create the HTML based API documentation (requires Doxygen)" OFF)
+OPTION(INSTALL_DOCUMENTATION "Install the HTML based API documentation (if build is on)" OFF)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -20,7 +21,6 @@ IF(NOT CMAKE_BUILD_TYPE)
       FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 MESSAGE("Selected build type: ${CMAKE_BUILD_TYPE}")
-
 
 
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -50,8 +50,6 @@ INCLUDE(WritePkgConfig)
 set(ConfigPackageLocation lib/cmake/OptionParser)
 install(FILES cmake/FindOptionParser.cmake DESTINATION ${ConfigPackageLocation})
 
-
-
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 
@@ -65,13 +63,15 @@ if(BUILD_DOCUMENTATION)
 
     configure_file(${doxyfile_in} ${doxyfile} @ONLY)
 
-    add_custom_target(doc
+    add_custom_target(doc ALL
         COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM)
 
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+    IF(INSTALL_DOCUMENTATION)
+        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+    ENDIF()
 endif()
 
 

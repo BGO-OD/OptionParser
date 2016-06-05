@@ -29,7 +29,7 @@ if(OptionParser_FIND_REQUIRED AND "${OptionParser_LIBRARY}" STREQUAL "OptionPars
 			)
 		ExternalProject_Get_Property(OptionParser INSTALL_DIR)
 		set(OptionParser_INCLUDE_DIR ${INSTALL_DIR}/include/)
-		set(OptionParser_LIBRARY ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}options_static${CMAKE_STATIC_LIBRARY_SUFFIX})
+		set(OptionParser_LIBRARY ${INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}options${CMAKE_STATIC_LIBRARY_SUFFIX})
 	endif()
 endif()
 

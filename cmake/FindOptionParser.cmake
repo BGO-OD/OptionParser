@@ -18,14 +18,13 @@ if(OptionParser_FIND_REQUIRED AND "${OptionParser_LIBRARY}" STREQUAL "OptionPars
 	if(OptionParser_FIND_REQUIRED_MAYBEBUILTIN)
 		# User requested fallback to builtin.
 		INCLUDE(ExternalProject)
-
+		MESSAGE(STATUS "OptionParser not found, building it as external project.")
 		ExternalProject_Add(
 			OptionParser
 			GIT_REPOSITORY https://github.com/BGO-OD/OptionParser.git
 			CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 			-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			-DINSTALL_STATIC_LIBS=ON
-			LOG_BUILD 1 LOG_CONFIGURE 1 LOG_DOWNLOAD 1 LOG_INSTALL 1
 			)
 		ExternalProject_Get_Property(OptionParser INSTALL_DIR)
 		set(OptionParser_INCLUDE_DIR ${INSTALL_DIR}/include/)

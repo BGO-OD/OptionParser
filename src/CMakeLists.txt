@@ -1,5 +1,6 @@
 include_directories("include")
 add_library(options_static STATIC Options.cpp OptionsWithForeignParser.cpp OptionsForTApplication.cpp)
+set_target_properties(options_static PROPERTIES OUTPUT_NAME options)
 IF(INSTALL_STATIC_LIBS)
 	install(TARGETS options_static DESTINATION lib)
 ENDIF(INSTALL_STATIC_LIBS)

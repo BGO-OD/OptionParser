@@ -434,13 +434,13 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 			aStream << "\"\"";
 		} else {
 			for (const auto& it : *this) {
-				aStream << it.first << ":" << it.second << " ";
+				aStream << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << " ";
 			}
 		}
 	}
 	virtual void fSetMe(const char *aArg, const char* aSource) {
 		std::string s(aArg);
-		auto dividerPosition = s.find_first_of(':');
+		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
 		auto name = s.substr(0, dividerPosition);
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 		T value;
@@ -488,7 +488,7 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 				if (it != this->begin()) {
 					aStream << ',';
 				}
-				aStream << it->first << ":" << it->second << " ";
+				aStream << it->first << OptionParser::fGetInstance()->fGetSecondaryAssignment() << it->second << " ";
 			}
 		}
 	};

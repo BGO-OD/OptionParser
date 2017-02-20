@@ -40,13 +40,13 @@ int main(int argc, const char *argv[]) {
 		std::cout << " string '" << str.first << "' is '" << str.second << "'\n";
 	}
 	for (double & dnum : dnums) {
-		std::cout << " double number '" << dnum << "\n";
+		std::cout << " double number '" << dnum << "'\n";
 	}
 	for (auto & it : stringl) {
-		std::cout << " list string '" << it << "\n";
+		std::cout << " list string '" << it << "'\n";
 	}
 	for (auto & it : stringS) {
-		std::cout << " list std::string '" << it << "\n";
+		std::cout << " list std::string '" << it << "'\n";
 	}
 	return number;
 }

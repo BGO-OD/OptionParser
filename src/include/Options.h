@@ -226,12 +226,12 @@ template <typename T> class Option : public OptionBase {
 		std::stringstream sbuf(buf);
 		while (!sbuf.eof()) {
 			T value;
-			sbuf >> value;
+			sbuf >> std::setbase(0) >> value;
 			fAddToRange(value);
 		}
 	};
 	virtual void fAddDefaultFromStream(std::istream& aStream) {
-		aStream >> lValue;
+		aStream >> std::setbase(0) >> lValue;
 	}
 	virtual void  fWriteRange(std::ostream &aStream) const {
 		if (! lRange.empty()) {
@@ -278,7 +278,7 @@ template <typename T> class Option : public OptionBase {
 
 	virtual void fSetMe(const char* aArg, const char* aSource) {
 		std::stringstream buf(aArg);
-		buf >> std::noskipws >> lValue;
+		buf >> std::setbase(0) >> std::noskipws >> lValue;
 		fSetSource(aSource);
 	}
 	operator T () const {
@@ -444,7 +444,7 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 		auto name = s.substr(0, dividerPosition);
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 		T value;
-		valueStream >> value;
+		valueStream >> std::setbase(0) >> value;
 		auto result = (*this).insert(this->end(), std::make_pair(name, value));
 		this->fAddSource(&(result->second), aSource);
 	}
@@ -567,7 +567,7 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 	virtual void fSetMe(const char *aArg, const char *aSource) {
 		std::stringstream valueStream(aArg);
 		T value;
-		valueStream >> value;
+		valueStream >> std::setbase(0) >> value;
 		this->push_back(value);
 		lSources.push_back(aSource ? aSource : "");
 	}

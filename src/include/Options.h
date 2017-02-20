@@ -441,6 +441,10 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 	virtual void fSetMe(const char *aArg, const char* aSource) {
 		std::string s(aArg);
 		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
+		if (dividerPosition == std::string::npos) { // not found, complain!
+			OptionParser::fGetInstance()->fGetErrorStream() << "The option " << this->fGetLongName() << " requires a '" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
+			OptionParser::fGetInstance()->fComplainAndLeave();
+		}
 		auto name = s.substr(0, dividerPosition);
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 		T value;
@@ -496,6 +500,10 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 	virtual void fSetMe(const char *aArg, const char *aSource) {
 		std::string s(aArg);
 		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
+		if (dividerPosition == std::string::npos) { // not found, complain!
+			OptionParser::fGetInstance()->fGetErrorStream() << "The option " << fGetLongName() << " requires a '" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
+			OptionParser::fGetInstance()->fComplainAndLeave();
+		}
 		auto name = s.substr(0, dividerPosition);
 		auto buf = new char[s.length() - dividerPosition];
 		OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());

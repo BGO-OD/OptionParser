@@ -699,9 +699,10 @@ Option<const char*>::~Option() {
 }
 /// add a copy of the given string to the range of allowe values
 void Option<const char*>::fAddToRange(const char *aValue) {
-		auto stringCopy = new char[strlen(aValue) + 1];
-		strcpy(stringCopy, aValue);
-		lRange.push_back(stringCopy);
+	auto size = strlen(aValue) + 1;
+	auto stringCopy = new char[size];
+	strncpy(stringCopy, aValue, size);
+	lRange.push_back(stringCopy);
 }
 /// \copydoc Option::fAddToRange(const std::vector< T > &)
 void Option<const char*>::fAddToRange(const std::vector<const char *>& aRange) {

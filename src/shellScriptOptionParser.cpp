@@ -83,21 +83,24 @@ int main(int argc, const char *argv[]) {
 		          ")\n"
 		          "Option sytax is:\n"
 		          "[export] type shortOpt longOpt descripton\n"
-		          "\ttype may be one of int, uint bool or string\n"
-		          "\tshortOpt is the one-letter variant, use - to have none\n"
+		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
+		          "\tshortOpt is the one-letter variant, use '-' to have none\n"
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
 		          "\tthe rest of the line is the description\n"
-		          "\tif the next line starts with range the values following are added to the\n"
-		          "\tallowed value range of the option, many range lines may follow!\n"
+			        "\tif 'export' is set the shell variable will be exported\n"
+		          "\tif the next line starts with 'range' the values following are added\n"
+			        "\tto the allowed value range of the option, many range lines may follow!\n"
 		          "\tif only two are given they denote a true range in the closed interval\n"
-		          "\tif the next line start with default a default value (resot of line) is set\n"
-		          "\tThe keyword minusMinusSpecialTreatment will put the parameters\n"
-		          "\tfollowing -- into the shell variable following that keyword\n"
-		          "\tThe keyword noPath clears the search path for config files\n"
-		          "\tThe keyword path adds the (escaped) rest of the line\n"
-		          "\tThe keyword minUnusedParameters sets the min number of params\n"
-		          "\tThe keyword maxUnusedParameters sets the max number of params\n"
-		          "\tto the search path for config files\n";
+		          "\tif the next line starts with 'default' a default value\n"
+              "\t (the rest of line) is set\n"
+		          "\tThe keyword 'minusMinusSpecialTreatment' will put the parameters\n"
+		          "\tfollowing '--' into the shell variable following that keyword\n"
+		          "\tThe keyword 'noPath' clears the search path for config files\n"
+		          "\tThe keyword 'path' adds the (escaped) rest of the line\n"
+		          "\tto the search path for config files\n"
+		          "\tThe keyword 'minUnusedParameters' sets the min number of params\n"
+			        "\tThe keyword 'maxUnusedParameters' sets the max number of params\n";
+
 		return (1);
 	}
 

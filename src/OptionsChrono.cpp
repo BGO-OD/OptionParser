@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 
-//Option<std::chrono::time_point<std::chrono::system_clock>>::valueType 
+//Option<std::chrono::time_point<std::chrono::system_clock>>::valueType
 std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
 	std::string::size_type pointStringStart = 0;
 	std::string::size_type pointStringStop = std::string::npos;
@@ -45,10 +45,10 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 		kDay = kToday | kTomorrow | kYesterday | kWeekday,
 		kLast = 1 << 5,
 		kNoon = 1 << 6
-		
+
 	};
 	if (pointStringStart < aString.size()) {
-		auto pointString = aString.substr(pointStringStart,pointStringStop);
+		auto pointString = aString.substr(pointStringStart, pointStringStop);
 		std::transform(pointString.begin(), pointString.end(), pointString.begin(), ::tolower);
 
 		typename std::underlying_type<dateBitType>::type dateBits = 0;
@@ -108,31 +108,31 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 					if (dateBits & kLast) {
 						if (dayOffset >= 0) {
 							dayOffset -= 7;
-						} 
+						}
 					} else { // we imply the next day of that name
-						if (dayOffset <= 0) { 
+						if (dayOffset <= 0) {
 							dayOffset += 7;
 						}
 					}
-					broken_down_time->tm_mday+= dayOffset;
+					broken_down_time->tm_mday += dayOffset;
 				}
 
 				timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
 			}
 		} else { // no date bits found, we have a direct specification
-			if (pointString[0]=='@') { // as for date(1) this is seconds since 1970
+			if (pointString[0] == '@') { // as for date(1) this is seconds since 1970
 				auto seconds = std::stod(pointString.substr(1));
-				timePoint =  std::chrono::system_clock::from_time_t(0) + 
-					std::chrono::duration_cast<valueType::duration>(std::chrono::duration<double>(seconds));
+				timePoint =  std::chrono::system_clock::from_time_t(0) +
+				             std::chrono::duration_cast<valueType::duration>(std::chrono::duration<double>(seconds));
 			} else {
 				std::tm broken_down_time = {};
-				auto items = sscanf(pointString.c_str(),"%d/%d/%d %d:%d:%d",
-				                    &(broken_down_time.tm_year),&(broken_down_time.tm_mon),&(broken_down_time.tm_mday),
-				                    &(broken_down_time.tm_hour),&(broken_down_time.tm_min),&(broken_down_time.tm_sec));
+				auto items = sscanf(pointString.c_str(), "%d/%d/%d %d:%d:%d",
+				                    &(broken_down_time.tm_year), &(broken_down_time.tm_mon), &(broken_down_time.tm_mday),
+				                    &(broken_down_time.tm_hour), &(broken_down_time.tm_min), &(broken_down_time.tm_sec));
 				if (items >= 3) { // we have y/m/d
 					broken_down_time.tm_year -= 1900;
 					broken_down_time.tm_mon--;
-					broken_down_time.tm_isdst=-1;
+					broken_down_time.tm_isdst = -1;
 					timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
 				}
 			}
@@ -143,7 +143,7 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 
 	if (offsetStringStart < aString.size()) {
 		valueType::duration offset;
-		auto offsetString = aString.substr(offsetStringStart,offsetStringStop);
+		auto offsetString = aString.substr(offsetStringStart, offsetStringStop);
 		std::transform(offsetString.begin(), offsetString.end(), offsetString.begin(), ::tolower);
 
 		int months = 0;
@@ -154,7 +154,7 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 			timePoint -= offset;
 		} else {
 			timePoint += offset;
-			}
+		}
 		if (months != 0 || years != 0) {
 			auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
 			auto fractionalPart = timePoint - std::chrono::system_clock::from_time_t(coarse_time);
@@ -166,8 +166,8 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 				broken_down_time->tm_mon += months;
 				broken_down_time->tm_year += years;
 			}
-				timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
-				timePoint += fractionalPart;
+			timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
+			timePoint += fractionalPart;
 		}
 	}
 	return timePoint;

@@ -26,9 +26,9 @@ template <class Rep, class Period> void OptionParseDurationString(std::chrono::d
 				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(2629800 * number));
 			}
 		} else if (unit.find("week") != std::string::npos) {
-			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600*24*7* number));
+			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * 24 * 7 * number));
 		} else if (unit.find("day") != std::string::npos) {
-			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600*24 * number));
+			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * 24 * number));
 		} else if (unit.find("hour") != std::string::npos) {
 			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * number));
 		} else if (unit.find("minute") != std::string::npos) {
@@ -41,18 +41,18 @@ template <class Rep, class Period> void OptionParseDurationString(std::chrono::d
 
 /// template specialisation for options that are std::chrono::durations
 template <class Rep, class Period> class Option<std::chrono::duration<Rep, Period>> : public OptionBase {
- public:
+  public:
 	typedef std::chrono::duration<Rep, Period> valueType;
   protected:
 	valueType lValue;
 	std::vector<valueType> lRange;
   public:
- Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}):
-	OptionBase(aShortName, aLongName, aExplanation, 1),
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}):
+		OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
-			if (!aRange.empty()) {
-				fAddToRange(aRange);
-			}
+		if (!aRange.empty()) {
+			fAddToRange(aRange);
+		}
 	}
 	virtual void fAddToRange(valueType aValue) {
 		lRange.push_back(aValue);
@@ -120,18 +120,18 @@ template <class Rep, class Period> class Option<std::chrono::duration<Rep, Perio
 
 /// template specialisation for options that are std::chrono::time_point<std::chrono::system_clock>
 template <> class Option<std::chrono::system_clock::time_point> : public OptionBase {
- public:
+  public:
 	typedef std::chrono::system_clock::time_point valueType;
   protected:
 	valueType lValue;
 	std::vector<valueType> lRange;
   public:
- Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}):
-	OptionBase(aShortName, aLongName, aExplanation, 1),
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}):
+		OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
-			if (!aRange.empty()) {
-				fAddToRange(aRange);
-			}
+		if (!aRange.empty()) {
+			fAddToRange(aRange);
+		}
 	}
 
 	static valueType fParseTimePointString(const std::string& aString);

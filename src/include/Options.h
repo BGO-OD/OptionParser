@@ -198,13 +198,13 @@ template <typename T> class Option : public OptionBase {
 	/// \copydetails OptionBase::OptionBase() This generic case always demands one parameter for the option!
 	/// \param [in] aDefault default value that the option has if not set otherwise
 	/// \param [in] aRange range of allowes values, can be given as initializer list. If only two values are given then [first,last] is the allowd interval.
- Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
-	OptionBase(aShortName, aLongName, aExplanation, 1),
+	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
+		OptionBase(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
-			if (!aRange.empty()) {
-				fAddToRange(aRange);
-			}
-		};
+		if (!aRange.empty()) {
+			fAddToRange(aRange);
+		}
+	};
 	/// add an value to the range of allowed values
 	virtual void fAddToRange(T aValue) {
 		lRange.push_back(aValue);

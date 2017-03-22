@@ -681,7 +681,7 @@ void Option<bool>::fAddDefaultFromStream(std::istream& aStream) {
 	lDefault = lValue;
 }
 
-/// \copydetails Option::Option() 
+/// \copydetails Option::Option()
 Option<const char*>::Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault, const std::vector<const char *>& aRange) :
 	OptionBase(aShortName, aLongName, aExplanation, 1),
 	lValue(aDefault) {

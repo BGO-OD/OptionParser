@@ -130,6 +130,8 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<bool>(std::cin, false));
 			} else if (keyWord == "seconds") {
 				options.push_back(fOptionFromStream<std::chrono::duration<long long>>(std::cin, std::chrono::seconds(1)));
+			} else if (keyWord == "date") {
+				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now()));
 			} else if (keyWord == "list") {
 				options.push_back(fContainerOptionFromStream<std::string>(std::cin));
 			} else if (keyWord == "range") {

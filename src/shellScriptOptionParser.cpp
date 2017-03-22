@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "Options.h"
+#include "OptionsChrono.h"
 #include <set>
 #include <limits>
 #include <unistd.h>
@@ -127,6 +128,8 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<int>(std::cin, 0));
 			} else if (keyWord == "bool") {
 				options.push_back(fOptionFromStream<bool>(std::cin, false));
+			} else if (keyWord == "seconds") {
+				options.push_back(fOptionFromStream<std::chrono::duration<long long>>(std::cin, std::chrono::seconds(1)));
 			} else if (keyWord == "list") {
 				options.push_back(fContainerOptionFromStream<std::string>(std::cin));
 			} else if (keyWord == "range") {

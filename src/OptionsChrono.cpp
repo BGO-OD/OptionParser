@@ -35,12 +35,6 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 		}
 	}
 
-	std::cout << "date string is '" << aString << "'" << std::endl;
-	std::cout << "                012345678901234567890123456789012345678901234567890123456789\n";
-	std::cout << "                0         1         2         3         4         5\n";
-	std::cout << "point  string start " << pointStringStart << ", end " << pointStringStop << std::endl;
-	std::cout << "offset string start " << offsetStringStart << ", end " << offsetStringStop << std::endl;
-
 	valueType timePoint;
 	enum dateBitType {
 		kNow = 1 << 0,
@@ -56,7 +50,6 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 	if (pointStringStart < aString.size()) {
 		auto pointString = aString.substr(pointStringStart,pointStringStop);
 		std::transform(pointString.begin(), pointString.end(), pointString.begin(), ::tolower);
-		std::cout << "point string is '" << pointString << "'\n";
 
 		typename std::underlying_type<dateBitType>::type dateBits = 0;
 		int weekDay = 0;
@@ -102,9 +95,7 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 			if (dateBits & kDay) {
 				auto coarse_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 				auto broken_down_time = std::localtime(&coarse_time);
-				char buf[1024];
-				std::strftime(buf,1024,"%c %Z",broken_down_time);
-				std::cout << buf << std::endl;
+
 				broken_down_time->tm_sec = 0;
 				broken_down_time->tm_min = 0;
 				broken_down_time->tm_hour = (dateBits & kNoon) ? 12 : 0;
@@ -126,9 +117,6 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 					broken_down_time->tm_mday+= dayOffset;
 				}
 
-				std::strftime(buf,1024,"%c %Z",broken_down_time);
-				std::cout << buf << std::endl;
-				//				std::cout << std::put_time(broken_down_time, "%c %Z") << "\n";
 				timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
 			}
 		} else { // no date bits found, we have a direct specification
@@ -142,17 +130,10 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 				                    &(broken_down_time.tm_year),&(broken_down_time.tm_mon),&(broken_down_time.tm_mday),
 				                    &(broken_down_time.tm_hour),&(broken_down_time.tm_min),&(broken_down_time.tm_sec));
 				if (items >= 3) { // we have y/m/d
-					char buf[1024];
-					std::strftime(buf,1024,"%c %Z",&broken_down_time);
-					std::cout << buf << std::endl;
 					broken_down_time.tm_year -= 1900;
 					broken_down_time.tm_mon--;
 					broken_down_time.tm_isdst=-1;
-					std::strftime(buf,1024,"%c %Z",&broken_down_time);
-					std::cout << buf << std::endl;
 					timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
-					std::strftime(buf,1024,"%c %Z",&broken_down_time);
-					std::cout << buf << std::endl;
 				}
 			}
 		}
@@ -165,11 +146,10 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 		auto offsetString = aString.substr(offsetStringStart,offsetStringStop);
 		std::transform(offsetString.begin(), offsetString.end(), offsetString.begin(), ::tolower);
 
-		std::cout << "offset string is '" << offsetString << "'\n";
 		int months = 0;
 		int years = 0;
 		OptionParseDurationString(offset, offsetString, &months, &years);
-		std::cout << "offset is " << offset.count() << " " << months << " months, " << years << " years\n";
+
 		if (offsetIsNegative) {
 			timePoint -= offset;
 		} else {

@@ -11,7 +11,7 @@ IF(BUILD_SHARED_LIBS)
 ENDIF(BUILD_SHARED_LIBS)
 INSTALL(
 	FILES
-	include/Options.h include/OptionsChono.h include/OptionsWithForeignParser.h include/OptionsForTApplication.h
+	include/Options.h include/OptionsChrono.h include/OptionsWithForeignParser.h include/OptionsForTApplication.h
 	DESTINATION
 	include)
 

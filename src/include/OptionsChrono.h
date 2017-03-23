@@ -31,9 +31,9 @@ template <class Rep, class Period> void OptionParseDurationString(std::chrono::d
 			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * 24 * number));
 		} else if (unit.find("hour") != std::string::npos) {
 			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * number));
-		} else if (unit.find("minute") != std::string::npos) {
+		} else if (unit.find("min") != std::string::npos) {
 			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(60 * number));
-		} else if (unit.find("second") != std::string::npos) {
+		} else if (unit.find("sec") != std::string::npos) {
 			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(number));
 		}
 	}

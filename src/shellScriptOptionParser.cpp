@@ -85,6 +85,8 @@ int main(int argc, const char *argv[]) {
 		          "Option sytax is:\n"
 		          "[export] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
+			        "\tfor durations the type 'seconds' is provided\n"
+			        "\tfor time stamps the type 'date' is provided\n"
 		          "\tshortOpt is the one-letter variant, use '-' to have none\n"
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
 		          "\tthe rest of the line is the description\n"

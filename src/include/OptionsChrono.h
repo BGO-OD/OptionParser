@@ -81,6 +81,18 @@ namespace options {
 			OptionParseDurationString(lValue, buf);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
+			if (! lRange.empty()) {
+				aStream << "# allowed range is";
+				if (lRange.size() == 2) {
+					aStream << " [" << lRange[0].count() << ", " << lRange[0].count() << "]\n";
+				} else {
+					for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+						aStream << it->count() << "\n";
+					}
+					aStream << "\n";
+				}
+			}
+
 		}
 		virtual bool fCheckRange(std::ostream& aLogStream) const {
 			if (lRange.empty()) {
@@ -163,6 +175,17 @@ namespace options {
 			lValue = fParseTimePointString(buf);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
+			if (! lRange.empty()) {
+				aStream << "# allowed range is";
+				if (lRange.size() == 2) {
+					aStream << " [" << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << ", " << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << "]\n";
+				} else {
+					for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+						aStream << std::chrono::duration<double>(it->time_since_epoch()).count() << "\n";
+					}
+					aStream << "\n";
+				}
+			}
 		}
 		virtual bool fCheckRange(std::ostream& aLogStream) const {
 			if (lRange.empty()) {

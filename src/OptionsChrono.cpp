@@ -128,7 +128,8 @@ namespace options {
 					timePoint =  std::chrono::system_clock::from_time_t(0) +
 					             std::chrono::duration_cast<valueType::duration>(std::chrono::duration<double>(seconds));
 				} else {
-					std::tm broken_down_time = {};
+					std::tm broken_down_time;
+					memset(&broken_down_time, 0, sizeof(broken_down_time));
 					auto items = sscanf(pointString.c_str(), "%d/%d/%d %d:%d:%d",
 					                    &(broken_down_time.tm_year), &(broken_down_time.tm_mon), &(broken_down_time.tm_mday),
 					                    &(broken_down_time.tm_hour), &(broken_down_time.tm_min), &(broken_down_time.tm_sec));

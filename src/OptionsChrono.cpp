@@ -5,6 +5,40 @@
 
 namespace options {
 
+	std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths, int* aYears) {
+		double number;
+		aStream >> number;
+		std::string unit;
+		aStream >> unit;
+		std::transform(unit.begin(), unit.end(), unit.begin(), ::tolower);
+		if (unit.find("year") != std::string::npos) {
+			if (aYears) {
+				*aYears = number;
+				return std::chrono::duration<double>::zero();
+			} else {
+				return std::chrono::duration<double>(31557500 * number);
+			}
+		} else if (unit.find("month") != std::string::npos) {
+			if (aMonths) {
+				*aMonths = number;
+				return std::chrono::duration<double>::zero();
+			} else {
+				return std::chrono::duration<double>(2629800 * number);
+			}
+		} else if (unit.find("week") != std::string::npos) {
+			return std::chrono::duration<double>(3600 * 24 * 7 * number);
+		} else if (unit.find("day") != std::string::npos) {
+			return std::chrono::duration<double>(3600 * 24 * number);
+		} else if (unit.find("hour") != std::string::npos) {
+			return std::chrono::duration<double>(3600 * number);
+		} else if (unit.find("min") != std::string::npos) {
+			return std::chrono::duration<double>(60 * number);
+		} else if (unit.find("sec") != std::string::npos) {
+			return std::chrono::duration<double>(number);
+		}
+		// assume seconds if no unit given
+		return std::chrono::duration<double>(number);
+	}
 
 //options::single<std::chrono::time_point<std::chrono::system_clock>>::valueType
 	std::chrono::system_clock::time_point options::single<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {

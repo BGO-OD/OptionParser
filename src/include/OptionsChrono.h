@@ -6,38 +6,13 @@
 #include <type_traits>
 
 namespace options {
+	std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths = nullptr, int* aYears = nullptr);
 
 	template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
 		std::stringstream sbuf(aString);
 		aDuration = aDuration.zero();
 		while (!sbuf.eof()) {
-			double number;
-			sbuf >> number;
-			std::string unit;
-			sbuf >> unit;
-			if (unit.find("year") != std::string::npos) {
-				if (aYears) {
-					*aYears = number;
-				} else {
-					aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(31557500 * number));
-				}
-			} else if (unit.find("month") != std::string::npos) {
-				if (aMonths) {
-					*aMonths = number;
-				} else {
-					aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(2629800 * number));
-				}
-			} else if (unit.find("week") != std::string::npos) {
-				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * 24 * 7 * number));
-			} else if (unit.find("day") != std::string::npos) {
-				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * 24 * number));
-			} else if (unit.find("hour") != std::string::npos) {
-				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(3600 * number));
-			} else if (unit.find("min") != std::string::npos) {
-				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(60 * number));
-			} else if (unit.find("sec") != std::string::npos) {
-				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(std::chrono::duration<double>(number));
-			}
+			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(parseNumberAndUnit(sbuf, aMonths, aYears));
 		}
 	};
 

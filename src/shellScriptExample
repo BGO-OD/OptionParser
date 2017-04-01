@@ -25,7 +25,7 @@ bool v verbose be verbose
 list l list list of strings
 default string1
 default string2
-seconds s secs a time range
+milliseconds s msecs a time range
 date d date a time point
 minusMinusSpecialTreatment ParametersAfterMinuMinus
 minUnusedParameters 2

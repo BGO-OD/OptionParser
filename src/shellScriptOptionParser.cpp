@@ -86,6 +86,8 @@ int main(int argc, const char *argv[]) {
 		          "[export] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
 		          "\tfor durations the type 'seconds' is provided\n"
+		          "\tfor short durations the type 'milliseconds' is provided\n"
+		          "\tfor very short durations the type 'microseconds' is provided\n"
 		          "\tfor time stamps the type 'date' is provided\n"
 		          "\tshortOpt is the one-letter variant, use '-' to have none\n"
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
@@ -132,6 +134,10 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<bool>(std::cin, false));
 			} else if (keyWord == "seconds") {
 				options.push_back(fOptionFromStream<std::chrono::duration<long long>>(std::cin, std::chrono::seconds(1)));
+			} else if (keyWord == "milliseconds") {
+				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::ratio<1, 1000>>>(std::cin, std::chrono::seconds(1)));
+			} else if (keyWord == "microseconds") {
+				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::ratio<1, 1000000>>>(std::cin, std::chrono::seconds(1)));
 			} else if (keyWord == "date") {
 				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now()));
 			} else if (keyWord == "list") {

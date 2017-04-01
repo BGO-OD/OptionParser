@@ -152,7 +152,7 @@ namespace options {
 
 			int months = 0;
 			int years = 0;
-			OptionParseDurationString(offset, offsetString, &months, &years);
+			parseDurationString(offset, offsetString, &months, &years);
 
 			if (offsetIsNegative) {
 				timePoint -= offset;

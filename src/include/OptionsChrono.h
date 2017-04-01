@@ -7,7 +7,7 @@
 
 namespace options {
 
-	template <class Rep, class Period> void OptionParseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
+	template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
 		std::stringstream sbuf(aString);
 		aDuration = aDuration.zero();
 		while (!sbuf.eof()) {
@@ -72,12 +72,12 @@ namespace options {
 			std::string buf;
 			std::getline(aStream, buf);
 			valueType value;
-			OptionParseDurationString(value, buf);
+			parseDurationString(value, buf);
 			fAddToRange(value);
 		}
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			std::getline(aStream, lOriginalString);
-			OptionParseDurationString(lValue, lOriginalString);
+			parseDurationString(lValue, lOriginalString);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
 			if (! lRange.empty()) {
@@ -121,7 +121,7 @@ namespace options {
 		}
 		virtual void fSetMe(const char *aArg, const char* aSource) {
 			lOriginalString = aArg;
-			OptionParseDurationString(lValue, aArg);
+			parseDurationString(lValue, aArg);
 			fSetSource(aSource);
 		}
 		operator const valueType () const {

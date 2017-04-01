@@ -1,0 +1,24 @@
+#!/bin/bash
+# update C++ source code that uses the option parser after
+# API changes
+
+# get this script with absolute path
+thisScript="$(cd $(dirname $0); pwd)/$(basename $0)"
+
+export ignoreList="${ignoreList}$((cat .gitignore 2> /dev/null;svn propget svn:ignore 2> /dev/null;svn propget svn:global-ignores 2> /dev/null) | awk '{sub("/$","");print}')"
+
+for fileOrDir in "$@"; do
+    if [ -d "${fileOrDir}" ]; then
+	(cd "${fileOrDir}"; ${thisScript} $(ls | grep -v -f <(echo ${ignoreList} | tr ' ' '\n')))
+    elif [ -f "${fileOrDir}" ]; then
+	if expr "${fileOrDir}" : '.\+\.\(cpp\|C\|h\|hpp\)$'; then
+	    echo "processing '${fileOrDir}'"
+	    ed "${fileOrDir}" <<EOF
+s/\([^[:alnum:]]\)Option\([^[:alnum:]]\)/\1option::single\2/g
+s/\([^[:alnum:]]\)OptionContainer\([^[:alnum:]]\)/\1option::container\2/g
+EOF
+	else
+	    echo "ignoring '${fileOrDir}'"
+	fi
+    fi
+done

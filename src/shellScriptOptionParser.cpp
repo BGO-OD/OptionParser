@@ -21,7 +21,7 @@
 #include <limits>
 #include <unistd.h>
 
-template <typename T> Option<T>* fOptionFromStream(std::istream &aStream, T defaultValue) {
+template <typename T> options::single<T>* fOptionFromStream(std::istream &aStream, T defaultValue) {
 	char shortName;
 	std::string longName;
 	std::string description;
@@ -34,9 +34,9 @@ template <typename T> Option<T>* fOptionFromStream(std::istream &aStream, T defa
 	if (shortName == '-') {
 		shortName = '\0';
 	}
-	return new Option<T>(shortName, longName.c_str(), description.c_str(), defaultValue);
+	return new options::single<T>(shortName, longName.c_str(), description.c_str(), defaultValue);
 }
-template <typename T> OptionContainer<T>* fContainerOptionFromStream(std::istream &aStream) {
+template <typename T> options::container<T>* fContainerOptionFromStream(std::istream &aStream) {
 	char shortName;
 	std::string longName;
 	std::string description;
@@ -49,7 +49,7 @@ template <typename T> OptionContainer<T>* fContainerOptionFromStream(std::istrea
 	if (shortName == '-') {
 		shortName = '\0';
 	}
-	return new OptionContainer<T>(shortName, longName.c_str(), description.c_str());
+	return new options::container<T>(shortName, longName.c_str(), description.c_str());
 }
 
 int main(int argc, const char *argv[]) {
@@ -107,8 +107,8 @@ int main(int argc, const char *argv[]) {
 		return (1);
 	}
 
-	std::vector<OptionBase*> options;
-	std::set<const OptionBase*> exportedOptions;
+	std::vector<options::base*> options;
+	std::set<const options::base*> exportedOptions;
 	std::string minusMinusSpecialTreatment = "";
 	std::vector<std::string> searchPath({"/etc/", "~/.", "~/.config/", "./."});
 
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[]) {
 				std::string buffer;
 				std::getline(std::cin, buffer);
 				std::vector<char> buffer2(buffer.length() + 1);
-				OptionParser::fReCaptureEscapedString(buffer2.data(), buffer.c_str());
+				options::parser::fReCaptureEscapedString(buffer2.data(), buffer.c_str());
 				searchPath.push_back(buffer2.data());
 			} else if (keyWord == "trailer:") {
 				break;
@@ -184,7 +184,7 @@ int main(int argc, const char *argv[]) {
 		trailer += "\n";
 	}
 
-	OptionParser parser(description.c_str(), trailer.c_str(), searchPath);
+	options::parser parser(description.c_str(), trailer.c_str(), searchPath);
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
 	parser.fSetExecutableName(argv[1]);

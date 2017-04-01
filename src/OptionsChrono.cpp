@@ -6,8 +6,8 @@
 namespace options {
 
 
-//Option<std::chrono::time_point<std::chrono::system_clock>>::valueType
-std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
+//options::single<std::chrono::time_point<std::chrono::system_clock>>::valueType
+std::chrono::system_clock::time_point options::single<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
 	std::string::size_type pointStringStart = 0;
 	std::string::size_type pointStringStop = std::string::npos;
 	std::string::size_type offsetStringStart = std::string::npos;

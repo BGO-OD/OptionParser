@@ -13,10 +13,25 @@ for fileOrDir in "$@"; do
     elif [ -f "${fileOrDir}" ]; then
 	if expr "${fileOrDir}" : '.\+\.\(cpp\|C\|h\|hpp\)$'; then
 	    echo "processing '${fileOrDir}'"
-	    ed "${fileOrDir}" <<EOF
-s/\([^[:alnum:]_]\)Option\([^[:alnum:]_]\)/\1options::single\2/g
-s/\([^[:alnum:]_]\)OptionContainer\([^[:alnum:]_]\)/\1options::container\2/g
-w
+	    ed -l -v "${fileOrDir}" <<EOF
+,s/\<Option[[:space:]]*</options::single</g
+,w
+EOF
+	    ed -l -v "${fileOrDir}" <<EOF
+,s/\<OptionContainer[[:space:]]*</options::container</g
+,w
+EOF
+	    ed -l -v "${fileOrDir}" <<EOF
+,s/\<OptionMap[[:space:]]*</options::map</g
+,w
+EOF
+	    ed -l -v "${fileOrDir}" <<EOF
+,s/\<OptionBase\>/options::base/g
+,w
+EOF
+	    ed -l -v "${fileOrDir}" <<EOF
+,s/\<OptionParser\>/options::parser/g
+,w
 EOF
 	else
 	    echo "ignoring '${fileOrDir}'"

@@ -1,5 +1,6 @@
 #include "OptionsForTApplication.h"
 
+namespace options {
 OptionsForTApplication::OptionsForTApplication(const char *aName) : ForeignApplicationOptions(aName) {
 	new ForeignOption(this, 'b', "bForTApplication", "run in batch mode without graphics", 0, "-b");
 	new ForeignOption(this, 'x', "xForTApplication", "exit on exception", 0, "-x");
@@ -10,3 +11,4 @@ OptionsForTApplication::OptionsForTApplication(const char *aName) : ForeignAppli
 	new ForeignOption(this, '\0', "config", "print ./configure options", 0, "-config");
 	new ForeignOption(this, '\0', "memstat", "run with memory usage monitoring", 0, "-memstat");
 }
+} // end of namespace options

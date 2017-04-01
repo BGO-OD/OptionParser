@@ -5,27 +5,27 @@
 
 
 int main(int argc, const char *argv[]) {
-	Option<int> number('N', "number", "some number", 0);
-	Option<int> number2('k', "kumber", "some other number", 0, {0, 3, 3});
-	OptionMap<int, std::vector<std::pair<std::string, int> > > numbers('m', "numbers", "several numbers");
-	OptionMap<std::string, std::list<std::pair<std::string, std::string> > > strings('s', "strings", "several strings");
-	Option<const char *>cs('c', "cstring", "a c string", nullptr, {"bla", "blubb"});
-	Option<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
-	OptionContainer<double> dnums('d', "doubles", "double numbers");
-	OptionContainer<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
-	OptionContainer<std::string, std::list<std::string>> stringS('X', "liststring", "list of std::strings");
-	Option<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
-	Option<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
-	Option<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
+	options::single<int> number('N', "number", "some number", 0);
+	options::single<int> number2('k', "kumber", "some other number", 0, {0, 3, 3});
+	options::map<int, std::vector<std::pair<std::string, int> > > numbers('m', "numbers", "several numbers");
+	options::map<std::string, std::list<std::pair<std::string, std::string> > > strings('s', "strings", "several strings");
+	options::single<const char *>cs('c', "cstring", "a c string", nullptr, {"bla", "blubb"});
+	options::single<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
+	options::container<double> dnums('d', "doubles", "double numbers");
+	options::container<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
+	options::container<std::string, std::list<std::string>> stringS('X', "liststring", "list of std::strings");
+	options::single<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
+	options::single<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
+	options::single<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
 
-	Option<std::chrono::system_clock::time_point> date('\0', "date", "a date");
+	options::single<std::chrono::system_clock::time_point> date('\0', "date", "a date");
 
 	cs.fForbid(&Cs);
 	Cs.fForbid(&cs);
 
-	OptionsForTApplication TApplicationOptions(argv[0]);
+	options::OptionsForTApplication TApplicationOptions(argv[0]);
 
-	OptionParser parser("option parsing example");
+	options::parser parser("option parsing example");
 
 	parser.fRequire(&number);
 

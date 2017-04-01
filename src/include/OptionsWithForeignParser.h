@@ -31,7 +31,7 @@ class ForeignApplicationOptions {
 };
 
 /// special type of option that is not really parsed but used to feed an additional option parser
-class ForeignOption : public OptionBase {
+class ForeignOption : public base {
   private:
 	std::string lCanonical;
 	std::string lArg;

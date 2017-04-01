@@ -1,5 +1,6 @@
 #include "OptionsWithForeignParser.h"
 #include <limits>
+namespace options {
 /// construct an object of typs ForeignApplicationOptions
 
 /// in a derived class the constructor should generete via new the
@@ -44,13 +45,13 @@ int * ForeignApplicationOptions::Argc() {
 	return &lArgc;
 }
 
-/// \copydetails OptionBase::OptionBase()
+/// \copydetails options::base::options::base()
 /// \param [in] aForeignApplication required pointer to the ForeignApplicationOptions object that this option shall belong to
 /// \param [in] aCanonicalForm canonical form of the option, including leading - signs to be given to the other parser
 ForeignOption::ForeignOption(ForeignApplicationOptions* aForeignApplication,
                              char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs,
                              const char *aCanonicalForm) :
-	OptionBase(aShortName, aLongName, aExplanation, aNargs),
+	base(aShortName, aLongName, aExplanation, aNargs),
 	lCanonical(aCanonicalForm), lOptions(aForeignApplication) {
 }
 ForeignOption::~ForeignOption() {}
@@ -83,3 +84,4 @@ void ForeignOption::fAddDefaultFromStream(std::istream& aStream) {
 void ForeignOption::fWriteValue(std::ostream& aStream) const {
 	aStream << lArg;
 }
+} // end of namespace options

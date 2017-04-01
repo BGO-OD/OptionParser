@@ -34,15 +34,15 @@ namespace options {
 /// Only the templated classes that derive from this base class can contain values.
 /// This base class only contains members that are generally usable and do not depend
 /// on the type of the option.
-class OptionBase {
-	friend class OptionParser;
+class base {
+	friend class parser;
   protected:
-	static std::map<std::string, OptionBase*>& fGetOptionMap() {
-		static std::map<std::string, OptionBase*> gOptions;
+	static std::map<std::string, base*>& fGetOptionMap() {
+		static std::map<std::string, base*> gOptions;
 		return gOptions;
 	};
-	static std::map<char, OptionBase*>& fGetShortOptionMap() {
-		static std::map<char, OptionBase*> gShortOptions;
+	static std::map<char, base*>& fGetShortOptionMap() {
+		static std::map<char, base*> gShortOptions;
 		return gShortOptions;
 	};
   protected:
@@ -53,8 +53,8 @@ class OptionBase {
 	short lNargs;
 	std::vector<std::string>* lPreserveWorthyStuff;
 
-	std::vector<const OptionBase*> lRequiredOptions;
-	std::vector<const OptionBase*> lForbiddenOptions;
+	std::vector<const base*> lRequiredOptions;
+	std::vector<const base*> lForbiddenOptions;
 	virtual void fSetMe(const char *aArg, const char *aSource) = 0;
 	virtual void fSetSource(const char *aSource);
   private:
@@ -67,8 +67,8 @@ class OptionBase {
 	void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
 
   public:
-	OptionBase(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
-	virtual ~OptionBase();
+	base(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
+	virtual ~base();
 
 	/// special for use in the shellScriptOptionParser
 	virtual void fAddToRangeFromStream(std::istream& aStream) = 0; ///< read values from aStream and add them to the range vector
@@ -77,9 +77,9 @@ class OptionBase {
 	/// write textual representation of value to a std::ostream
 	virtual void fWriteValue(std::ostream& aStream) const = 0;
 	/// require aOtherOption when this option is set
-	virtual void fRequire(const OptionBase* aOtherOption);
+	virtual void fRequire(const base* aOtherOption);
 	/// add vector of other options, particlularly nice for use with initializer list
-	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
+	virtual void fRequire(std::vector<const base*> aOtherOptions);
 
 	/// add all options from the pair of iterators [aBegin,aEnd) to the list of required options
 	template <typename InputIt> void fRequire(InputIt aBegin, InputIt aEnd) {
@@ -88,9 +88,9 @@ class OptionBase {
 		}
 	}
 	/// forbid aOtherOption when this option is set
-	virtual void fForbid(const OptionBase* aOtherOption);
+	virtual void fForbid(const base* aOtherOption);
 	/// add vector of other options, particlularly nice for use with initializer list
-	virtual void fForbid(std::vector<const OptionBase*> aOtherOptions);
+	virtual void fForbid(std::vector<const base*> aOtherOptions);
 	/// add all options from the pair of iterators [aBegin,aEnd) to the list of forbidden options
 	template <typename InputIt> void fForbid(InputIt aBegin, InputIt aEnd) {
 		for (auto it = aBegin; it != aEnd; ++it) {
@@ -115,16 +115,16 @@ class OptionBase {
 /// together with the list of search paths for config files the option parser
 /// can then be used to parse the command line options.
 
-class OptionParser {
+class parser {
   protected:
-	static OptionParser* gParser;
+	static parser* gParser;
 	const char *lDescription;
 	const char *lTrailer;
 	const std::vector<std::string> lSearchPaths;
 	std::vector<std::string> lUnusedOptions;
 	std::vector<std::string> lStuffAfterMinusMinus;
 
-	std::set<const OptionBase*> lRequiredOptions;
+	std::set<const base*> lRequiredOptions;
 
 	bool lMinusMinusJustEndsOptions;
 	std::ostream *lMessageStream;
@@ -136,11 +136,11 @@ class OptionParser {
 	char lSecondaryAssignment;
 
 	void fReadConfigFiles();
-	void fPrintOptionHelp(std::ostream& aMessageStream, const OptionBase& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
+	void fPrintOptionHelp(std::ostream& aMessageStream, const base& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
 	void fCheckConsistency();
   public:
-	OptionParser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
-	~OptionParser();
+	parser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
+	~parser();
 	void fSetMessageStream(std::ostream* aStream);
 	void fSetErrorStream(std::ostream* aStream);
 	std::ostream& fGetErrorStream() const;
@@ -153,8 +153,8 @@ class OptionParser {
 	char fGetSecondaryAssignment() const {
 		return lSecondaryAssignment;
 	}
-	virtual void fRequire(const OptionBase* aOtherOption);
-	virtual void fRequire(std::vector<const OptionBase*> aOtherOptions);
+	virtual void fRequire(const base* aOtherOption);
+	virtual void fRequire(std::vector<const base*> aOtherOptions);
 
 
 	/// parse the options on the command line
@@ -169,7 +169,7 @@ class OptionParser {
 
 
 	/// get the only allwed instance of the option parser.
-	static OptionParser* fGetInstance();
+	static parser* fGetInstance();
 
 	/// print help, normally automatically called by the --help option or in case of problems.
 	void fHelp();
@@ -189,17 +189,17 @@ class OptionParser {
 
 
 /// generic option class with any type that can be used with std::istram and std::ostream
-template <typename T> class Option : public OptionBase {
+template <typename T> class single : public base {
   private:
 	T lValue;
 	std::vector<T> lRange;
   public:
-	/// \brief construct an object of Option<T>
-	/// \copydetails OptionBase::OptionBase() This generic case always demands one parameter for the option!
+	/// \brief construct an object of single<T>
+	/// \copydetails base::base() This generic case always demands one parameter for the option!
 	/// \param [in] aDefault default value that the option has if not set otherwise
 	/// \param [in] aRange range of allowes values, can be given as initializer list. If only two values are given then [first,last] is the allowd interval.
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
-		OptionBase(aShortName, aLongName, aExplanation, 1),
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
+		base(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
@@ -290,13 +290,13 @@ template <typename T> class Option : public OptionBase {
 };
 
 /// class specialisation for options of type bool
-template <> class Option<bool> : public OptionBase {
+template <> class single<bool> : public base {
   private:
 	bool lValue;
 	bool lDefault;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, bool aDefault = false) :
-		OptionBase(aShortName, aLongName, aExplanation, 0),
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, bool aDefault = false) :
+		base(aShortName, aLongName, aExplanation, 0),
 		lValue(aDefault), lDefault(aDefault) {
 	}
 	virtual void fWriteValue(std::ostream& aStream) const;
@@ -316,13 +316,13 @@ template <> class Option<bool> : public OptionBase {
 };
 
 /// template specialisation for options that represent simple c-style strings
-template <> class Option<const char *> : public OptionBase {
+template <> class single<const char *> : public base {
   protected:
 	const char *lValue;
 	std::vector<const char*> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
-	virtual ~Option();
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
+	virtual ~single();
 	virtual void fAddToRange(const char *aValue);
 	virtual void fAddToRange(const std::vector<const char *>& aRange);
 	/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
@@ -345,12 +345,12 @@ template <> class Option<const char *> : public OptionBase {
 	}
 };
 /// template specialisation for options that are std::strings
-template <> class Option<std::string> : public OptionBase {
+template <> class single<std::string> : public base {
   protected:
 	std::string lValue;
 	std::vector<std::string> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault = "", const std::vector<std::string>& aRange = {});
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault = "", const std::vector<std::string>& aRange = {});
 	virtual void fAddToRange(const std::string& aValue);
 	/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
 	template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
@@ -377,12 +377,12 @@ template <> class Option<std::string> : public OptionBase {
 
 /// This class is an intermediate helper class for options that
 /// are map-based. It is not to be used directly.
-template <typename T> class OptionBaseForMap: public OptionBase {
+template <typename T> class baseForMap: public base {
   protected:
 	std::map<const T*, std::string> lSources;
   public:
-	OptionBaseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-		OptionBase(aShortName, aLongName, aExplanation, aNargs) {};
+	baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
+		base(aShortName, aLongName, aExplanation, aNargs) {};
 	void fAddSource(const T* aValueLocation, std::string aSource) {
 		lSources.insert(std::make_pair(aValueLocation, aSource));
 	};
@@ -401,24 +401,24 @@ template <typename T> class OptionBaseForMap: public OptionBase {
 
 /// template for map-based options. The map key is always a std::string but the mapped value is arbitrary.
 /// the container is by defalt a std::map. It is assumed that the container always containds std::pairs
-/// of a std::string as first and the valye type T as second, e.g. a
+/// of a std::string as first and the value type T as second, e.g. a
 /// std::list<std::pair<std::string,int>> which, in contrast to the map would preserve the order in
 /// which the items were specified.
-template <typename T, typename Container = std::map<std::string, T>> class OptionMap: public OptionBaseForMap<T>, public Container {
+template <typename T, typename Container = std::map<std::string, T>> class map: public baseForMap<T>, public Container {
   public:
-	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-		OptionBaseForMap<T>(aShortName, aLongName, aExplanation, 1) {
+	map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
 	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << aPrefix << this->lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+			aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
 		for (const auto& it : *this) {
 			auto source = this->fGetSource(&(it.second));
-			aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first <<  OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
+			aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first <<  parser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
 			if (source) {
 				aStream << "# set from " << source << "\n";
 			}
@@ -434,16 +434,16 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 			aStream << "\"\"";
 		} else {
 			for (const auto& it : *this) {
-				aStream << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment() << it.second << " ";
+				aStream << it.first << parser::fGetInstance()->fGetSecondaryAssignment() << it.second << " ";
 			}
 		}
 	}
 	virtual void fSetMe(const char *aArg, const char* aSource) {
 		std::string s(aArg);
-		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
+		auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 		if (dividerPosition == std::string::npos) { // not found, complain!
-			OptionParser::fGetInstance()->fGetErrorStream() << "The option " << this->fGetLongName() << " requires a '" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
-			OptionParser::fGetInstance()->fComplainAndLeave();
+			parser::fGetInstance()->fGetErrorStream() << "The option " << this->fGetLongName() << " requires a '" << parser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
+			parser::fGetInstance()->fComplainAndLeave();
 		}
 		auto name = s.substr(0, dividerPosition);
 		std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
@@ -461,23 +461,23 @@ template <typename T, typename Container = std::map<std::string, T>> class Optio
 
 
 /// template specialisation for maps where the values are also std::strings
-template <typename Container> class OptionMap<std::string, Container>: public OptionBaseForMap<std::string>, public Container {
+template <typename Container> class map<std::string, Container>: public baseForMap<std::string>, public Container {
   public:
-	OptionMap(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-		OptionBaseForMap<std::string>(aShortName, aLongName, aExplanation, 1) {
+	map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		baseForMap<std::string>(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
 
 	virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 		if (this->empty()) {
-			aStream << aPrefix << this->lLongName << "=key" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
+			aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 		}
 		for (const auto & it : *this) {
 			auto source = this->fGetSource(&(it.second));
 
-			aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first << OptionParser::fGetInstance()->fGetSecondaryAssignment();
-			OptionParser::fPrintEscapedString(aStream, it.second.c_str());
+			aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first << parser::fGetInstance()->fGetSecondaryAssignment();
+			parser::fPrintEscapedString(aStream, it.second.c_str());
 			aStream << "\n";
 			if (source) {
 				aStream << "# set from " << source << "\n";
@@ -492,21 +492,21 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 				if (it != this->begin()) {
 					aStream << ',';
 				}
-				aStream << it->first << OptionParser::fGetInstance()->fGetSecondaryAssignment() << it->second << " ";
+				aStream << it->first << parser::fGetInstance()->fGetSecondaryAssignment() << it->second << " ";
 			}
 		}
 	};
 
 	virtual void fSetMe(const char *aArg, const char *aSource) {
 		std::string s(aArg);
-		auto dividerPosition = s.find_first_of(OptionParser::fGetInstance()->fGetSecondaryAssignment());
+		auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 		if (dividerPosition == std::string::npos) { // not found, complain!
-			OptionParser::fGetInstance()->fGetErrorStream() << "The option " << fGetLongName() << " requires a '" << OptionParser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
-			OptionParser::fGetInstance()->fComplainAndLeave();
+			parser::fGetInstance()->fGetErrorStream() << "The option " << fGetLongName() << " requires a '" << parser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
+			parser::fGetInstance()->fComplainAndLeave();
 		}
 		auto name = s.substr(0, dividerPosition);
 		auto buf = new char[s.length() - dividerPosition];
-		OptionParser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
+		parser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
 		auto result = (*this).insert(this->end(), std::make_pair(name, buf));
 		fAddSource(&(result->second), aSource);
 	};
@@ -521,12 +521,12 @@ template <typename Container> class OptionMap<std::string, Container>: public Op
 
 /// This class is an intermediate helper class for options that
 /// are container-based. It is not to be used directly.
-class OptionBaseForContainer: public OptionBase {
+class baseForContainer: public base {
   protected:
 	std::vector<std::string> lSources;
   public:
-	OptionBaseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-		OptionBase(aShortName, aLongName, aExplanation, aNargs) {};
+	baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
+		base(aShortName, aLongName, aExplanation, aNargs) {};
 	virtual bool fIsSet() const {
 		return ! lSources.empty();
 	};
@@ -535,10 +535,10 @@ class OptionBaseForContainer: public OptionBase {
 /// template for container-based options.
 /// the container is by defalt a std::vector.
 /// If a non-vector container is used it needs to have a push_back.
-template <typename T, typename Container = std::vector<T>> class OptionContainer: public OptionBaseForContainer, public Container {
+template <typename T, typename Container = std::vector<T>> class container: public baseForContainer, public Container {
   public:
-	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-		OptionBaseForContainer(aShortName, aLongName, aExplanation, 1) {
+	container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		baseForContainer(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -594,10 +594,10 @@ template <typename T, typename Container = std::vector<T>> class OptionContainer
 
 
 /// template specialisation for container based options that contain const char* strings
-template <typename Container> class OptionContainer<const char *, Container>: public OptionBaseForContainer, public Container {
+template <typename Container> class container<const char *, Container>: public baseForContainer, public Container {
   public:
-	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-		OptionBaseForContainer(aShortName, aLongName, aExplanation, 1) {
+	container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		baseForContainer(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 	virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -609,7 +609,7 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 		auto it2 = lSources.begin();
 		for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
 			aStream << (it2->empty() ? aPrefix : "") << this->lLongName << "=";
-			OptionParser::fPrintEscapedString(aStream, *it);
+			parser::fPrintEscapedString(aStream, *it);
 			aStream << "\n";
 			if (!it2->empty()) {
 				aStream << "# set from " << *it2 << "\n";
@@ -629,13 +629,13 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 				if (it != this->begin()) {
 					aStream << ',';
 				}
-				OptionParser::fPrintEscapedString(aStream, *it);
+				parser::fPrintEscapedString(aStream, *it);
 			}
 		}
 	}
 	virtual void fSetMe(const char *aArg, const char *aSource) {
 		auto buf = new char[strlen(aArg) + 1];
-		OptionParser::fReCaptureEscapedString(buf, aArg);
+		parser::fReCaptureEscapedString(buf, aArg);
 		this->push_back(buf);
 		lSources.push_back(aSource ? aSource : "");
 	}
@@ -649,16 +649,16 @@ template <typename Container> class OptionContainer<const char *, Container>: pu
 };
 
 /// template specialisation for container based options that contain std::strings
-template <typename Container> class OptionContainer<std::string, Container>: public OptionBaseForContainer, public Container {
+template <typename Container> class container<std::string, Container>: public baseForContainer, public Container {
   public:
-	OptionContainer(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-		OptionBaseForContainer(aShortName, aLongName, aExplanation, 1) {
+	container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+		baseForContainer(aShortName, aLongName, aExplanation, 1) {
 	}
 	virtual void fAddToRangeFromStream(std::istream& aStream) {
 		std::string buf1;
 		std::getline(aStream, buf1);
 		auto buf2 = new char[buf1.length() + 1];
-		OptionParser::fReCaptureEscapedString(buf2, buf1.c_str());
+		parser::fReCaptureEscapedString(buf2, buf1.c_str());
 		//	lRange.push_back(buf2);
 	};
 	virtual void fAddDefaultFromStream(std::istream& aStream) {
@@ -674,7 +674,7 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 		auto it2 = lSources.begin();
 		for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
 			aStream << (it2->empty() ? aPrefix : "") << this->lLongName << "=";
-			OptionParser::fPrintEscapedString(aStream, it->c_str());
+			parser::fPrintEscapedString(aStream, it->c_str());
 			aStream << "\n";
 			if (!it2->empty()) {
 				aStream << "# set from " << *it2 << "\n";
@@ -694,13 +694,13 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 				if (it != this->begin()) {
 					aStream << ',';
 				}
-				OptionParser::fPrintEscapedString(aStream, it->c_str());
+				parser::fPrintEscapedString(aStream, it->c_str());
 			}
 		}
 	}
 	virtual void fSetMe(const char* aArg, const char *aSource) {
 		auto buf = new char[strlen(aArg) + 1];
-		OptionParser::fReCaptureEscapedString(buf, aArg);
+		parser::fReCaptureEscapedString(buf, aArg);
 		this->push_back(buf);
 		lSources.push_back(aSource ? aSource : "");
 	}

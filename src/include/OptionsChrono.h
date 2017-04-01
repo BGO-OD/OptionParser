@@ -42,15 +42,15 @@ template <class Rep, class Period> void OptionParseDurationString(std::chrono::d
 };
 
 /// template specialisation for options that are std::chrono::durations
-template <class Rep, class Period> class Option<std::chrono::duration<Rep, Period>> : public OptionBase {
+template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base {
   public:
 	typedef std::chrono::duration<Rep, Period> valueType;
   protected:
 	valueType lValue;
 	std::vector<valueType> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}):
-		OptionBase(aShortName, aLongName, aExplanation, 1),
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}):
+		base(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
@@ -121,15 +121,15 @@ template <class Rep, class Period> class Option<std::chrono::duration<Rep, Perio
 
 
 /// template specialisation for options that are std::chrono::time_point<std::chrono::system_clock>
-template <> class Option<std::chrono::system_clock::time_point> : public OptionBase {
+template <> class single<std::chrono::system_clock::time_point> : public base {
   public:
 	typedef std::chrono::system_clock::time_point valueType;
   protected:
 	valueType lValue;
 	std::vector<valueType> lRange;
   public:
-	Option(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}):
-		OptionBase(aShortName, aLongName, aExplanation, 1),
+	single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}):
+		base(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
 		if (!aRange.empty()) {
 			fAddToRange(aRange);

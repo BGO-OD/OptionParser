@@ -42,7 +42,7 @@ namespace options {
 	};
 
 /// template specialisation for options that are std::chrono::durations
-	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base {
+	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base, public originalStringKeeper {
 	  public:
 		typedef std::chrono::duration<Rep, Period> valueType;
 	  protected:
@@ -76,9 +76,8 @@ namespace options {
 			fAddToRange(value);
 		}
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
-			std::string buf;
-			std::getline(aStream, buf);
-			OptionParseDurationString(lValue, buf);
+			std::getline(aStream, lOriginalString);
+			OptionParseDurationString(lValue, lOriginalString);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
 			if (! lRange.empty()) {
@@ -120,8 +119,10 @@ namespace options {
 		virtual void fWriteValue(std::ostream& aStream) const {
 			aStream << lValue.count();
 		}
-		virtual void fSetMe(const char *aArg, const char* /*aSource*/) {
+		virtual void fSetMe(const char *aArg, const char* aSource) {
+			lOriginalString = aArg;
 			OptionParseDurationString(lValue, aArg);
+			fSetSource(aSource);
 		}
 		operator const valueType () const {
 			return lValue;
@@ -133,7 +134,7 @@ namespace options {
 
 
 /// template specialisation for options that are std::chrono::time_point<std::chrono::system_clock>
-	template <> class single<std::chrono::system_clock::time_point> : public base {
+	template <> class single<std::chrono::system_clock::time_point> : public base, public originalStringKeeper {
 	  public:
 		typedef std::chrono::system_clock::time_point valueType;
 	  protected:
@@ -170,9 +171,8 @@ namespace options {
 			fAddToRange(fParseTimePointString(buf));
 		}
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
-			std::string buf;
-			std::getline(aStream, buf);
-			lValue = fParseTimePointString(buf);
+			std::getline(aStream, lOriginalString);
+			lValue = fParseTimePointString(lOriginalString);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
 			if (! lRange.empty()) {
@@ -215,8 +215,10 @@ namespace options {
 			aStream << std::fixed << std::chrono::duration<double>(lValue.time_since_epoch()).count();
 			aStream.flags(flags);
 		}
-		virtual void fSetMe(const char *aArg, const char* /*aSource*/) {
+		virtual void fSetMe(const char *aArg, const char* aSource) {
+			lOriginalString = aArg;
 			lValue = fParseTimePointString(aArg);
+			fSetSource(aSource);
 		}
 		operator const valueType () const {
 			return lValue;

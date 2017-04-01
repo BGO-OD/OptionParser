@@ -717,5 +717,12 @@ namespace options {
 
 	};
 
+	class originalStringKeeper {
+	  protected:
+		std::string lOriginalString;
+	  public:
+		void fWriteOriginalString(std::ostream& aStream) const;
+	};
+
 } // end of namespace options
 #endif

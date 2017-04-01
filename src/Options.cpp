@@ -362,7 +362,7 @@ namespace options {
 		*wp = '\0';
 	}
 
-/// construct an opbect of type base
+/// construct an object of type base
 
 /// The newluy created object is inserted into the maps sorted by long name and by short name,
 /// (short name only if it is not '\0')
@@ -423,7 +423,12 @@ namespace options {
 
 	void base::fWriteCfgLines(std::ostream & aStream, const char *aPrefix) const {
 		aStream << aPrefix << lLongName << "=";
-		fWriteValue(aStream);
+		auto asOriginalStringKeeper = dynamic_cast<const originalStringKeeper*>(this);
+		if (asOriginalStringKeeper) {
+			asOriginalStringKeeper->fWriteOriginalString(aStream);
+		} else {
+			fWriteValue(aStream);
+		}
 		aStream << "\n";
 	}
 
@@ -920,5 +925,9 @@ namespace options {
 	OptionWriteCfgFile OptionWriteCfgFile::gWriteCfgFile;
 	OptionReadCfgFile OptionReadCfgFile::gReadCfgFile;
 	OptionHelp OptionHelp::gHelp;
+
+	void originalStringKeeper::fWriteOriginalString(std::ostream& aStream) const {
+		aStream << lOriginalString;
+	}
 
 } // end of namespace options

@@ -3,6 +3,9 @@
 #include <iostream>
 #include <algorithm>
 
+namespace options {
+
+
 //Option<std::chrono::time_point<std::chrono::system_clock>>::valueType
 std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
 	std::string::size_type pointStringStart = 0;
@@ -172,3 +175,5 @@ std::chrono::system_clock::time_point Option<std::chrono::system_clock::time_poi
 	}
 	return timePoint;
 }
+
+} // end of namespace options

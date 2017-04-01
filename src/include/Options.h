@@ -28,7 +28,7 @@
 #include <sstream>
 #include <fstream>
 
-
+namespace options {
 /// base class for options
 
 /// Only the templated classes that derive from this base class can contain values.
@@ -713,5 +713,5 @@ template <typename Container> class OptionContainer<std::string, Container>: pub
 
 };
 
-
+} // end of namespace options
 #endif

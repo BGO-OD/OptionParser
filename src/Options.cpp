@@ -26,6 +26,9 @@
 #include <iterator>
 #include <algorithm>
 
+namespace options {
+
+
 static Option<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 static Option<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
 OptionParser* OptionParser::gParser = nullptr;
@@ -917,3 +920,5 @@ class OptionReadCfgFile : public Option<const char *> {
 OptionWriteCfgFile OptionWriteCfgFile::gWriteCfgFile;
 OptionReadCfgFile OptionReadCfgFile::gReadCfgFile;
 OptionHelp OptionHelp::gHelp;
+
+} // end of namespace options

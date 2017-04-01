@@ -3,6 +3,8 @@
 
 #include "OptionsWithForeignParser.h"
 
+namespace options {
+
 
 /// specific class to give the options for a TApplication as ForeignApplicationOptions to the option parser
 class OptionsForTApplication: public ForeignApplicationOptions {
@@ -10,5 +12,6 @@ class OptionsForTApplication: public ForeignApplicationOptions {
 	OptionsForTApplication(const char *aName);
 };
 
+} // end of namespace options
 
 #endif

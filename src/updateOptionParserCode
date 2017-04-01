@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # update C++ source code that uses the option parser after
 # API changes
 
@@ -14,8 +14,9 @@ for fileOrDir in "$@"; do
 	if expr "${fileOrDir}" : '.\+\.\(cpp\|C\|h\|hpp\)$'; then
 	    echo "processing '${fileOrDir}'"
 	    ed "${fileOrDir}" <<EOF
-s/\([^[:alnum:]]\)Option\([^[:alnum:]]\)/\1option::single\2/g
-s/\([^[:alnum:]]\)OptionContainer\([^[:alnum:]]\)/\1option::container\2/g
+s/\([^[:alnum:]_]\)Option\([^[:alnum:]_]\)/\1options::single\2/g
+s/\([^[:alnum:]_]\)OptionContainer\([^[:alnum:]_]\)/\1options::container\2/g
+w
 EOF
 	else
 	    echo "ignoring '${fileOrDir}'"

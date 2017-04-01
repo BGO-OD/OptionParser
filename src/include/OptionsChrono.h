@@ -5,6 +5,8 @@
 #include <chrono>
 #include <type_traits>
 
+namespace options {
+
 template <class Rep, class Period> void OptionParseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
 	std::stringstream sbuf(aString);
 	aDuration = aDuration.zero();
@@ -201,6 +203,7 @@ template <> class Option<std::chrono::system_clock::time_point> : public OptionB
 	}
 };
 
+} // end of namespace options
 
 
 #endif

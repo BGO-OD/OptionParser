@@ -3,6 +3,8 @@
 
 #include "Options.h"
 
+namespace options {
+
 class ForeignOption;
 /// class to hold a list of options that are to be handled by a foreign option parser
 class ForeignApplicationOptions {
@@ -46,5 +48,7 @@ class ForeignOption : public OptionBase {
 	virtual ~ForeignOption();
 	virtual void fAddArgs() const;
 };
+
+} // end of namespace options
 
 #endif

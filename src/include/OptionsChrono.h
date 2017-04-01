@@ -45,13 +45,24 @@ namespace options {
 	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base, public originalStringKeeper {
 	  public:
 		typedef std::chrono::duration<Rep, Period> valueType;
+		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
 		valueType lValue;
+		valuePrinterType lValuePrinter;
 		std::vector<valueType> lRange;
+
 	  public:
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}):
+		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+			auto flags(aStream.flags());
+			aStream << std::fixed;
+			aStream << aValue.count();
+			aStream.flags(flags);
+		};
+
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter):
 			base(aShortName, aLongName, aExplanation, 1),
-			lValue(aDefault) {
+			lValue(aDefault),
+			lValuePrinter(aValuePrinter) {
 			if (!aRange.empty()) {
 				fAddToRange(aRange);
 			}
@@ -83,10 +94,15 @@ namespace options {
 			if (! lRange.empty()) {
 				aStream << "# allowed range is";
 				if (lRange.size() == 2) {
-					aStream << " [" << lRange[0].count() << ", " << lRange[0].count() << "]\n";
+					aStream << " [";
+					lValuePrinter(aStream, lRange[0]);
+					aStream << ", ";
+					lValuePrinter(aStream, lRange[0]);
+					aStream << "]\n";
 				} else {
-					for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-						aStream << it->count() << "\n";
+					for (auto& rangeElement : lRange) {
+						lValuePrinter(aStream, rangeElement);
+						aStream << "\n";
 					}
 					aStream << "\n";
 				}
@@ -109,15 +125,18 @@ namespace options {
 						return true;
 					}
 				}
-				aLogStream << fGetLongName() << " out of range (" << lValue.count() << "), must be one of:\n";
-				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					aLogStream << it->count() << "\n";
+				aLogStream << fGetLongName() << " out of range (";
+				lValuePrinter(aLogStream, lValue);
+				aLogStream << "), must be one of:\n";
+				for (auto rangeElement :  lRange) {
+					lValuePrinter(aLogStream, rangeElement);
+					aLogStream  << "\n";
 				}
 				return false;
 			}
 		}
 		virtual void fWriteValue(std::ostream& aStream) const {
-			aStream << lValue.count();
+			lValuePrinter(aStream, lValue);
 		}
 		virtual void fSetMe(const char *aArg, const char* aSource) {
 			lOriginalString = aArg;
@@ -137,13 +156,24 @@ namespace options {
 	template <> class single<std::chrono::system_clock::time_point> : public base, public originalStringKeeper {
 	  public:
 		typedef std::chrono::system_clock::time_point valueType;
+		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
 		valueType lValue;
+		valuePrinterType lValuePrinter;
 		std::vector<valueType> lRange;
+
 	  public:
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}):
+		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+			auto flags(aStream.flags());
+			aStream << std::fixed;
+			aStream << std::chrono::duration<double>(aValue.time_since_epoch()).count();
+			aStream.flags(flags);
+		};
+
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter):
 			base(aShortName, aLongName, aExplanation, 1),
-			lValue(aDefault) {
+			lValue(aDefault),
+			lValuePrinter(aValuePrinter) {
 			if (!aRange.empty()) {
 				fAddToRange(aRange);
 			}
@@ -178,10 +208,15 @@ namespace options {
 			if (! lRange.empty()) {
 				aStream << "# allowed range is";
 				if (lRange.size() == 2) {
-					aStream << " [" << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << ", " << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << "]\n";
+					aStream << " [";
+					lValuePrinter(aStream, lRange[0]);
+					aStream << ", ";
+					lValuePrinter(aStream, lRange[1]);
+					aStream << "]\n";
 				} else {
-					for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-						aStream << std::chrono::duration<double>(it->time_since_epoch()).count() << "\n";
+					for (auto& rangeElement : lRange) {
+						lValuePrinter(aStream, rangeElement);
+						aStream << "\n";
 					}
 					aStream << "\n";
 				}
@@ -194,7 +229,13 @@ namespace options {
 				if (lRange[0] <= lValue && lValue <= lRange[1]) {
 					return true;
 				} else {
-					aLogStream << fGetLongName() << " out of range (" << std::chrono::duration<double>(lValue.time_since_epoch()).count() << "), must be in [" << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << ", " << std::chrono::duration<double>(lRange[0].time_since_epoch()).count() << "]\n";
+					aLogStream << fGetLongName() << " out of range (";
+					lValuePrinter(aLogStream, lValue);
+					aLogStream << "), must be in [";
+					lValuePrinter(aLogStream, lRange[0]);
+					aLogStream << ", ";
+					lValuePrinter(aLogStream, lRange[1]);
+					aLogStream << "]\n";
 					return false;
 				}
 			} else {
@@ -203,17 +244,18 @@ namespace options {
 						return true;
 					}
 				}
-				aLogStream << fGetLongName() << " out of range (" << std::chrono::duration<double>(lValue.time_since_epoch()).count() << "), must be one of:\n";
-				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					aLogStream << std::chrono::duration<double>(it->time_since_epoch()).count() << "\n";
+				aLogStream << fGetLongName() << " out of range (";
+				lValuePrinter(aLogStream, lValue);
+				aLogStream << "), must be one of:\n";
+				for (auto& rangeElement : lRange) {
+					lValuePrinter(aLogStream, rangeElement);
+					aLogStream << "\n";
 				}
 				return false;
 			}
 		}
 		virtual void fWriteValue(std::ostream& aStream) const {
-			auto flags(aStream.flags());
-			aStream << std::fixed << std::chrono::duration<double>(lValue.time_since_epoch()).count();
-			aStream.flags(flags);
+			lValuePrinter(aStream, lValue);
 		}
 		virtual void fSetMe(const char *aArg, const char* aSource) {
 			lOriginalString = aArg;

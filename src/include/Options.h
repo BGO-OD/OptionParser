@@ -375,39 +375,41 @@ namespace options {
 
 
 
+	namespace internal {
 /// This class is an intermediate helper class for options that
 /// are map-based. It is not to be used directly.
-	template <typename T> class baseForMap: public base {
-	  protected:
-		std::map<const T*, std::string> lSources;
-	  public:
-		baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-			base(aShortName, aLongName, aExplanation, aNargs) {};
-		void fAddSource(const T* aValueLocation, std::string aSource) {
-			lSources.insert(std::make_pair(aValueLocation, aSource));
+		template <typename T> class baseForMap: public base {
+		  protected:
+			std::map<const T*, std::string> lSources;
+		  public:
+			baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
+				base(aShortName, aLongName, aExplanation, aNargs) {};
+			void fAddSource(const T* aValueLocation, std::string aSource) {
+				lSources.insert(std::make_pair(aValueLocation, aSource));
+			};
+			const char *fGetSource(const T* aValueLocation) const {
+				auto it = lSources.find(aValueLocation);
+				if (it != lSources.end()) {
+					return it->second.c_str();
+				} else {
+					return nullptr;
+				}
+			};
+			virtual bool fIsSet() const {
+				return ! lSources.empty();
+			};
 		};
-		const char *fGetSource(const T* aValueLocation) const {
-			auto it = lSources.find(aValueLocation);
-			if (it != lSources.end()) {
-				return it->second.c_str();
-			} else {
-				return nullptr;
-			}
-		};
-		virtual bool fIsSet() const {
-			return ! lSources.empty();
-		};
-	};
+	} // end of namespace internal
 
 /// template for map-based options. The map key is always a std::string but the mapped value is arbitrary.
 /// the container is by defalt a std::map. It is assumed that the container always containds std::pairs
 /// of a std::string as first and the value type T as second, e.g. a
 /// std::list<std::pair<std::string,int>> which, in contrast to the map would preserve the order in
 /// which the items were specified.
-	template <typename T, typename Container = std::map<std::string, T>> class map: public baseForMap<T>, public Container {
+	template <typename T, typename Container = std::map<std::string, T>> class map: public internal::baseForMap<T>, public Container {
 	  public:
 		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
 		}
 		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -461,10 +463,10 @@ namespace options {
 
 
 /// template specialisation for maps where the values are also std::strings
-	template <typename Container> class map<std::string, Container>: public baseForMap<std::string>, public Container {
+	template <typename Container> class map<std::string, Container>: public internal::baseForMap<std::string>, public Container {
 	  public:
 		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			baseForMap<std::string>(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForMap<std::string>(aShortName, aLongName, aExplanation, 1) {
 		}
 		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -519,26 +521,28 @@ namespace options {
 		}
 	};
 
+	namespace internal {
 /// This class is an intermediate helper class for options that
 /// are container-based. It is not to be used directly.
-	class baseForContainer: public base {
-	  protected:
-		std::vector<std::string> lSources;
-	  public:
-		baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-			base(aShortName, aLongName, aExplanation, aNargs) {};
-		virtual bool fIsSet() const {
-			return ! lSources.empty();
+		class baseForContainer: public base {
+		  protected:
+			std::vector<std::string> lSources;
+		  public:
+			baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
+				base(aShortName, aLongName, aExplanation, aNargs) {};
+			virtual bool fIsSet() const {
+				return ! lSources.empty();
+			};
 		};
-	};
+	} // end of namespace internal
 
 /// template for container-based options.
 /// the container is by defalt a std::vector.
 /// If a non-vector container is used it needs to have a push_back.
-	template <typename T, typename Container = std::vector<T>> class container: public baseForContainer, public Container {
+	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer, public Container {
 	  public:
 		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			baseForContainer(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
 		}
 		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -594,10 +598,10 @@ namespace options {
 
 
 /// template specialisation for container based options that contain const char* strings
-	template <typename Container> class container<const char *, Container>: public baseForContainer, public Container {
+	template <typename Container> class container<const char *, Container>: public internal::baseForContainer, public Container {
 	  public:
 		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			baseForContainer(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
 		}
 		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
 		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
@@ -649,10 +653,10 @@ namespace options {
 	};
 
 /// template specialisation for container based options that contain std::strings
-	template <typename Container> class container<std::string, Container>: public baseForContainer, public Container {
+	template <typename Container> class container<std::string, Container>: public internal::baseForContainer, public Container {
 	  public:
 		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			baseForContainer(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
 		}
 		virtual void fAddToRangeFromStream(std::istream& aStream) {
 			std::string buf1;

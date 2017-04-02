@@ -333,17 +333,31 @@ namespace options {
 			fAddToRange(aRange);
 		}
 	}
-	void  options::single<std::chrono::system_clock::time_point>::fAddToRange(valueType aValue) {
+	options::single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange, valuePrinterType aValuePrinter):
+		base(aShortName, aLongName, aExplanation, 1),
+		lValuePrinter(aValuePrinter) {
+		lValue = fParseTimePointString(aDefault);
+		if (!aRange.empty()) {
+			fAddToRange(aRange);
+		}
+	}
+	void options::single<std::chrono::system_clock::time_point>::fAddToRange(valueType aValue) {
 		lRange.push_back(aValue);
 	}
+	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::string& aString) {
+		fAddToRange(fParseTimePointString(aString));
+	}
+
 	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::vector<valueType>& aRange) {
+		fAddToRange(aRange.cbegin(), aRange.cend());
+	};
+	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::vector<std::string>& aRange) {
 		fAddToRange(aRange.cbegin(), aRange.cend());
 	};
 	void options::single<std::chrono::system_clock::time_point>::fAddToRangeFromStream(std::istream& aStream) {
 		std::string buf;
 		std::getline(aStream, buf);
-		valueType value;
-		fAddToRange(fParseTimePointString(buf));
+		fAddToRange(buf);
 	}
 	void options::single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
 		std::getline(aStream, lOriginalString);

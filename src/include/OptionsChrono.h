@@ -145,10 +145,12 @@ namespace options {
 		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue);
 
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
 		static valueType fParseTimePointString(const std::string& aString);
 
 
 		virtual void fAddToRange(valueType aValue);
+		virtual void fAddToRange(const std::string& aString);
 
 		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
 		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
@@ -157,6 +159,7 @@ namespace options {
 			}
 		};
 		virtual void fAddToRange(const std::vector<valueType>& aRange);
+		virtual void fAddToRange(const std::vector<std::string>& aRange);
 		virtual void fAddToRangeFromStream(std::istream& aStream);
 		virtual void fAddDefaultFromStream(std::istream& aStream);
 		virtual void fWriteRange(std::ostream& aStream) const;

@@ -11,8 +11,12 @@ namespace options {
 			  public:
 				enum unitType {
 					kUnspecific = 0,
-					kMonth,
-					kYear
+					kWithEnlargingPrefix = 1 << 0,
+					kWithDiminishingPrefix = 1 << 1,
+					kWithPrefix = kWithEnlargingPrefix | kWithDiminishingPrefix,
+					kMonth = 1 << 2,
+					kYear = (1 << 3) | kWithEnlargingPrefix ,
+					kSecond = kWithDiminishingPrefix
 				};
 				const char *lUnitName;
 				double lFactor;
@@ -24,17 +28,50 @@ namespace options {
 				};
 			};
 
-			std::vector<unitDescriptor> unitDescriptors({{"year", 31557500, unitDescriptor::kYear},
-				{"month", 2629800, unitDescriptor::kMonth},
+			static std::vector<unitDescriptor> unitDescriptors({
+				{"year",     31557500, unitDescriptor::kYear},
+				{"yr",       31557500, unitDescriptor::kYear},
+				{"a",        31557500, unitDescriptor::kYear},
+				{"month",     2629800, unitDescriptor::kMonth},
 				{"week", 3600 * 24 * 7, unitDescriptor::kUnspecific},
-				{"day", 3600 * 24, unitDescriptor::kUnspecific},
-				{"hour", 3600, unitDescriptor::kUnspecific},
-				{"minute", 60, unitDescriptor::kUnspecific},
-				{"min", 60, unitDescriptor::kUnspecific},
-				{"second", 1, unitDescriptor::kUnspecific},
-				{"sec", 1, unitDescriptor::kUnspecific}
+				{"day",     3600 * 24, unitDescriptor::kUnspecific},
+				{"hour",         3600, unitDescriptor::kUnspecific},
+				{"minute",         60, unitDescriptor::kUnspecific},
+				{"min",            60, unitDescriptor::kUnspecific},
+				{"second",          1, unitDescriptor::kSecond},
+				{"sec",             1, unitDescriptor::kSecond},
+				{"s",               1, unitDescriptor::kSecond}
 			}
-			                                           );
+			                                                  );
+
+			class prefixDescriptor {
+			  public:
+				const char *lName;
+				long long lFactor;
+				std::string::size_type lNameLength;
+				prefixDescriptor(decltype(lName) aName, decltype(lFactor) aFactor) :
+					lName(aName), lFactor(aFactor) {
+					lNameLength = strlen(aName);
+				}
+			};
+			static std::vector<prefixDescriptor> diminishingPrefixDescriptors ({
+				{"milli",      1000},
+				{"m",          1000},
+				{"micro",   1000000},
+				{"u",       1000000},
+				{"nano", 1000000000},
+				{"n",    1000000000}
+			}
+			                                                                  );
+			static std::vector<prefixDescriptor> enlargingPrefixDescriptors ({
+				{"kilo",      1000},
+				{"k",         1000},
+				{"mega",   1000000},
+				{"m",      1000000},
+				{"giga", 1000000000},
+				{"g",    1000000000}
+			}
+			                                                                );
 
 			double number;
 			aStream >> number;
@@ -44,6 +81,30 @@ namespace options {
 			for (auto& unitDesc : unitDescriptors) {
 				auto location = unit.find(unitDesc.lUnitName);
 				if (location != std::string::npos) {
+					if (location != 0) {
+						bool prefixFound = false;
+						if (unitDesc.lType & unitDescriptor::kWithDiminishingPrefix) {
+							for (auto& prefix : diminishingPrefixDescriptors) {
+								if (unit.compare(0, location, prefix.lName) == 0) {
+									number /= prefix.lFactor;
+									prefixFound = true;
+									break;
+								}
+							}
+						}
+						if (unitDesc.lType & unitDescriptor::kWithEnlargingPrefix) {
+							for (auto& prefix : enlargingPrefixDescriptors) {
+								if (unit.compare(0, location, prefix.lName) == 0) {
+									number *= prefix.lFactor;
+									prefixFound = true;
+									break;
+								}
+							}
+						}
+						if (!prefixFound) {
+							throw "up";
+						}
+					}
 					if ((unitDesc.lType == unitDescriptor::kYear && aYears) ||
 					        (unitDesc.lType == unitDescriptor::kMonth && aMonths)) {
 						if (unitDesc.lType == unitDescriptor::kYear) {
@@ -57,8 +118,7 @@ namespace options {
 					}
 				}
 			}
-			// assume seconds if no unit given
-			return std::chrono::duration<double>(number);
+			return std::chrono::duration<double>::zero();
 		}
 	} // end of namespace internal
 //options::single<std::chrono::time_point<std::chrono::system_clock>>::valueType

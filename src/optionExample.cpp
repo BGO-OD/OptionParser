@@ -51,6 +51,10 @@ int main(int argc, const char *argv[]) {
 	for (auto & it : stringS) {
 		std::cout << " list std::string '" << it << "'\n";
 	}
+
+	std::cout << "and the time variable is:";
 	date.fWriteValue(std::cout);
+	auto timebuf = std::chrono::system_clock::to_time_t(date);
+	std::cout << ", that is " << std::ctime(&timebuf);
 	return number;
 }

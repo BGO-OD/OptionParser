@@ -137,12 +137,17 @@ namespace options {
 		char lPrimaryAssignment;
 		char lSecondaryAssignment;
 
+		bool lParsingIsDone;
+
 		void fReadConfigFiles();
 		void fPrintOptionHelp(std::ostream& aMessageStream, const base& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
 		void fCheckConsistency();
 	  public:
 		parser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 		~parser();
+
+		bool fIsParsingDone() const;
+
 		void fSetMessageStream(std::ostream* aStream);
 		void fSetErrorStream(std::ostream* aStream);
 		std::ostream& fGetErrorStream() const;

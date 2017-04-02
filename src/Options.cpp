@@ -54,6 +54,12 @@ namespace options {
 	parser::~parser() {
 		gParser = nullptr;
 	}
+
+	bool parser::fIsParsingDone() const {
+		return lParsingIsDone;
+	}
+
+
 	void parser::fSetMessageStream(std::ostream *aStream) {
 		lMessageStream = aStream;
 	}
@@ -108,6 +114,7 @@ namespace options {
 	}
 
 	const std::vector<std::string>& parser::fParse(int argc, const char *argv[]) {
+		lParsingIsDone = true; // we set this early, as of now now new options may be created
 		{
 			auto buf = strdup(argv[0]);
 			lProgName = basename(buf);
@@ -379,6 +386,18 @@ namespace options {
 		lLongName(aLongName),
 		lExplanation(aExplanation),
 		lNargs(aNargs) {
+
+		{
+			auto p = parser::fGetInstance();
+			if (p != nullptr) {
+				if (p->fIsParsingDone()) {
+					std::string exceptionText(lLongName + " construction after parsing is done");
+					throw std::logic_error(exceptionText);
+				}
+			}
+		}
+
+
 		if (fGetOptionMap().find(lLongName) != fGetOptionMap().end()) {
 			std::string exceptionText(lLongName + " already set");
 			throw std::invalid_argument(exceptionText);

@@ -75,13 +75,27 @@ namespace options {
 
 			double number;
 			aStream >> number;
+			if (aStream.eof()) {
+				return std::chrono::duration<double>::zero();
+			}
 			std::string unit;
 			aStream >> unit;
 			std::transform(unit.begin(), unit.end(), unit.begin(), ::tolower);
 			for (auto& unitDesc : unitDescriptors) {
 				auto location = unit.find(unitDesc.lUnitName);
 				if (location != std::string::npos) {
+					auto unitNameLength = strlen(unitDesc.lUnitName);
+					auto nExtraChars = unit.size() - location - unitNameLength;
+					if (nExtraChars > 0 && // next line is special condition to allow a plural-s
+					        !(nExtraChars == 1 && unitNameLength > 2 && unit.back() == 's')) {
+						parser::fGetInstance()->fGetErrorStream() << "Garbage in '" << unit << "' after the unit '" << unitDesc.lUnitName << "'\n";
+						parser::fGetInstance()->fComplainAndLeave();
+					}
 					if (location != 0) {
+						if (!unitDesc.lType & unitDescriptor::kWithPrefix) {
+							parser::fGetInstance()->fGetErrorStream() << "Garbage in '" << unit << "' before the unit '" << unitDesc.lUnitName << "'\n";
+							parser::fGetInstance()->fComplainAndLeave();
+						}
 						bool prefixFound = false;
 						if (unitDesc.lType & unitDescriptor::kWithDiminishingPrefix) {
 							for (auto& prefix : diminishingPrefixDescriptors) {
@@ -102,7 +116,8 @@ namespace options {
 							}
 						}
 						if (!prefixFound) {
-							throw "up";
+							parser::fGetInstance()->fGetErrorStream() << "No valid prefix found in '" << unit << "'\n";
+							parser::fGetInstance()->fComplainAndLeave();
 						}
 					}
 					if ((unitDesc.lType == unitDescriptor::kYear && aYears) ||
@@ -118,6 +133,8 @@ namespace options {
 					}
 				}
 			}
+			parser::fGetInstance()->fGetErrorStream() << "Unrecognized time unit in '" << unit << "'\n";
+			parser::fGetInstance()->fComplainAndLeave();
 			return std::chrono::duration<double>::zero();
 		}
 	} // end of namespace internal

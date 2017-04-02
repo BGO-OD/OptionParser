@@ -233,7 +233,7 @@ namespace options {
 			if (dateBits != 0) {
 				timePoint = std::chrono::system_clock::now();
 				if (dateBits & kDay) {
-					auto coarse_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+					auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
 					auto broken_down_time = std::localtime(&coarse_time);
 
 					broken_down_time->tm_sec = 0;
@@ -277,6 +277,9 @@ namespace options {
 						broken_down_time.tm_mon--;
 						broken_down_time.tm_isdst = -1;
 						timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
+					} else {
+						parser::fGetInstance()->fGetErrorStream() << "Unrecognized time in '" << pointString << "'\n";
+						parser::fGetInstance()->fComplainAndLeave();
 					}
 				}
 			}

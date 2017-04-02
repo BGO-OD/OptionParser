@@ -319,4 +319,97 @@ namespace options {
 		return timePoint;
 	}
 
+	void options::single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+		auto flags(aStream.flags());
+		aStream << std::fixed;
+		aStream << std::chrono::duration<double>(aValue.time_since_epoch()).count();
+		aStream.flags(flags);
+	}
+	options::single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault, const std::vector<valueType>& aRange, valuePrinterType aValuePrinter):
+		base(aShortName, aLongName, aExplanation, 1),
+		lValue(aDefault),
+		lValuePrinter(aValuePrinter) {
+		if (!aRange.empty()) {
+			fAddToRange(aRange);
+		}
+	}
+	void  options::single<std::chrono::system_clock::time_point>::fAddToRange(valueType aValue) {
+		lRange.push_back(aValue);
+	}
+	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::vector<valueType>& aRange) {
+		fAddToRange(aRange.cbegin(), aRange.cend());
+	};
+	void options::single<std::chrono::system_clock::time_point>::fAddToRangeFromStream(std::istream& aStream) {
+		std::string buf;
+		std::getline(aStream, buf);
+		valueType value;
+		fAddToRange(fParseTimePointString(buf));
+	}
+	void options::single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
+		std::getline(aStream, lOriginalString);
+		lValue = fParseTimePointString(lOriginalString);
+	}
+
+	void options::single<std::chrono::system_clock::time_point>::fWriteRange(std::ostream& aStream) const {
+		if (! lRange.empty()) {
+			aStream << "# allowed range is";
+			if (lRange.size() == 2) {
+				aStream << " [";
+				lValuePrinter(aStream, lRange[0]);
+				aStream << ", ";
+				lValuePrinter(aStream, lRange[1]);
+				aStream << "]\n";
+			} else {
+				for (auto& rangeElement : lRange) {
+					lValuePrinter(aStream, rangeElement);
+					aStream << "\n";
+				}
+				aStream << "\n";
+			}
+		}
+	}
+	bool options::single<std::chrono::system_clock::time_point>::fCheckRange(std::ostream& aLogStream) const {
+		if (lRange.empty()) {
+			return true;
+		} else if (lRange.size() == 2) {
+			if (lRange[0] <= lValue && lValue <= lRange[1]) {
+				return true;
+			} else {
+				aLogStream << fGetLongName() << " out of range (";
+				lValuePrinter(aLogStream, lValue);
+				aLogStream << "), must be in [";
+				lValuePrinter(aLogStream, lRange[0]);
+				aLogStream << ", ";
+				lValuePrinter(aLogStream, lRange[1]);
+				aLogStream << "]\n";
+				return false;
+			}
+		} else {
+			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
+				if (*it == lValue) {
+					return true;
+				}
+			}
+			aLogStream << fGetLongName() << " out of range (";
+			lValuePrinter(aLogStream, lValue);
+			aLogStream << "), must be one of:\n";
+			for (auto& rangeElement : lRange) {
+				lValuePrinter(aLogStream, rangeElement);
+				aLogStream << "\n";
+			}
+			return false;
+		}
+	}
+	void options::single<std::chrono::system_clock::time_point>::fWriteValue(std::ostream& aStream) const {
+		lValuePrinter(aStream, lValue);
+	}
+	void options::single<std::chrono::system_clock::time_point>::fSetMe(const char *aArg, const char* aSource) {
+		lOriginalString = aArg;
+		lValue = fParseTimePointString(aArg);
+		fSetSource(aSource);
+	}
+	const options::single<std::chrono::system_clock::time_point>::valueType options::single<std::chrono::system_clock::time_point>::fGetValue() const {
+		return lValue;
+	}
+
 } // end of namespace options

@@ -31,8 +31,9 @@
 
 namespace options {
 
-
+	/// standard option for producing debug output about the options
 	static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
+	/// standard option to suppress parsing of config files
 	static single<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
 	parser* parser::gParser = nullptr;
 
@@ -422,6 +423,7 @@ namespace options {
 		delete lPreserveWorthyStuff;
 	}
 
+	/// remember the source that provided the value, e.g. commandline or a config file
 	void base::fSetSource(const char *aSource) {
 		if (aSource) {
 			lSource = aSource;

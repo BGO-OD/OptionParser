@@ -138,7 +138,8 @@ namespace options {
 			return std::chrono::duration<double>::zero();
 		}
 	} // end of namespace internal
-//options::single<std::chrono::time_point<std::chrono::system_clock>>::valueType
+
+
 	std::chrono::system_clock::time_point options::single<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
 		std::string::size_type pointStringStart = 0;
 		std::string::size_type pointStringStop = std::string::npos;
@@ -179,7 +180,8 @@ namespace options {
 			kWeekday = 1 << 4,
 			kDay = kToday | kTomorrow | kYesterday | kWeekday,
 			kLast = 1 << 5,
-			kNoon = 1 << 6
+			kThis = 1 << 6,
+			kNoon = 1 << 7
 
 		};
 		if (pointStringStart < aString.size()) {
@@ -224,6 +226,9 @@ namespace options {
 			if (pointString.find("last") != std::string::npos) {
 				dateBits |= kLast;
 			}
+			if (pointString.find("this") != std::string::npos) {
+				dateBits |= kThis;
+			}
 
 			if (dateBits != 0) {
 				timePoint = std::chrono::system_clock::now();
@@ -244,6 +249,8 @@ namespace options {
 							if (dayOffset >= 0) {
 								dayOffset -= 7;
 							}
+						} else if (dateBits & kThis) {
+							// no change to the Offset
 						} else { // we imply the next day of that name
 							if (dayOffset <= 0) {
 								dayOffset += 7;

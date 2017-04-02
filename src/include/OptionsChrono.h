@@ -9,6 +9,7 @@ namespace options {
 	namespace internal {
 		std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths = nullptr, int* aYears = nullptr);
 
+		/// parse a string into a std::chrono::duration, if given set the years and months separately
 		template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
 			std::stringstream sbuf(aString);
 			aDuration = aDuration.zero();

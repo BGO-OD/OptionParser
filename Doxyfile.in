@@ -13,3 +13,4 @@ USE_MDFILE_AS_MAINPAGE = @doxy_main_page@
 SOURCE_BROWSER         = YES
 INLINE_SOURCES         = YES
 SHOW_NAMESPACES        = YES
+EXTRACT_STATIC         = YES

@@ -26,6 +26,9 @@
 #include <iterator>
 #include <algorithm>
 
+/// \namespace options
+/// all of the option parser stuff is contained in the namespace options.
+
 namespace options {
 
 
@@ -364,7 +367,7 @@ namespace options {
 
 /// construct an object of type base
 
-/// The newluy created object is inserted into the maps sorted by long name and by short name,
+/// The newly created object is inserted into the maps sorted by long name and by short name,
 /// (short name only if it is not '\0')
 /// If a clash wopuld occur, i.e. either long or short name is already taken an exception is thrown.
 /// \param [in] aShortName short option without the -, use '\0' to have only a long form
@@ -689,7 +692,7 @@ namespace options {
 		lDefault = lValue;
 	}
 
-/// \copydetails Option::Option()
+/// \copydetails single::single()
 	single<const char*>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault, const std::vector<const char *>& aRange) :
 		base(aShortName, aLongName, aExplanation, 1),
 		lValue(aDefault) {
@@ -712,7 +715,7 @@ namespace options {
 		strncpy(stringCopy, aValue, size);
 		lRange.push_back(stringCopy);
 	}
-/// \copydoc Option::fAddToRange(const std::vector< T > &)
+/// \copydoc single::fAddToRange(const std::vector< T > &)
 	void single<const char*>::fAddToRange(const std::vector<const char *>& aRange) {
 		fAddToRange(aRange.cbegin(), aRange.cend());
 	}

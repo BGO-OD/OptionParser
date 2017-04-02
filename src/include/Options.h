@@ -55,6 +55,8 @@ namespace options {
 
 		std::vector<const base*> lRequiredOptions;
 		std::vector<const base*> lForbiddenOptions;
+
+		/// function to set the value from a string, remembering the source
 		virtual void fSetMe(const char *aArg, const char *aSource) = 0;
 		virtual void fSetSource(const char *aSource);
 	  private:
@@ -188,7 +190,10 @@ namespace options {
 	};
 
 
-/// generic option class with any type that can be used with std::istram and std::ostream
+/// generic option class with any type that can be used with std::istream and std::ostream
+
+/// It is called 'single' because it's meant for single values as opposed to containers
+/// as it may contain strings (via specialisations) it's not limited to scalar tyes.
 	template <typename T> class single : public base {
 	  private:
 		T lValue;
@@ -373,7 +378,8 @@ namespace options {
 		}
 	};
 
-
+	/// \namespace options::internal
+	/// special namespace for classes and functions that are meant for internal use only
 
 	namespace internal {
 /// This class is an intermediate helper class for options that
@@ -401,7 +407,9 @@ namespace options {
 		};
 	} // end of namespace internal
 
-/// template for map-based options. The map key is always a std::string but the mapped value is arbitrary.
+/// template for map-based options.
+
+/// The map key is always a std::string but the mapped value is arbitrary.
 /// the container is by defalt a std::map. It is assumed that the container always containds std::pairs
 /// of a std::string as first and the value type T as second, e.g. a
 /// std::list<std::pair<std::string,int>> which, in contrast to the map would preserve the order in
@@ -521,6 +529,7 @@ namespace options {
 		}
 	};
 
+	/// \namespace options::internal
 	namespace internal {
 /// This class is an intermediate helper class for options that
 /// are container-based. It is not to be used directly.
@@ -537,6 +546,7 @@ namespace options {
 	} // end of namespace internal
 
 /// template for container-based options.
+
 /// the container is by defalt a std::vector.
 /// If a non-vector container is used it needs to have a push_back.
 	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer, public Container {
@@ -717,6 +727,11 @@ namespace options {
 
 	};
 
+	/// interface class that is used for options where the original string rather
+	/// than the streamed value is to be written into config files.
+
+	/// This is to be used when the streaming would loose important information,
+	/// like having a time point given as 'yesterday' which would loose its relative meaning.
 	class originalStringKeeper {
 	  protected:
 		std::string lOriginalString;

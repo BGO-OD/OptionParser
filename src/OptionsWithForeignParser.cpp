@@ -45,7 +45,7 @@ namespace options {
 		return &lArgc;
 	}
 
-/// \copydetails options::base::options::base()
+/// \copydetails base::base()
 /// \param [in] aForeignApplication required pointer to the ForeignApplicationOptions object that this option shall belong to
 /// \param [in] aCanonicalForm canonical form of the option, including leading - signs to be given to the other parser
 	ForeignOption::ForeignOption(ForeignApplicationOptions* aForeignApplication,

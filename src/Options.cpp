@@ -39,7 +39,8 @@ namespace options {
 	parser::parser(const char *aDescription, const char *aTrailer, const std::vector<std::string>& aSearchPaths):
 		lDescription(aDescription),
 		lTrailer(aTrailer),
-		lSearchPaths(aSearchPaths) {
+		lSearchPaths(aSearchPaths),
+		lParsingIsDone(false) {
 		if (gParser != nullptr) {
 			std::cerr << "there may be only one parser" << std::endl;
 			fComplainAndLeave(false);
@@ -114,6 +115,9 @@ namespace options {
 	}
 
 	const std::vector<std::string>& parser::fParse(int argc, const char *argv[]) {
+		if (lParsingIsDone) {
+			throw std::logic_error("parsing may be done only once");
+		}
 		lParsingIsDone = true; // we set this early, as of now now new options may be created
 		{
 			auto buf = strdup(argv[0]);

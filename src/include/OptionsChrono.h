@@ -6,15 +6,17 @@
 #include <type_traits>
 
 namespace options {
-	std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths = nullptr, int* aYears = nullptr);
+	namespace internal {
+		std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths = nullptr, int* aYears = nullptr);
 
-	template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
-		std::stringstream sbuf(aString);
-		aDuration = aDuration.zero();
-		while (!sbuf.eof()) {
-			aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(parseNumberAndUnit(sbuf, aMonths, aYears));
-		}
-	};
+		template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
+			std::stringstream sbuf(aString);
+			aDuration = aDuration.zero();
+			while (!sbuf.eof()) {
+				aDuration += std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(parseNumberAndUnit(sbuf, aMonths, aYears));
+			}
+		};
+	} // end of namespace internal
 
 /// template specialisation for options that are std::chrono::durations
 	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base, public originalStringKeeper {
@@ -58,12 +60,12 @@ namespace options {
 			std::string buf;
 			std::getline(aStream, buf);
 			valueType value;
-			parseDurationString(value, buf);
+			internal::parseDurationString(value, buf);
 			fAddToRange(value);
 		}
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			std::getline(aStream, lOriginalString);
-			parseDurationString(lValue, lOriginalString);
+			internal::parseDurationString(lValue, lOriginalString);
 		}
 		virtual void fWriteRange(std::ostream& aStream) const {
 			if (! lRange.empty()) {
@@ -115,7 +117,7 @@ namespace options {
 		}
 		virtual void fSetMe(const char *aArg, const char* aSource) {
 			lOriginalString = aArg;
-			parseDurationString(lValue, aArg);
+			internal::parseDurationString(lValue, aArg);
 			fSetSource(aSource);
 		}
 		operator const valueType () const {

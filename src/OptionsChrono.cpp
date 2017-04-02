@@ -7,35 +7,55 @@ namespace options {
 	namespace internal {
 
 		std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths, int* aYears) {
+			class unitDescriptor {
+			  public:
+				enum unitType {
+					kUnspecific = 0,
+					kMonth,
+					kYear
+				};
+				const char *lUnitName;
+				double lFactor;
+				unitType lType;
+				unitDescriptor(decltype(lUnitName) aUnitName,
+				               decltype(lFactor) aFactor,
+				               decltype(lType) aType):
+					lUnitName(aUnitName), lFactor(aFactor), lType(aType) {
+				};
+			};
+
+			std::vector<unitDescriptor> unitDescriptors({{"year", 31557500, unitDescriptor::kYear},
+				{"month", 2629800, unitDescriptor::kMonth},
+				{"week", 3600 * 24 * 7, unitDescriptor::kUnspecific},
+				{"day", 3600 * 24, unitDescriptor::kUnspecific},
+				{"hour", 3600, unitDescriptor::kUnspecific},
+				{"minute", 60, unitDescriptor::kUnspecific},
+				{"min", 60, unitDescriptor::kUnspecific},
+				{"second", 1, unitDescriptor::kUnspecific},
+				{"sec", 1, unitDescriptor::kUnspecific}
+			}
+			                                           );
+
 			double number;
 			aStream >> number;
 			std::string unit;
 			aStream >> unit;
 			std::transform(unit.begin(), unit.end(), unit.begin(), ::tolower);
-			if (unit.find("year") != std::string::npos) {
-				if (aYears) {
-					*aYears = number;
-					return std::chrono::duration<double>::zero();
-				} else {
-					return std::chrono::duration<double>(31557500 * number);
+			for (auto& unitDesc : unitDescriptors) {
+				auto location = unit.find(unitDesc.lUnitName);
+				if (location != std::string::npos) {
+					if ((unitDesc.lType == unitDescriptor::kYear && aYears) ||
+					        (unitDesc.lType == unitDescriptor::kMonth && aMonths)) {
+						if (unitDesc.lType == unitDescriptor::kYear) {
+							*aYears = number;
+						} else {
+							*aMonths = number;
+						}
+						return  std::chrono::duration<double>::zero();
+					} else {
+						return std::chrono::duration<double>(unitDesc.lFactor * number);
+					}
 				}
-			} else if (unit.find("month") != std::string::npos) {
-				if (aMonths) {
-					*aMonths = number;
-					return std::chrono::duration<double>::zero();
-				} else {
-					return std::chrono::duration<double>(2629800 * number);
-				}
-			} else if (unit.find("week") != std::string::npos) {
-				return std::chrono::duration<double>(3600 * 24 * 7 * number);
-			} else if (unit.find("day") != std::string::npos) {
-				return std::chrono::duration<double>(3600 * 24 * number);
-			} else if (unit.find("hour") != std::string::npos) {
-				return std::chrono::duration<double>(3600 * number);
-			} else if (unit.find("min") != std::string::npos) {
-				return std::chrono::duration<double>(60 * number);
-			} else if (unit.find("sec") != std::string::npos) {
-				return std::chrono::duration<double>(number);
 			}
 			// assume seconds if no unit given
 			return std::chrono::duration<double>(number);
@@ -127,7 +147,7 @@ namespace options {
 			if (pointString.find("last") != std::string::npos) {
 				dateBits |= kLast;
 			}
-			std::cout << std::hex << "dateBits are " << dateBits << "\n";
+
 			if (dateBits != 0) {
 				timePoint = std::chrono::system_clock::now();
 				if (dateBits & kDay) {

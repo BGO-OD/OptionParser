@@ -38,12 +38,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wunused -Woverloaded-virtual -Wsh
 # Get latest tagged version.
 INCLUDE(GetLatestTag)
 
-# Check for termios.h presence
-find_file(TERMIOS_INCLUDE "termios.h" "/usr/include")
-message("termios serch gave ${TERMIOS_INCLUDE}")
-if (TERMIOS_INCLUDE)
-   get_filename_component(TERMIOS_INCLUDE_PATH "${TERMIOS_INCLUDE}" DIRECTORY)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS -I${TERMIOS_INCLUDE_PATH}")
+# Check for termios.h indirectly via build system
+if (UNIX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS")
 endif()
 
 # Set variables for packaging. 

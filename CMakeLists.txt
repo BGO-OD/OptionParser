@@ -38,9 +38,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wunused -Woverloaded-virtual -Wsh
 # Get latest tagged version.
 INCLUDE(GetLatestTag)
 
-# Check for termios.h indirectly via build system
+# Check for sensible build system
 if (UNIX)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIS_NONBROKEN_SYSTEM")
 endif()
 
 # Set variables for packaging. 

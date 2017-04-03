@@ -15,14 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include "Options.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef HAVE_TERMIOS
+#ifdef IS_NONBROKEN_SYSTEM
 #include <termios.h>
 #include <sys/ioctl.h>
 #endif
@@ -127,9 +123,13 @@ namespace options {
 		}
 		lParsingIsDone = true; // we set this early, as of now now new options may be created
 		{
+			#ifdef IS_NONBROKEN_SYSTEM
 			auto buf = strdup(argv[0]);
 			lProgName = basename(buf);
 			free(buf);
+			#else
+			lProgName = argv[0];
+			#endif
 		}
 		bool firstOptionNotSeen = true;
 		for (int i = 1; i < argc; i++) {
@@ -556,7 +556,7 @@ namespace options {
 		size_t maxName = 0;
 		size_t maxExplain = 0;
 		size_t lineLenght = 132;
-		#ifdef HAVE_TERMIOS
+		#ifdef IS_NONBROKEN_SYSTEM
 		{
 			struct winsize window;
 			if (ioctl(0, TIOCGWINSZ, &window) == 0) {
@@ -589,7 +589,7 @@ namespace options {
 	void parser::fWriteCfgFile(const char *aFileName) {
 		std::ofstream cfgFile(aFileName, std::ofstream::out | std::ofstream::trunc);
 		if (lExecutableName.empty()) {
-			#ifdef HAVE_TERMIOS
+			#ifdef IS_NONBROKEN_SYSTEM
 			char buf[128];
 			auto result = readlink("/proc/self/exe", buf, sizeof(buf));
 			if (result > 0 && result < 128 - 2 - 14) {

@@ -92,7 +92,7 @@ namespace options {
 						parser::fGetInstance()->fComplainAndLeave();
 					}
 					if (location != 0) {
-						if (!unitDesc.lType & unitDescriptor::kWithPrefix) {
+						if (!(unitDesc.lType & unitDescriptor::kWithPrefix)) {
 							parser::fGetInstance()->fGetErrorStream() << "Garbage in '" << unit << "' before the unit '" << unitDesc.lUnitName << "'\n";
 							parser::fGetInstance()->fComplainAndLeave();
 						}

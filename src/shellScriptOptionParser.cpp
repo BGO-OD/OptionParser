@@ -88,7 +88,8 @@ int main(int argc, const char *argv[]) {
 		          "\tfor durations the type 'seconds' is provided\n"
 		          "\tfor short durations the type 'milliseconds' is provided\n"
 		          "\tfor very short durations the type 'microseconds' is provided\n"
-		          "\tfor time stamps the type 'date' is provided\n"
+		          "\tfor time stamps the type 'date' is provided with fractional seconds\n"
+		          "\tfor time stamps the type 'idate' is provided with integer seconds\n"
 		          "\tshortOpt is the one-letter variant, use '-' to have none\n"
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
 		          "\tthe rest of the line is the description\n"
@@ -140,6 +141,10 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::ratio<1, 1000000>>>(std::cin, std::chrono::seconds(1)));
 			} else if (keyWord == "date") {
 				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now()));
+			} else if (keyWord == "idate") {
+				auto opt = fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now());
+				opt->fSetValuePrinter([](std::ostream & aStream, std::chrono::system_clock::time_point aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
+				options.push_back(opt);
 			} else if (keyWord == "list") {
 				options.push_back(fContainerOptionFromStream<std::string>(std::cin));
 			} else if (keyWord == "range") {

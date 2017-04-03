@@ -26,7 +26,7 @@ list l list list of strings
 default string1
 default string2
 milliseconds s msecs a time range
-date d date a time point
+idate d date a time point
 minusMinusSpecialTreatment ParametersAfterMinuMinus
 minUnusedParameters 2
 maxUnusedParameters 4

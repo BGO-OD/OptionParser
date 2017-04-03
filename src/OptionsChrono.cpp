@@ -341,6 +341,12 @@ namespace options {
 			fAddToRange(aRange);
 		}
 	}
+
+	void options::single<std::chrono::system_clock::time_point>::fSetValuePrinter(valuePrinterType aValuePrinter) {
+		lValuePrinter = aValuePrinter;
+	}
+
+
 	void options::single<std::chrono::system_clock::time_point>::fAddToRange(valueType aValue) {
 		lRange.push_back(aValue);
 	}

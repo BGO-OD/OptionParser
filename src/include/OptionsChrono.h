@@ -148,6 +148,7 @@ namespace options {
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
 		static valueType fParseTimePointString(const std::string& aString);
 
+		void fSetValuePrinter(valuePrinterType aValuePrinter);
 
 		virtual void fAddToRange(valueType aValue);
 		virtual void fAddToRange(const std::string& aString);

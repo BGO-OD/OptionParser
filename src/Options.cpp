@@ -589,11 +589,13 @@ namespace options {
 	void parser::fWriteCfgFile(const char *aFileName) {
 		std::ofstream cfgFile(aFileName, std::ofstream::out | std::ofstream::trunc);
 		if (lExecutableName.empty()) {
+			#ifdef HAVE_TERMIOS
 			char buf[128];
 			auto result = readlink("/proc/self/exe", buf, sizeof(buf));
 			if (result > 0 && result < 128 - 2 - 14) {
 				cfgFile << "#!" << buf << " --readCfgFile\n";
 			}
+			#endif
 		} else {
 			cfgFile << "#!" << lExecutableName << " --readCfgFile\n";
 		}

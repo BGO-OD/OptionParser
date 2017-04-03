@@ -337,6 +337,7 @@ namespace options {
 		base(aShortName, aLongName, aExplanation, 1),
 		lValuePrinter(aValuePrinter) {
 		lValue = fParseTimePointString(aDefault);
+		lOriginalString = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
 		}

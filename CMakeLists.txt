@@ -42,7 +42,8 @@ INCLUDE(GetLatestTag)
 find_file(TERMIOS_INCLUDE "termios.h" "/usr/include")
 message("termios serch gave ${TERMIOS_INCLUDE}")
 if (TERMIOS_INCLUDE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS")
+   get_filename_component(TERMIOS_INCLUDE_PATH "${TERMIOS_INCLUDE}" DIRECTORY)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS -I${TERMIOS_INCLUDE_PATH}")
 endif()
 
 # Set variables for packaging. 

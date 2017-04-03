@@ -38,6 +38,13 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wunused -Woverloaded-virtual -Wsh
 # Get latest tagged version.
 INCLUDE(GetLatestTag)
 
+# Check for termios.h presence
+find_file(TERMIOS_INCLUDE "termios.h" "/usr/include")
+message("termios serch gave ${TERMIOS_INCLUDE}")
+if (TERMIOS_INCLUDE)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_TERMIOS")
+endif()
+
 # Set variables for packaging. 
 SET(PROJECT_DESCRIPTION "templated C++ command line option parser with executable to be used in shell scripts")
 SET(PROJECT_VERSION "${${CMAKE_PROJECT_NAME}_LATEST_TAG}")

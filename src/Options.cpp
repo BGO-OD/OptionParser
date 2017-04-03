@@ -18,7 +18,9 @@
 #include "Options.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_TERMIOS
 #include <termios.h>
+#endif
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -550,12 +552,14 @@ namespace options {
 		size_t maxName = 0;
 		size_t maxExplain = 0;
 		size_t lineLenght = 132;
+		#ifdef HAVE_TERMIOS
 		{
 			struct winsize window;
 			if (ioctl(0, TIOCGWINSZ, &window) == 0) {
 				lineLenght = window.ws_col;
 			}
 		}
+		#endif
 		for (auto & it : base::fGetOptionMap()) {
 			const auto opt = it.second;
 			maxName = std::max(opt->lLongName.length(), maxName);

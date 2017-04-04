@@ -142,9 +142,9 @@ namespace options {
 
 	std::chrono::system_clock::time_point options::single<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
 		std::string::size_type pointStringStart = 0;
-		std::string::size_type pointStringStop = std::string::npos;
+		std::string::size_type pointStringLength = std::string::npos;
 		std::string::size_type offsetStringStart = std::string::npos;
-		std::string::size_type offsetStringStop = std::string::npos;
+		std::string::size_type offsetStringLength = std::string::npos;
 		bool offsetIsNegative = false;
 		{
 			auto after = aString.find("after");
@@ -153,7 +153,7 @@ namespace options {
 				pointStringStart = std::string::npos;
 			} else if (after != std::string::npos) { // "after" after the offset before the point
 				offsetStringStart = 0;
-				offsetStringStop = after;
+				offsetStringLength = after - 1;
 				pointStringStart = after + 6;
 			}
 		}
@@ -165,7 +165,7 @@ namespace options {
 				offsetIsNegative = true;
 			} else if (before != std::string::npos) { // "before" after the offset before the point
 				offsetStringStart = 0;
-				offsetStringStop = before;
+				offsetStringLength = before - 1;
 				pointStringStart = before + 7;
 				offsetIsNegative = true;
 			}
@@ -185,7 +185,7 @@ namespace options {
 
 		};
 		if (pointStringStart < aString.size()) {
-			auto pointString = aString.substr(pointStringStart, pointStringStop);
+			auto pointString = aString.substr(pointStringStart, pointStringLength);
 			std::transform(pointString.begin(), pointString.end(), pointString.begin(), ::tolower);
 
 			typename std::underlying_type<dateBitType>::type dateBits = 0;
@@ -289,7 +289,7 @@ namespace options {
 
 		if (offsetStringStart < aString.size()) {
 			valueType::duration offset;
-			auto offsetString = aString.substr(offsetStringStart, offsetStringStop);
+			auto offsetString = aString.substr(offsetStringStart, offsetStringLength);
 			std::transform(offsetString.begin(), offsetString.end(), offsetString.begin(), ::tolower);
 
 			int months = 0;

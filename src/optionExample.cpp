@@ -19,6 +19,7 @@ int main(int argc, const char *argv[]) {
 	options::single<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
 
 	options::single<std::chrono::system_clock::time_point> date('\0', "date", "a date");
+	options::single<std::chrono::duration<long>> dur('\0', "dur", "a duration");
 	options::single<bool> lateOption('\0', "lateOption", "try to book an option late", false);
 	cs.fForbid(&Cs);
 	Cs.fForbid(&cs);
@@ -56,6 +57,10 @@ int main(int argc, const char *argv[]) {
 	date.fWriteValue(std::cout);
 	auto timebuf = std::chrono::system_clock::to_time_t(date);
 	std::cout << ", that is " << std::ctime(&timebuf);
+
+	std::cout << "the duration is: ";
+	dur.fWriteValue(std::cout);
+	std::cout << "\n";
 
 	if (lateOption) {
 		options::single<bool> optionLate('\0', "lateOptionTest", "option booked late", false);

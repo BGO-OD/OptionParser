@@ -17,8 +17,8 @@
 */
 #include "Options.h"
 #include "OptionsChrono.h"
-#include <set>
 #include <limits>
+#include <set>
 #include <unistd.h>
 
 template <typename T> options::single<T>* fOptionFromStream(std::istream &aStream, T defaultValue) {

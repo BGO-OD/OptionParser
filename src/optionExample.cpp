@@ -60,7 +60,7 @@ int main(int argc, const char *argv[]) {
 
 	std::cout << "the duration is: ";
 	dur.fWriteValue(std::cout);
-	std::cout << "\n";
+	std::cout << " or " << std::chrono::duration_cast<std::chrono::hours>(dur.fGetValue()).count()  << " hours \n";
 
 	if (lateOption) {
 		options::single<bool> optionLate('\0', "lateOptionTest", "option booked late", false);

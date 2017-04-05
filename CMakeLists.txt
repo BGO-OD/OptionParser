@@ -43,6 +43,13 @@ if (UNIX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIS_NONBROKEN_SYSTEM")
 endif()
 
+# Check for timezone files
+find_path(TZFILE_PATH "UTC" "/usr/share/zoneinfo" "/usr/lib/zoneinfo")
+if (TZFILE_PATH) 
+  message(STATUS "the time zone info files will be saerched in ${TZFILE_PATH}")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTZFILE_PATH='\"${TZFILE_PATH}/\"'")
+endif()
+
 # Set variables for packaging. 
 SET(PROJECT_DESCRIPTION "templated C++ command line option parser with executable to be used in shell scripts")
 SET(PROJECT_VERSION "${${CMAKE_PROJECT_NAME}_LATEST_TAG}")

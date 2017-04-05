@@ -440,8 +440,8 @@ namespace options {
 				return false;
 			}
 		} else {
-			for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-				if (*it == lValue) {
+			for (auto& it : lRange) {
+				if (it == lValue) {
 					return true;
 				}
 			}

@@ -392,7 +392,7 @@ namespace options {
 /// \param [in] aLongName long option without the --, must always be given
 /// \param [in] aExplanation explanation for help output
 /// \param [in] aNargs number of arguments/parameters. May be 0 ot 1.
-	base::base(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
+	base::base(char aShortName, const std::string&  aLongName, const std::string&  aExplanation, short aNargs) :
 		lShortName(aShortName),
 		lLongName(aLongName),
 		lExplanation(aExplanation),

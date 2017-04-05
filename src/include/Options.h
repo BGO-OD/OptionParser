@@ -69,7 +69,7 @@ namespace options {
 		void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
 
 	  public:
-		base(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs);
+		base(char aShortName, const std::string&  aLongName, const std::string&  aExplanation, short aNargs);
 		virtual ~base();
 
 		/// special for use in the shellScriptOptionParser

@@ -32,9 +32,9 @@
 /// all of the option parser stuff is contained in the namespace options.
 
 namespace options {
-	// ugly trick here: we have two variables and instatitate one with the other so
-	// we have only one contructor that needs the reference
-	const internal::sourceFile internal::sourceFile::gUnsetSource("unset",   internal::sourceFile::gCmdLine);
+	// ugly trick here: we give a reference to the newly construcetd item to the constructor
+	// we have only one constructor that needs the reference as parameter
+	const internal::sourceFile internal::sourceFile::gUnsetSource("unset",   internal::sourceFile::gUnsetSource);
 	const internal::sourceFile internal::sourceFile::gCmdLine("commandLine", internal::sourceFile::gUnsetSource);
 
 

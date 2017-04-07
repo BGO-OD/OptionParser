@@ -29,44 +29,46 @@
 #include <fstream>
 
 namespace options {
-	class sourceFile {
-	  protected:
-		std::string lName;
-		const sourceFile& lParent;
-	  public:
-		static const sourceFile gUnsetSource;
-		static const sourceFile gCmdLine;
-		sourceFile(const std::string& aName, decltype(lParent) aParent):
-			lName(aName),
-			lParent(aParent) {
+	namespace internal {
+		class sourceFile {
+		  protected:
+			std::string lName;
+			const sourceFile& lParent;
+		  public:
+			static const sourceFile gUnsetSource;
+			static const sourceFile gCmdLine;
+			sourceFile(const std::string& aName, decltype(lParent) aParent):
+				lName(aName),
+				lParent(aParent) {
+			};
+			const std::string& fGetName() const {
+				return lName;
+			};
 		};
-		const std::string& fGetName() const {
-			return lName;
-		};
-	};
 
-	class sourceItem {
-	  protected:
-		const sourceFile* lFile;
-		int lLineNumber;
-	  public:
-		sourceItem(): lFile(&sourceFile::gUnsetSource) {
+		class sourceItem {
+		  protected:
+			const sourceFile* lFile;
+			int lLineNumber;
+		  public:
+			sourceItem(): lFile(&sourceFile::gUnsetSource) {
+			};
+			sourceItem(decltype(lFile) aFile,
+			           decltype(lLineNumber) aLineNumber):
+				lFile(aFile), lLineNumber(aLineNumber) {
+			};
+			decltype(lFile) fGetFile() const {
+				return lFile;
+			};
+			decltype(lLineNumber) fGetLineNumber() const {
+				return lLineNumber;
+			}
+			bool fIsUnset() const {
+				return lFile == &sourceFile::gUnsetSource;
+			}
 		};
-		sourceItem(decltype(lFile) aFile,
-		           decltype(lLineNumber) aLineNumber):
-			lFile(aFile), lLineNumber(aLineNumber) {
-		};
-		decltype(lFile) fGetFile() const {
-			return lFile;
-		};
-		decltype(lLineNumber) fGetLineNumber() const {
-			return lLineNumber;
-		}
-		bool fIsUnset() const {
-			return lFile == &sourceFile::gUnsetSource;
-		}
-	};
-	std::ostream& operator<< (std::ostream &aStream, const sourceItem& aItem);
+	} // end of namespace internal
+	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem);
 
 
 
@@ -90,7 +92,7 @@ namespace options {
 		char lShortName;
 		const std::string lLongName;
 		const std::string lExplanation;
-		sourceItem lSource;
+		internal::sourceItem lSource;
 		short lNargs;
 		std::vector<std::string>* lPreserveWorthyStuff;
 
@@ -98,8 +100,8 @@ namespace options {
 		std::vector<const base*> lForbiddenOptions;
 
 		/// function to set the value from a string, remembering the source
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource) = 0;
-		virtual void fSetSource(const sourceItem& aSource);
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) = 0;
+		virtual void fSetSource(const internal::sourceItem& aSource);
 	  private:
 		virtual void fHandleOption(int argc, const char *argv[], int *i);
 
@@ -222,7 +224,7 @@ namespace options {
 		/// print help, normally automatically called by the --help option or in case of problems.
 		void fHelp();
 		void fWriteCfgFile(const char *aFileName);
-		void fReadCfgFile(const char *aFileName, const options::sourceItem& aSource, bool aMayBeAbsent = false);
+		void fReadCfgFile(const char *aFileName, const options::internal::sourceItem& aSource, bool aMayBeAbsent = false);
 		void fSetExecutableName(const char *aName);
 
 		/// switch on use of -- to separate a trailer on the command line that is not to be parsed
@@ -327,7 +329,7 @@ namespace options {
 		}
 
 
-		virtual void fSetMe(const char* aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char* aArg, const internal::sourceItem& aSource) {
 			std::stringstream buf(aArg);
 			buf >> std::setbase(0) >> std::noskipws >> lValue;
 			fSetSource(aSource);
@@ -351,7 +353,7 @@ namespace options {
 			lValue(aDefault), lDefault(aDefault) {
 		}
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
 		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
 			return true;
 		};
@@ -386,7 +388,7 @@ namespace options {
 		virtual void fAddDefaultFromStream(std::istream& aStream);
 		virtual void  fWriteRange(std::ostream &aStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		operator const char* () const {
 			return lValue;
@@ -415,7 +417,7 @@ namespace options {
 		virtual void  fWriteRange(std::ostream &aStream) const;
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
 		operator const std::string& () const {
 			return lValue;
 		}
@@ -432,19 +434,19 @@ namespace options {
 /// are map-based. It is not to be used directly.
 		template <typename T> class baseForMap: public base {
 		  protected:
-			std::map<const T*, const sourceItem> lSources;
+			std::map<const T*, const internal::sourceItem> lSources;
 		  public:
 			baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 				base(aShortName, aLongName, aExplanation, aNargs) {};
-			void fAddSource(const T* aValueLocation, const sourceItem& aSource) {
+			void fAddSource(const T* aValueLocation, const internal::sourceItem& aSource) {
 				lSources.insert(std::make_pair(aValueLocation, aSource));
 			};
-			const sourceItem fGetSource(const T* aValueLocation) const {
+			const internal::sourceItem fGetSource(const T* aValueLocation) const {
 				auto it = lSources.find(aValueLocation);
 				if (it != lSources.end()) {
 					return it->second;
 				} else {
-					return sourceItem();
+					return internal::sourceItem();
 				}
 			};
 			virtual bool fIsSet() const {
@@ -494,7 +496,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 			std::string s(aArg);
 			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 			if (dividerPosition == std::string::npos) { // not found, complain!
@@ -553,7 +555,7 @@ namespace options {
 			}
 		};
 
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 			std::string s(aArg);
 			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 			if (dividerPosition == std::string::npos) { // not found, complain!
@@ -581,7 +583,7 @@ namespace options {
 /// are container-based. It is not to be used directly.
 		class baseForContainer: public base {
 		  protected:
-			std::vector<sourceItem> lSources;
+			std::vector<internal::sourceItem> lSources;
 		  public:
 			baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 				base(aShortName, aLongName, aExplanation, aNargs) {};
@@ -632,7 +634,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 			std::stringstream valueStream(aArg);
 			T value;
 			valueStream >> std::setbase(0) >> value;
@@ -693,7 +695,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 			auto buf = new char[strlen(aArg) + 1];
 			parser::fReCaptureEscapedString(buf, aArg);
 			this->push_back(buf);
@@ -724,7 +726,7 @@ namespace options {
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			std::string buf1;
 			std::getline(aStream, buf1);
-			fSetMe(buf1.c_str(), sourceItem());
+			fSetMe(buf1.c_str(), internal::sourceItem());
 		};
 
 		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
@@ -758,7 +760,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char* aArg, const sourceItem& aSource) {
+		virtual void fSetMe(const char* aArg, const internal::sourceItem& aSource) {
 			auto buf = new char[strlen(aArg) + 1];
 			parser::fReCaptureEscapedString(buf, aArg);
 			this->push_back(buf);

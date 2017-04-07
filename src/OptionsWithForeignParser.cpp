@@ -56,10 +56,11 @@ namespace options {
 	}
 	ForeignOption::~ForeignOption() {}
 /// remember argument ad register in list of options that were set.
-	void ForeignOption::fSetMe(const char *aArg, const sourceItem& /* aSource */) {
+	void ForeignOption::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 		if (aArg != nullptr) {
 			lArg = aArg;
 		}
+		fSetSource(aSource);
 		lOptions->fRegister(this);
 	}
 /// add args of this option tho the argument vector of the option list

@@ -458,7 +458,7 @@ namespace options {
 	void options::single<std::chrono::system_clock::time_point>::fWriteValue(std::ostream& aStream) const {
 		lValuePrinter(aStream, lValue);
 	}
-	void options::single<std::chrono::system_clock::time_point>::fSetMe(const char *aArg, const sourceItem& aSource) {
+	void options::single<std::chrono::system_clock::time_point>::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
 		lOriginalString = aArg;
 		lValue = fParseTimePointString(aArg);
 		fSetSource(aSource);

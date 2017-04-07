@@ -29,6 +29,47 @@
 #include <fstream>
 
 namespace options {
+	class sourceFile {
+	  protected:
+		std::string lName;
+		const sourceFile& lParent;
+	  public:
+		static const sourceFile gUnsetSource;
+		static const sourceFile gCmdLine;
+		sourceFile(const std::string& aName, decltype(lParent) aParent):
+			lName(aName),
+			lParent(aParent) {
+		};
+		const std::string& fGetName() const {
+			return lName;
+		};
+	};
+
+	class sourceItem {
+	  protected:
+		const sourceFile* lFile;
+		int lLineNumber;
+	  public:
+		sourceItem(): lFile(&sourceFile::gUnsetSource) {
+		};
+		sourceItem(decltype(lFile) aFile,
+		           decltype(lLineNumber) aLineNumber):
+			lFile(aFile), lLineNumber(aLineNumber) {
+		};
+		decltype(lFile) fGetFile() const {
+			return lFile;
+		};
+		decltype(lLineNumber) fGetLineNumber() const {
+			return lLineNumber;
+		}
+		bool fIsUnset() const {
+			return lFile == &sourceFile::gUnsetSource;
+		}
+	};
+	std::ostream& operator<< (std::ostream &aStream, const sourceItem& aItem);
+
+
+
 /// base class for options
 
 /// Only the templated classes that derive from this base class can contain values.
@@ -49,7 +90,7 @@ namespace options {
 		char lShortName;
 		const std::string lLongName;
 		const std::string lExplanation;
-		std::string lSource;
+		sourceItem lSource;
 		short lNargs;
 		std::vector<std::string>* lPreserveWorthyStuff;
 
@@ -57,8 +98,8 @@ namespace options {
 		std::vector<const base*> lForbiddenOptions;
 
 		/// function to set the value from a string, remembering the source
-		virtual void fSetMe(const char *aArg, const char *aSource) = 0;
-		virtual void fSetSource(const char *aSource);
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource) = 0;
+		virtual void fSetSource(const sourceItem& aSource);
 	  private:
 		virtual void fHandleOption(int argc, const char *argv[], int *i);
 
@@ -101,7 +142,7 @@ namespace options {
 		}
 		/// check if this option was set, regardless of from command line or config file
 		virtual bool fIsSet() const {
-			return ! lSource.empty();
+			return ! lSource.fIsUnset();
 		};
 		/// returns long name of option, usually only for internal use.
 		const std::string& fGetLongName() const {
@@ -181,7 +222,7 @@ namespace options {
 		/// print help, normally automatically called by the --help option or in case of problems.
 		void fHelp();
 		void fWriteCfgFile(const char *aFileName);
-		void fReadCfgFile(const char *aFileName, bool aMayBeAbsent = false);
+		void fReadCfgFile(const char *aFileName, const options::sourceItem& aSource, bool aMayBeAbsent = false);
 		void fSetExecutableName(const char *aName);
 
 		/// switch on use of -- to separate a trailer on the command line that is not to be parsed
@@ -286,7 +327,7 @@ namespace options {
 		}
 
 
-		virtual void fSetMe(const char* aArg, const char* aSource) {
+		virtual void fSetMe(const char* aArg, const sourceItem& aSource) {
 			std::stringstream buf(aArg);
 			buf >> std::setbase(0) >> std::noskipws >> lValue;
 			fSetSource(aSource);
@@ -310,7 +351,7 @@ namespace options {
 			lValue(aDefault), lDefault(aDefault) {
 		}
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const char* aSource);
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
 		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
 			return true;
 		};
@@ -345,7 +386,7 @@ namespace options {
 		virtual void fAddDefaultFromStream(std::istream& aStream);
 		virtual void  fWriteRange(std::ostream &aStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const char* aSource);
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		operator const char* () const {
 			return lValue;
@@ -374,7 +415,7 @@ namespace options {
 		virtual void  fWriteRange(std::ostream &aStream) const;
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const char* aSource);
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource);
 		operator const std::string& () const {
 			return lValue;
 		}
@@ -391,19 +432,19 @@ namespace options {
 /// are map-based. It is not to be used directly.
 		template <typename T> class baseForMap: public base {
 		  protected:
-			std::map<const T*, std::string> lSources;
+			std::map<const T*, const sourceItem> lSources;
 		  public:
 			baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 				base(aShortName, aLongName, aExplanation, aNargs) {};
-			void fAddSource(const T* aValueLocation, std::string aSource) {
+			void fAddSource(const T* aValueLocation, const sourceItem& aSource) {
 				lSources.insert(std::make_pair(aValueLocation, aSource));
 			};
-			const char *fGetSource(const T* aValueLocation) const {
+			const sourceItem fGetSource(const T* aValueLocation) const {
 				auto it = lSources.find(aValueLocation);
 				if (it != lSources.end()) {
-					return it->second.c_str();
+					return it->second;
 				} else {
-					return nullptr;
+					return sourceItem();
 				}
 			};
 			virtual bool fIsSet() const {
@@ -433,8 +474,8 @@ namespace options {
 			}
 			for (const auto& it : *this) {
 				auto source = this->fGetSource(&(it.second));
-				aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first <<  parser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
-				if (source) {
+				aStream << (source.fIsUnset() ? aPrefix : "") << this->lLongName << "=" << it.first <<  parser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
+				if (!source.fIsUnset()) {
 					aStream << "# set from " << source << "\n";
 				}
 			}
@@ -453,7 +494,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const char* aSource) {
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
 			std::string s(aArg);
 			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 			if (dividerPosition == std::string::npos) { // not found, complain!
@@ -491,10 +532,10 @@ namespace options {
 			for (const auto & it : *this) {
 				auto source = this->fGetSource(&(it.second));
 
-				aStream << (source ? "" : aPrefix) << this->lLongName << "=" << it.first << parser::fGetInstance()->fGetSecondaryAssignment();
+				aStream << (source.fIsUnset() ? aPrefix : "") << this->lLongName << "=" << it.first << parser::fGetInstance()->fGetSecondaryAssignment();
 				parser::fPrintEscapedString(aStream, it.second.c_str());
 				aStream << "\n";
-				if (source) {
+				if (!source.fIsUnset()) {
 					aStream << "# set from " << source << "\n";
 				}
 			}
@@ -512,7 +553,7 @@ namespace options {
 			}
 		};
 
-		virtual void fSetMe(const char *aArg, const char *aSource) {
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
 			std::string s(aArg);
 			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
 			if (dividerPosition == std::string::npos) { // not found, complain!
@@ -540,7 +581,7 @@ namespace options {
 /// are container-based. It is not to be used directly.
 		class baseForContainer: public base {
 		  protected:
-			std::vector<std::string> lSources;
+			std::vector<sourceItem> lSources;
 		  public:
 			baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 				base(aShortName, aLongName, aExplanation, aNargs) {};
@@ -568,8 +609,8 @@ namespace options {
 			}
 			auto it2 = lSources.begin();
 			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->empty() ? aPrefix : "") << this->lLongName << "=" << *it << "\n";
-				if (!it2->empty()) {
+				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=" << *it << "\n";
+				if (!it2->fIsUnset()) {
 					aStream << "# set from " << *it2 << "\n";
 				}
 			}
@@ -591,12 +632,12 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const char *aSource) {
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
 			std::stringstream valueStream(aArg);
 			T value;
 			valueStream >> std::setbase(0) >> value;
 			this->push_back(value);
-			lSources.push_back(aSource ? aSource : "");
+			lSources.push_back(aSource);
 		}
 
 		operator const Container& () const {
@@ -627,10 +668,10 @@ namespace options {
 			}
 			auto it2 = lSources.begin();
 			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->empty() ? aPrefix : "") << this->lLongName << "=";
+				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
 				parser::fPrintEscapedString(aStream, *it);
 				aStream << "\n";
-				if (!it2->empty()) {
+				if (!it2->fIsUnset()) {
 					aStream << "# set from " << *it2 << "\n";
 				}
 			}
@@ -652,11 +693,11 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const char *aSource) {
+		virtual void fSetMe(const char *aArg, const sourceItem& aSource) {
 			auto buf = new char[strlen(aArg) + 1];
 			parser::fReCaptureEscapedString(buf, aArg);
 			this->push_back(buf);
-			lSources.push_back(aSource ? aSource : "");
+			lSources.push_back(aSource);
 		}
 		operator const Container & () const {
 			return *static_cast<const Container*>(this);
@@ -683,7 +724,7 @@ namespace options {
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			std::string buf1;
 			std::getline(aStream, buf1);
-			fSetMe(buf1.c_str(), nullptr);
+			fSetMe(buf1.c_str(), sourceItem());
 		};
 
 		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
@@ -692,10 +733,10 @@ namespace options {
 			}
 			auto it2 = lSources.begin();
 			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->empty() ? aPrefix : "") << this->lLongName << "=";
+				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
 				parser::fPrintEscapedString(aStream, it->c_str());
 				aStream << "\n";
-				if (!it2->empty()) {
+				if (!it2->fIsUnset()) {
 					aStream << "# set from " << *it2 << "\n";
 				}
 			}
@@ -717,11 +758,11 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char* aArg, const char *aSource) {
+		virtual void fSetMe(const char* aArg, const sourceItem& aSource) {
 			auto buf = new char[strlen(aArg) + 1];
 			parser::fReCaptureEscapedString(buf, aArg);
 			this->push_back(buf);
-			lSources.push_back(aSource ? aSource : "");
+			lSources.push_back(aSource);
 		}
 		operator const Container & () const {
 			return *static_cast<const Container*>(this);

@@ -32,6 +32,14 @@
 /// all of the option parser stuff is contained in the namespace options.
 
 namespace options {
+	const sourceFile sourceFile::gUnsetSource("unset", sourceFile::gCmdLine);
+	const sourceFile sourceFile::gCmdLine("commandLine", sourceFile::gUnsetSource);
+
+
+	std::ostream& operator<< (std::ostream &aStream, const sourceItem& aItem) {
+		aStream << aItem.fGetFile()->fGetName() << ":" << aItem.fGetLineNumber();
+		return aStream;
+	}
 
 	/// standard option for producing debug output about the options
 	static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
@@ -109,7 +117,7 @@ namespace options {
 				f.replace(tildePosition, 1, getenv("HOME"));
 			}
 			f += lProgName;
-			fReadCfgFile(f.c_str(), true);
+			fReadCfgFile(f.c_str(), sourceItem(&sourceFile::gUnsetSource, 0), true);
 		}
 	}
 
@@ -182,7 +190,7 @@ namespace options {
 							fComplainAndLeave();
 						}
 						auto opt = it->second;
-						opt->fSetMe(equalsAt + 1, "cmdline");
+						opt->fSetMe(equalsAt + 1, sourceItem(&sourceFile::gCmdLine, i));
 						free(buf);
 					}
 				}
@@ -200,7 +208,7 @@ namespace options {
 				fGetErrorStream() << "option " << opt->lLongName << " has value '";
 				opt->fWriteValue(fGetErrorStream());
 				fGetErrorStream() << "' ";
-				if (opt->lSource.empty()) {
+				if (opt->lSource.fIsUnset()) {
 					fGetErrorStream() << " (default) ";
 				} else {
 					fGetErrorStream() << " from " << opt->lSource;
@@ -430,12 +438,8 @@ namespace options {
 	}
 
 	/// remember the source that provided the value, e.g. commandline or a config file
-	void base::fSetSource(const char *aSource) {
-		if (aSource) {
-			lSource = aSource;
-		} else {
-			lSource.clear();
-		}
+	void base::fSetSource(const sourceItem& aSource) {
+		lSource = aSource;
 	}
 
 
@@ -445,9 +449,9 @@ namespace options {
 			parser::fGetInstance()->fComplainAndLeave();
 		}
 		if (lNargs == 0) {
-			fSetMe(nullptr, "cmdline: ");
+			fSetMe(nullptr, sourceItem(&sourceFile::gCmdLine, *i));
 		} else if (lNargs == 1) {
-			fSetMe(argv[*i + 1], "cmdline: ");
+			fSetMe(argv[*i + 1], sourceItem(&sourceFile::gCmdLine, *i));
 			*i += lNargs;
 		}
 		if (fCheckRange(parser::fGetInstance()->fGetErrorStream()) == false) {
@@ -624,12 +628,12 @@ namespace options {
 			}
 			cfgFile << "\n# " << opt->lExplanation << "\n";
 			auto prefix = "";
-			if (opt->lSource.empty() || opt->lLongName == "readCfgFile") {
+			if (opt->lSource.fIsUnset() || opt->lLongName == "readCfgFile") {
 				prefix = "# ";
 			}
 			opt->fWriteCfgLines(cfgFile, prefix);
 			opt->fWriteRange(cfgFile);
-			if (!opt->lSource.empty()) {
+			if (!opt->lSource.fIsUnset()) {
 				cfgFile << "# set from " << opt->lSource << "\n";
 			}
 		}
@@ -637,18 +641,20 @@ namespace options {
 		cfgFile.close();
 	}
 
-	void parser::fReadCfgFile(const char *aFileName, bool aMayBeAbsent) {
+	void parser::fReadCfgFile(const char *aFileName, const sourceItem& aSource, bool aMayBeAbsent) {
 		std::ifstream cfgFile(aFileName);
 		if (!cfgFile.good() && !aMayBeAbsent) {
 			fGetErrorStream() << "can't acccess config file '" << aFileName << "', reason is " << strerror(errno) << std::endl;
 			fComplainAndLeave(false);
 		}
+		auto sourceF = new sourceFile(aFileName, *(aSource.fGetFile()));
 		int lineNumber = 0;
 		std::vector<std::string>* preserveWorthyStuff = nullptr;
 		while (cfgFile.good()) {
 			std::string line;
 			std::getline(cfgFile, line);
 			lineNumber++;
+			sourceItem source(sourceF, lineNumber);
 			if (line.length() == 0) {
 				continue;
 			} else if (line[0] == '#') {
@@ -682,14 +688,12 @@ namespace options {
 			auto optionName = line.substr(0, equalsAt);
 			auto it = base::fGetOptionMap().find(optionName);
 			if (it == base::fGetOptionMap().end()) {
-				fGetErrorStream() << aFileName << ":" << lineNumber << ": error: unknown option '" << optionName << "' ,line is '" << line << "'" << std::endl;
+				fGetErrorStream() << source << ": error: unknown option '" << optionName << "' ,line is '" << line << "'" << std::endl;
 				continue;
 			}
 			auto option = it->second;
 			{
-				char blubb[1028];
-				sprintf(blubb, "%s:%d: ", aFileName, lineNumber);
-				option->fSetMe(line.substr(equalsAt + 1).c_str(), blubb);
+				option->fSetMe(line.substr(equalsAt + 1).c_str(), source);
 				if (preserveWorthyStuff != nullptr) {
 					option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 					preserveWorthyStuff = nullptr;
@@ -713,7 +717,7 @@ namespace options {
 	void single<bool>::fWriteValue(std::ostream & aStream) const {
 		aStream << std::boolalpha << lValue;
 	}
-	void single<bool>::fSetMe(const char *aArg, const char *aSource) {
+	void single<bool>::fSetMe(const char *aArg, const sourceItem& aSource) {
 		if (aArg == nullptr) {
 			lValue = ! lDefault;
 		} else {
@@ -765,7 +769,7 @@ namespace options {
 	void single<const char*>::fAddDefaultFromStream(std::istream& aStream) {
 		std::string buf1;
 		std::getline(aStream, buf1);
-		fSetMe(buf1.c_str(), nullptr);
+		fSetMe(buf1.c_str(), sourceItem());
 	}
 
 	void  single<const char*>::fWriteRange(std::ostream &aStream) const {
@@ -797,7 +801,7 @@ namespace options {
 			parser::fPrintEscapedString(aStream, lValue);
 		}
 	}
-	void single<const char*>::fSetMe(const char *aArg, const char *aSource) {
+	void single<const char*>::fSetMe(const char *aArg, const sourceItem& aSource) {
 		auto buf = new char[strlen(aArg) + 1];
 		parser::fReCaptureEscapedString(buf, aArg);
 		lValue = buf;
@@ -854,7 +858,7 @@ namespace options {
 	void single<std::string>::fAddDefaultFromStream(std::istream& aStream) {
 		std::string buf1;
 		std::getline(aStream, buf1);
-		fSetMe(buf1.c_str(), nullptr);
+		fSetMe(buf1.c_str(), sourceItem());
 	}
 
 	bool single<std::string>::fCheckRange(std::ostream& aLogStream) const {
@@ -885,7 +889,7 @@ namespace options {
 	void single<std::string>::fWriteValue(std::ostream & aStream) const {
 		parser::fPrintEscapedString(aStream, lValue.c_str());
 	}
-	void single<std::string>::fSetMe(const char *aArg, const char *aSource) {
+	void single<std::string>::fSetMe(const char *aArg, const sourceItem& aSource) {
 		auto buf = new char[strlen(aArg) + 1];
 		parser::fReCaptureEscapedString(buf, aArg);
 		lValue = buf;
@@ -924,7 +928,7 @@ namespace options {
 		OptionHelp():
 			single('h', "help", "give this help") {
 		}
-		void fSetMe(const char * /*aArg*/, const char * /*aSource*/) override {
+		void fSetMe(const char * /*aArg*/, const sourceItem& /*aSource*/) override {
 			parser::fGetInstance()->fHelp();
 			exit(parser::fGetInstance()->fGetHelpReturnValue());
 		}
@@ -938,7 +942,7 @@ namespace options {
 		OptionWriteCfgFile():
 			single('\0', "writeCfgFile", "write a config file") {
 		}
-		void fSetMe(const char *aArg, const char */* aSource */) override {
+		void fSetMe(const char *aArg, const sourceItem&/* aSource */) override {
 			lValue = aArg;
 			parser::fGetInstance()->fWriteCfgFile(aArg);
 			exit(parser::fGetInstance()->fGetHelpReturnValue());
@@ -953,9 +957,9 @@ namespace options {
 		OptionReadCfgFile():
 			single('\0', "readCfgFile", "read a config file") {
 		}
-		void fSetMe(const char *aArg, const char */*aSource*/) override {
+		void fSetMe(const char *aArg, const sourceItem& aSource) override {
 			lValue = aArg;
-			parser::fGetInstance()->fReadCfgFile(aArg);
+			parser::fGetInstance()->fReadCfgFile(aArg, aSource);
 		}
 	};
 

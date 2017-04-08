@@ -32,11 +32,12 @@
 /// all of the option parser stuff is contained in the namespace options.
 
 namespace options {
-	// ugly trick here: we give a reference to the newly construcetd item to the constructor
-	// we have only one constructor that needs the reference as parameter
-	const internal::sourceFile internal::sourceFile::gUnsetSource("unset",   internal::sourceFile::gUnsetSource);
-	const internal::sourceFile internal::sourceFile::gCmdLine("commandLine", internal::sourceFile::gUnsetSource);
-
+	namespace internal {
+		// ugly trick here: we give a reference to the newly construcetd item to the constructor
+		// we have only one constructor that needs the reference as parameter
+		const sourceFile sourceFile::gUnsetSource("unset",   sourceFile::gUnsetSource);
+		const sourceFile sourceFile::gCmdLine("commandLine", sourceFile::gUnsetSource);
+	} // end of namespace internal
 
 	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem) {
 		aStream << aItem.fGetFile()->fGetName() << ":" << aItem.fGetLineNumber();
@@ -47,6 +48,9 @@ namespace options {
 	static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 	/// standard option to suppress parsing of config files
 	static single<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
+
+
+
 	parser* parser::gParser = nullptr;
 
 	parser::parser(const char *aDescription, const char *aTrailer, const std::vector<std::string>& aSearchPaths):
@@ -615,14 +619,11 @@ namespace options {
 			cfgFile << " by " << getenv("USER") << " using " << lProgName << "\n";
 			cfgFile << "# only comments started by ## will be preserved on a re-write!\n";
 			cfgFile << "# to rewrite this file for a different executable location, use:\n";
-			cfgFile << "# " << lProgName << " --readCfgFile " << aFileName << " --writeCfgFile " << aFileName << "\n";
+			cfgFile << "# " << lProgName << " --noCfgFileRecursion --readCfgFile " << aFileName << " --writeCfgFile " << aFileName << "\n";
 			cfgFile << "# Assuming " << lProgName << " is in your PATH\n";
 		}
 		for (auto & it : base::fGetOptionMap()) {
 			const auto opt = it.second;
-			if (opt->lLongName == "writeCfgFile") {
-				continue;
-			}
 			if (opt->lPreserveWorthyStuff != nullptr) {
 				for (const auto& line : * (opt->lPreserveWorthyStuff)) {
 					cfgFile << "\n" << line;
@@ -630,7 +631,7 @@ namespace options {
 			}
 			cfgFile << "\n# " << opt->lExplanation << "\n";
 			auto prefix = "";
-			if (opt->lSource.fIsUnset() || opt->lLongName == "readCfgFile") {
+			if (opt->lSource.fIsUnset()) {
 				prefix = "# ";
 			}
 			opt->fWriteCfgLines(cfgFile, prefix);
@@ -936,13 +937,34 @@ namespace options {
 		}
 	};
 
+	/// special class for options which never have a value setting in cfg files
+	template <typename T> class supressed : public single<T> {
+	  public:
+		template <class ... Types> supressed (Types ... args) :
+			single<T>(args...) {
+		};
+		void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
+			single<T>::fWriteCfgLines(aStream, "# ");
+		}
+	};
+
+	/// standard option to suppress parsing of config files within config files
+	class NoCfgFileRecursion: public supressed<bool> {
+	  public:
+		NoCfgFileRecursion():
+			supressed('\0', "noCfgFileRecursion", "do not read config files recursively, must be set before use") {
+		};
+	};
+	static NoCfgFileRecursion gNoCfgFileRecursion;
+
+
 /// special derived class used to write out config files
-	class OptionWriteCfgFile : public single<const char *> {
+	class OptionWriteCfgFile : public supressed<const char *> {
 	  private:
 		static OptionWriteCfgFile gWriteCfgFile;
 	  public:
 		OptionWriteCfgFile():
-			single('\0', "writeCfgFile", "write a config file") {
+			supressed('\0', "writeCfgFile", "write a config file") {
 		}
 		void fSetMe(const char *aArg, const internal::sourceItem&/* aSource */) override {
 			lValue = aArg;
@@ -960,9 +982,15 @@ namespace options {
 			single('\0', "readCfgFile", "read a config file") {
 		}
 		void fSetMe(const char *aArg, const internal::sourceItem& aSource) override {
-			lValue = aArg;
+			single<const char *>::fSetMe(aArg, aSource);
+			if (gNoCfgFileRecursion && aSource.fGetFile() != &internal::sourceFile::gCmdLine) {
+				return;
+			}
 			parser::fGetInstance()->fReadCfgFile(aArg, aSource);
-		}
+		};
+		void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
+			single<const char *>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
+		};
 	};
 
 

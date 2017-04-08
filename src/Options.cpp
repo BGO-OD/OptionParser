@@ -44,11 +44,13 @@ namespace options {
 		return aStream;
 	}
 
-	/// standard option for producing debug output about the options
-	static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
-	/// standard option to suppress parsing of config files
-	static single<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
-
+	namespace internal { // for clarity we put these options into the
+		// internal namespace, although they are already hidden by the static
+		/// standard option for producing debug output about the options
+		static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
+		/// standard option to suppress parsing of config files
+		static single<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
+	} // end of namespace internal
 
 
 	parser* parser::gParser = nullptr;
@@ -147,7 +149,7 @@ namespace options {
 		}
 		bool firstOptionNotSeen = true;
 		for (int i = 1; i < argc; i++) {
-			if (firstOptionNotSeen && !(argv[i][0] == '-' && argv[i][1] == '-' && gOptionNoCfgFiles.lLongName.compare(argv[i] + 2) == 0)) {
+			if (firstOptionNotSeen && !(argv[i][0] == '-' && argv[i][1] == '-' && internal::gOptionNoCfgFiles.lLongName.compare(argv[i] + 2) == 0)) {
 				fReadConfigFiles();
 			}
 			if (argv[i][0] == '-' && argv[i][1] != '-') {
@@ -208,7 +210,7 @@ namespace options {
 		if (firstOptionNotSeen) {
 			fReadConfigFiles();
 		}
-		if (gOptionDebugOptions) {
+		if (internal::gOptionDebugOptions) {
 			for (auto & it : base::fGetOptionMap()) {
 				auto opt = it.second;
 				fGetErrorStream() << "option " << opt->lLongName << " has value '";
@@ -921,82 +923,77 @@ namespace options {
 	}
 
 
-
+	namespace internal { // put clases and options for internal use
+		// into internal namespace
 
 /// special derived class used to give help
-	class OptionHelp : public single<bool> {
-	  private:
+		class OptionHelp : public single<bool> {
+		  public:
+			OptionHelp():
+				single('h', "help", "give this help") {
+			}
+			void fSetMe(const char * /*aArg*/, const sourceItem& /*aSource*/) override {
+				parser::fGetInstance()->fHelp();
+				exit(parser::fGetInstance()->fGetHelpReturnValue());
+			}
+		};
 		static OptionHelp gHelp;
-	  public:
-		OptionHelp():
-			single('h', "help", "give this help") {
-		}
-		void fSetMe(const char * /*aArg*/, const internal::sourceItem& /*aSource*/) override {
-			parser::fGetInstance()->fHelp();
-			exit(parser::fGetInstance()->fGetHelpReturnValue());
-		}
-	};
 
-	/// special class for options which never have a value setting in cfg files
-	template <typename T> class supressed : public single<T> {
-	  public:
-		template <class ... Types> supressed (Types ... args) :
-			single<T>(args...) {
-		};
-		void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
-			single<T>::fWriteCfgLines(aStream, "# ");
-		}
-	};
 
-	/// standard option to suppress parsing of config files within config files
-	class NoCfgFileRecursion: public supressed<bool> {
-	  public:
-		NoCfgFileRecursion():
-			supressed('\0', "noCfgFileRecursion", "do not read config files recursively, must be set before use") {
+		/// special class for options which never have a value setting in cfg files
+		template <typename T> class supressed : public single<T> {
+		  public:
+			template <class ... Types> supressed (Types ... args) :
+				single<T>(args...) {
+			};
+			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
+				single<T>::fWriteCfgLines(aStream, "# ");
+			}
 		};
-	};
-	static NoCfgFileRecursion gNoCfgFileRecursion;
+
+		/// standard option to suppress parsing of config files within config files
+		class NoCfgFileRecursion: public supressed<bool> {
+		  public:
+			NoCfgFileRecursion():
+				supressed('\0', "noCfgFileRecursion", "do not read config files recursively, must be set before use") {
+			};
+		};
+		static NoCfgFileRecursion gNoCfgFileRecursion;
 
 
 /// special derived class used to write out config files
-	class OptionWriteCfgFile : public supressed<const char *> {
-	  private:
+		class OptionWriteCfgFile : public supressed<const char *> {
+		  public:
+			OptionWriteCfgFile():
+				supressed('\0', "writeCfgFile", "write a config file") {
+			}
+			void fSetMe(const char *aArg, const sourceItem&/* aSource */) override {
+				lValue = aArg;
+				parser::fGetInstance()->fWriteCfgFile(aArg);
+				exit(parser::fGetInstance()->fGetHelpReturnValue());
+			}
+		};
 		static OptionWriteCfgFile gWriteCfgFile;
-	  public:
-		OptionWriteCfgFile():
-			supressed('\0', "writeCfgFile", "write a config file") {
-		}
-		void fSetMe(const char *aArg, const internal::sourceItem&/* aSource */) override {
-			lValue = aArg;
-			parser::fGetInstance()->fWriteCfgFile(aArg);
-			exit(parser::fGetInstance()->fGetHelpReturnValue());
-		}
-	};
 
 /// special derived class used to read in config files
-	class OptionReadCfgFile : public single<const char *> {
-	  private:
-		static OptionReadCfgFile gReadCfgFile;
-	  public:
-		OptionReadCfgFile():
-			single('\0', "readCfgFile", "read a config file") {
-		}
-		void fSetMe(const char *aArg, const internal::sourceItem& aSource) override {
-			single<const char *>::fSetMe(aArg, aSource);
-			if (gNoCfgFileRecursion && aSource.fGetFile() != &internal::sourceFile::gCmdLine) {
-				return;
+		class OptionReadCfgFile : public single<const char *> {
+		  public:
+			OptionReadCfgFile():
+				single('\0', "readCfgFile", "read a config file") {
 			}
-			parser::fGetInstance()->fReadCfgFile(aArg, aSource);
+			void fSetMe(const char *aArg, const sourceItem& aSource) override {
+				single<const char *>::fSetMe(aArg, aSource);
+				if (gNoCfgFileRecursion && aSource.fGetFile() != &sourceFile::gCmdLine) {
+					return;
+				}
+				parser::fGetInstance()->fReadCfgFile(aArg, aSource);
+			};
+			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
+				single<const char *>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
+			};
 		};
-		void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
-			single<const char *>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
-		};
-	};
-
-
-	OptionWriteCfgFile OptionWriteCfgFile::gWriteCfgFile;
-	OptionReadCfgFile OptionReadCfgFile::gReadCfgFile;
-	OptionHelp OptionHelp::gHelp;
+		static OptionReadCfgFile gReadCfgFile;
+	} // end of name internal
 
 	void originalStringKeeper::fWriteOriginalString(std::ostream& aStream) const {
 		aStream << lOriginalString;

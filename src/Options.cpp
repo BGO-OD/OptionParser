@@ -27,6 +27,7 @@
 #include <ctime>
 #include <iterator>
 #include <algorithm>
+#include <list>
 
 /// \namespace options
 /// all of the option parser stuff is contained in the namespace options.
@@ -39,6 +40,8 @@ namespace options {
 		const sourceFile sourceFile::gCmdLine("commandLine", sourceFile::gUnsetSource);
 	} // end of namespace internal
 
+
+	/// operator to write sourceItems to a stream
 	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem) {
 		aStream << aItem.fGetFile()->fGetName() << ":" << aItem.fGetLineNumber();
 		return aStream;
@@ -207,9 +210,46 @@ namespace options {
 			}
 			firstOptionNotSeen = false;
 		}
-		if (firstOptionNotSeen) {
+		if (firstOptionNotSeen) { // read cfg files if no options set at all
 			fReadConfigFiles();
 		}
+
+		if (!internal::positional_base::fGetPositonalArgs().empty()) {
+			std::list<base*> positionalArgs;
+			for (auto it : internal::positional_base::fGetPositonalArgs()) {
+				positionalArgs.push_back(it.second);
+			}
+			while (!lUnusedOptions.empty()) {
+				auto opt = positionalArgs.front();
+				if (opt->fIsContainer()) { // process first options from the back
+					for (;;) {
+						auto opt2 = positionalArgs.back();
+						if (opt2 == opt) {
+							break;
+						}
+						positionalArgs.pop_back();
+						auto& arg = lUnusedOptions.back();
+						opt2->fSetMe(arg.c_str(), internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+						lUnusedOptions.pop_back();
+						if (lUnusedOptions.empty()) {
+							break;
+						}
+					}
+				}
+				auto& arg = lUnusedOptions.front();
+
+				opt->fSetMe(arg.c_str(), internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+				lUnusedOptions.erase(lUnusedOptions.begin());
+				if (! opt->fIsContainer()) {
+					positionalArgs.pop_front();
+					if (positionalArgs.empty()) {
+						break;
+					}
+				}
+			}
+		}
+
+
 		if (internal::gOptionDebugOptions) {
 			for (auto & it : base::fGetOptionMap()) {
 				auto opt = it.second;

@@ -27,9 +27,11 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+#include <typeinfo>
 
 namespace options {
 	namespace internal {
+		/// class to remember the file (or cmd line) an option was set from
 		class sourceFile {
 		  protected:
 			std::string lName;
@@ -46,6 +48,7 @@ namespace options {
 			};
 		};
 
+		/// class to remember from which line (or item) of a file/line an option was set from
 		class sourceItem {
 		  protected:
 			const sourceFile* lFile;
@@ -68,6 +71,7 @@ namespace options {
 			}
 		};
 	} // end of namespace internal
+
 	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem);
 
 
@@ -146,12 +150,34 @@ namespace options {
 		virtual bool fIsSet() const {
 			return ! lSource.fIsUnset();
 		};
+
+		virtual bool fIsContainer() const {
+			return false;
+		};
+
+
 		/// returns long name of option, usually only for internal use.
 		const std::string& fGetLongName() const {
 			return lLongName;
 		};
 	};
 
+	namespace internal {
+		class positional_base {
+		  public:
+			positional_base(int aOrderingNumber,
+			                base* aAsBase) {
+				auto result = fGetPositonalArgs().emplace(aOrderingNumber, aAsBase);
+				if (result.second == false) {
+					throw std::logic_error("non-unique numbered positional arg");
+				}
+			};
+			static std::map<int, base*>& fGetPositonalArgs() {
+				static std::map<int, base*> gPositinalArgs;
+				return gPositinalArgs;
+			}
+		};
+	} // end of namespace internal
 
 
 /// class that contains the parser, i.e. does that option handling
@@ -332,6 +358,10 @@ namespace options {
 		virtual void fSetMe(const char* aArg, const internal::sourceItem& aSource) {
 			std::stringstream buf(aArg);
 			buf >> std::setbase(0) >> std::noskipws >> lValue;
+			if (buf.fail()) {
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(lValue).name() << " failed.\n";
+				parser::fGetInstance()->fComplainAndLeave();
+			}
 			fSetSource(aSource);
 		}
 		operator T () const {
@@ -451,6 +481,9 @@ namespace options {
 			};
 			virtual bool fIsSet() const {
 				return ! lSources.empty();
+			};
+			bool fIsContainer() const override {
+				return true;
 			};
 		};
 	} // end of namespace internal
@@ -589,6 +622,9 @@ namespace options {
 				base(aShortName, aLongName, aExplanation, aNargs) {};
 			virtual bool fIsSet() const {
 				return ! lSources.empty();
+			};
+			bool fIsContainer() const override {
+				return true;
 			};
 		};
 	} // end of namespace internal
@@ -785,6 +821,16 @@ namespace options {
 		std::string lOriginalString;
 	  public:
 		void fWriteOriginalString(std::ostream& aStream) const;
+	};
+
+
+
+	template <class T> class positional: public T, public internal::positional_base {
+	  public:
+		template <class ... Types> positional(int aOrderingNumber, Types ... args) :
+			T('\0', args...),
+			internal::positional_base(aOrderingNumber, this) {
+		};
 	};
 
 } // end of namespace options

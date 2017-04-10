@@ -53,8 +53,25 @@ namespace options {
 		static single<bool> gOptionDebugOptions('\0', "debugOptions", "give debug output to option parsing");
 		/// standard option to suppress parsing of config files
 		static single<bool> gOptionNoCfgFiles('\0', "noCfgFiles", "do not read the default config files, must be FIRST option");
-	} // end of namespace internal
 
+
+		positional_base::positional_base(int aOrderingNumber,
+		                                 base* aAsBase) {
+			if (aAsBase->fIsContainer()) {
+				for (const auto& it : fGetPositonalArgs()) {
+					if (it.second->fIsContainer()) {
+						throw std::logic_error("only one container type option allowed");
+					}
+				}
+			}
+			auto result = fGetPositonalArgs().emplace(aOrderingNumber, aAsBase);
+			if (result.second == false) {
+				throw std::logic_error("non-unique numbered positional arg");
+			}
+		};
+
+
+	} // end of namespace internal
 
 	parser* parser::gParser = nullptr;
 

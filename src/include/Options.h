@@ -166,12 +166,7 @@ namespace options {
 		class positional_base {
 		  public:
 			positional_base(int aOrderingNumber,
-			                base* aAsBase) {
-				auto result = fGetPositonalArgs().emplace(aOrderingNumber, aAsBase);
-				if (result.second == false) {
-					throw std::logic_error("non-unique numbered positional arg");
-				}
-			};
+			                base* aAsBase);
 			static std::map<int, base*>& fGetPositonalArgs() {
 				static std::map<int, base*> gPositinalArgs;
 				return gPositinalArgs;

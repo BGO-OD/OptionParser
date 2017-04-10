@@ -83,7 +83,7 @@ int main(int argc, const char *argv[]) {
 		          "test $? != 0 && echo exit\n"
 		          ")\n"
 		          "Option sytax is:\n"
-		          "[export] type shortOpt longOpt descripton\n"
+		          "[export][positional number] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
 		          "\tfor durations the type 'seconds' is provided\n"
 		          "\tfor short durations the type 'milliseconds' is provided\n"
@@ -94,6 +94,8 @@ int main(int argc, const char *argv[]) {
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
 		          "\tthe rest of the line is the description\n"
 		          "\tif 'export' is set the shell variable will be exported\n"
+		          "\tif 'positional' is set the variable will be set as postional,"
+		          "\t  with 'number' defining the order in the positional parameter list."
 		          "\tif the next line starts with 'range' the values following are added\n"
 		          "\tto the allowed value range of the option, many range lines may follow!\n"
 		          "\tif only two are given they denote a true range in the closed interval\n"
@@ -120,6 +122,7 @@ int main(int argc, const char *argv[]) {
 	{
 		std::string keyWord;
 		bool exportNextOption = false;
+		int nextOptionPositional = 0;
 		while (std::cin.good()) {
 			std::cin >> keyWord;
 			if (std::cin.eof()) {
@@ -154,6 +157,9 @@ int main(int argc, const char *argv[]) {
 			} else if (keyWord == "export") {
 				exportNextOption = true;
 				continue;
+			} else if (keyWord == "positional") {
+				std::cin >> nextOptionPositional;
+				continue;
 			} else if (keyWord == "minusMinusSpecialTreatment") {
 				std::cin >> minusMinusSpecialTreatment;
 				continue;
@@ -178,10 +184,14 @@ int main(int argc, const char *argv[]) {
 				std::cerr << "illegal option type '" << keyWord << "', giving up" << std::endl;
 				return 1;
 			}
+			if (nextOptionPositional != 0) {
+				options::internal::positional_base(nextOptionPositional, options.back());
+			}
 			if (exportNextOption) {
 				exportedOptions.insert(options.back());
 			}
 			exportNextOption = false;
+			nextOptionPositional = 0;
 		}
 	}
 	std::string trailer;

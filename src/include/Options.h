@@ -535,6 +535,10 @@ namespace options {
 			std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 			T value;
 			valueStream >> std::setbase(0) >> value;
+			if (valueStream.fail()) {
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(value).name() << " failed.\n";
+				parser::fGetInstance()->fComplainAndLeave();
+			}
 			auto result = (*this).insert(this->end(), std::make_pair(name, value));
 			this->fAddSource(&(result->second), aSource);
 		}
@@ -669,6 +673,10 @@ namespace options {
 			std::stringstream valueStream(aArg);
 			T value;
 			valueStream >> std::setbase(0) >> value;
+			if (valueStream.fail()) {
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(value).name() << " failed.\n";
+				parser::fGetInstance()->fComplainAndLeave();
+			}
 			this->push_back(value);
 			lSources.push_back(aSource);
 		}

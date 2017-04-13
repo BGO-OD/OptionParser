@@ -40,7 +40,8 @@ namespace options {
 		ForeignOption(ForeignApplicationOptions* aForeignApplication,
 		              char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs,
 		              const char *aCanonicalForm);
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
+		void fSetMe(std::istream& aArg, const internal::sourceItem& aSource) override;
+		void fSetMeNoarg(const internal::sourceItem& aSource) override;
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		virtual void fAddToRangeFromStream(std::istream& aStream);
 		virtual void fAddDefaultFromStream(std::istream& aStream);

@@ -75,6 +75,41 @@ namespace options {
 	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem);
 
 
+	/// wrapper class for fundamental types
+	template <typename T> class fundamental_wrapper {
+	  protected:
+		T lValue;
+	  public:
+		fundamental_wrapper(T aValue): lValue(aValue) {};
+		fundamental_wrapper& operator=(const T aValue) {
+			lValue = aValue;
+			return *this;
+		}
+		operator T () const {
+			return lValue;
+		}
+		operator T& () {
+			return lValue;
+		}
+	};
+
+
+	template <typename T> std::ostream& operator<<(std::ostream& aStream, const fundamental_wrapper<T>& aWrapper) {
+		T oerks = aWrapper;
+		aStream << oerks;
+		return aStream;
+	};
+	template <typename T> std::istream& operator>>(std::istream& aStream, fundamental_wrapper<T>& aWrapper) {
+		T oerks;
+		aStream >> oerks;
+		aWrapper = oerks;
+		return aStream;
+	};
+
+	namespace escapedIO {
+		std::ostream& operator<<(std::ostream& aStream, const std::string& aString);
+		std::istream& operator>>(std::istream& aStream, std::string& aString);
+	} // end of namespace escapedIO
 
 /// base class for options
 
@@ -104,7 +139,8 @@ namespace options {
 		std::vector<const base*> lForbiddenOptions;
 
 		/// function to set the value from a string, remembering the source
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) = 0;
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) = 0;
+		virtual void fSetMeNoarg(const internal::sourceItem& /*aSource*/) {};
 		virtual void fSetSource(const internal::sourceItem& aSource);
 	  private:
 		virtual void fHandleOption(int argc, const char *argv[], int *i);
@@ -263,9 +299,12 @@ namespace options {
 
 /// It is called 'single' because it's meant for single values as opposed to containers
 /// as it may contain strings (via specialisations) it's not limited to scalar tyes.
-	template <typename T> class single : public base {
+	template <typename T> class single :
+		public std::conditional<std::is_fundamental<T>::value,
+		fundamental_wrapper<T>,
+		T>::type,
+		public base {
 	  private:
-		T lValue;
 		std::vector<T> lRange;
 	  public:
 		/// \brief construct an object of single<T>
@@ -273,8 +312,10 @@ namespace options {
 		/// \param [in] aDefault default value that the option has if not set otherwise
 		/// \param [in] aRange range of allowes values, can be given as initializer list. If only two values are given then [first,last] is the allowd interval.
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
-			base(aShortName, aLongName, aExplanation, 1),
-			lValue(aDefault) {
+			std::conditional<std::is_fundamental<T>::value,
+			fundamental_wrapper<T>,
+			T>::type (aDefault),
+			base(aShortName, aLongName, aExplanation, 1) {
 			if (!aRange.empty()) {
 				fAddToRange(aRange);
 			}
@@ -300,14 +341,17 @@ namespace options {
 			std::stringstream sbuf(buf);
 			while (!sbuf.eof()) {
 				T value;
+				using escapedIO::operator>>;
 				sbuf >> std::setbase(0) >> value;
 				fAddToRange(value);
 			}
 		};
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
-			aStream >> std::setbase(0) >> lValue;
+			using escapedIO::operator>>;
+			aStream >> std::setbase(0) >> *this;
 		}
 		virtual void  fWriteRange(std::ostream &aStream) const {
+			using escapedIO::operator<<;
 			if (! lRange.empty()) {
 				aStream << "# allowed range is";
 				if (lRange.size() == 2) {
@@ -323,25 +367,27 @@ namespace options {
 		}
 
 		virtual void fWriteValue(std::ostream& aStream) const {
-			aStream << lValue;
+			using escapedIO::operator<<;
+			aStream << *this;
 		}
 		virtual bool fCheckRange(std::ostream& aLogStream) const {
+			using escapedIO::operator<<;
 			if (lRange.empty()) {
 				return true;
 			} else if (lRange.size() == 2) {
-				if (lRange[0] <= lValue && lValue <= lRange[1]) {
+				if (lRange[0] <= *this && *this <= lRange[1]) {
 					return true;
 				} else {
-					aLogStream << fGetLongName() << " out of range (" << lValue << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
+					aLogStream << fGetLongName() << " out of range (" << *this << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
 					return false;
 				}
 			} else {
 				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					if (*it == lValue) {
+					if (*it == *this) {
 						return true;
 					}
 				}
-				aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
+				aLogStream << fGetLongName() << " out of range (" << *this << "), must be one of:\n";
 				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
 					aLogStream << *it << "\n";
 				}
@@ -350,20 +396,19 @@ namespace options {
 		}
 
 
-		virtual void fSetMe(const char* aArg, const internal::sourceItem& aSource) {
-			std::stringstream buf(aArg);
-			buf >> std::setbase(0) >> std::noskipws >> lValue;
-			if (buf.fail()) {
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(lValue).name() << " failed.\n";
-				parser::fGetInstance()->fComplainAndLeave();
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+			using escapedIO::operator>>;
+			aStream >> std::setbase(0) >> std::noskipws >> *this;
+			if (aStream.fail()) {
+				std::string arg;
+				aStream >> arg;
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(T).name() << " failed.\n";
+				parser::fGetInstance()->fComplainAndLeave(false);
 			}
 			fSetSource(aSource);
 		}
-		operator T () const {
-			return lValue;
-		}
 		const T &fGetValue() const {
-			return lValue;
+			return *this;
 		}
 	};
 
@@ -377,8 +422,9 @@ namespace options {
 			base(aShortName, aLongName, aExplanation, 0),
 			lValue(aDefault), lDefault(aDefault) {
 		}
-		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
+		void fWriteValue(std::ostream& aStream) const override;
+		void fSetMeNoarg(const internal::sourceItem& aSource) override;
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;
 		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
 			return true;
 		};
@@ -413,44 +459,12 @@ namespace options {
 		virtual void fAddDefaultFromStream(std::istream& aStream);
 		virtual void  fWriteRange(std::ostream &aStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource);
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		operator const char* () const {
 			return lValue;
 		}
-		const char *fGetValue() const {
-			return lValue;
-		}
 	};
-/// template specialisation for options that are std::strings
-	template <> class single<std::string> : public base {
-	  protected:
-		std::string lValue;
-		std::vector<std::string> lRange;
-	  public:
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault = "", const std::vector<std::string>& aRange = {});
-		virtual void fAddToRange(const std::string& aValue);
-		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
-		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
-			for (auto it = aBegin; it != aEnd; ++it) {
-				fAddToRange(*it);
-			}
-		};
-		virtual void fAddToRange(const std::vector<std::string>& aRange);
-		virtual void fAddToRangeFromStream(std::istream& aStream);
-		virtual void fAddDefaultFromStream(std::istream& aStream);
-		virtual void  fWriteRange(std::ostream &aStream) const;
-		virtual bool fCheckRange(std::ostream& aLogStream) const;
-		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
-		operator const std::string& () const {
-			return lValue;
-		}
-		const std::string& fGetValue() const {
-			return lValue;
-		}
-	};
-
 	/// \namespace options::internal
 	/// special namespace for classes and functions that are meant for internal use only
 
@@ -474,7 +488,7 @@ namespace options {
 					return internal::sourceItem();
 				}
 			};
-			virtual bool fIsSet() const {
+			bool fIsSet() const override {
 				return ! lSources.empty();
 			};
 			bool fIsContainer() const override {
@@ -504,7 +518,11 @@ namespace options {
 			}
 			for (const auto& it : *this) {
 				auto source = this->fGetSource(&(it.second));
-				aStream << (source.fIsUnset() ? aPrefix : "") << this->lLongName << "=" << it.first <<  parser::fGetInstance()->fGetSecondaryAssignment() << it.second << "\n";
+				aStream << (source.fIsUnset() ? aPrefix : "") << this->lLongName << "=" << it.first <<  parser::fGetInstance()->fGetSecondaryAssignment();
+				{
+					using escapedIO::operator<<;
+					aStream << it.second << "\n";
+				}
 				if (!source.fIsUnset()) {
 					aStream << "# set from " << source << "\n";
 				}
@@ -516,6 +534,7 @@ namespace options {
 		}
 
 		virtual void fWriteValue(std::ostream& aStream) const {
+			using escapedIO::operator<<;
 			if (this->empty()) {
 				aStream << "\"\"";
 			} else {
@@ -524,19 +543,20 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-			std::string s(aArg);
-			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
-			if (dividerPosition == std::string::npos) { // not found, complain!
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+			std::string name;
+			std::getline(aStream, name, parser::fGetInstance()->fGetSecondaryAssignment());
+			if (aStream.eof()) { // not found, complain!
 				parser::fGetInstance()->fGetErrorStream() << "The option " << this->fGetLongName() << " requires a '" << parser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
 				parser::fGetInstance()->fComplainAndLeave();
 			}
-			auto name = s.substr(0, dividerPosition);
-			std::stringstream valueStream(s.substr(dividerPosition + 1, std::string::npos));
 			T value;
-			valueStream >> std::setbase(0) >> value;
-			if (valueStream.fail()) {
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(value).name() << " failed.\n";
+			using escapedIO::operator>>;
+			aStream >> std::setbase(0) >> value;
+			if (aStream.fail()) {
+				std::string arg;
+				aStream >> arg;
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(value).name() << " failed.\n";
 				parser::fGetInstance()->fComplainAndLeave();
 			}
 			auto result = (*this).insert(this->end(), std::make_pair(name, value));
@@ -544,68 +564,6 @@ namespace options {
 		}
 		const std::map<std::string, T>& fGetValue() const  {
 			return *static_cast<const std::map<std::string, T>*>(this);
-		}
-	};
-
-
-
-
-/// template specialisation for maps where the values are also std::strings
-	template <typename Container> class map<std::string, Container>: public internal::baseForMap<std::string>, public Container {
-	  public:
-		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			internal::baseForMap<std::string>(aShortName, aLongName, aExplanation, 1) {
-		}
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
-
-		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
-			if (this->empty()) {
-				aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
-			}
-			for (const auto & it : *this) {
-				auto source = this->fGetSource(&(it.second));
-
-				aStream << (source.fIsUnset() ? aPrefix : "") << this->lLongName << "=" << it.first << parser::fGetInstance()->fGetSecondaryAssignment();
-				parser::fPrintEscapedString(aStream, it.second.c_str());
-				aStream << "\n";
-				if (!source.fIsUnset()) {
-					aStream << "# set from " << source << "\n";
-				}
-			}
-		};
-		virtual void fWriteValue(std::ostream& aStream) const {
-			if (this->empty()) {
-				aStream << "\"\"";
-			} else {
-				for (auto it = this->begin(); it != this->end(); ++it) {
-					if (it != this->begin()) {
-						aStream << ',';
-					}
-					aStream << it->first << parser::fGetInstance()->fGetSecondaryAssignment() << it->second << " ";
-				}
-			}
-		};
-
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-			std::string s(aArg);
-			auto dividerPosition = s.find_first_of(parser::fGetInstance()->fGetSecondaryAssignment());
-			if (dividerPosition == std::string::npos) { // not found, complain!
-				parser::fGetInstance()->fGetErrorStream() << "The option " << fGetLongName() << " requires a '" << parser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
-				parser::fGetInstance()->fComplainAndLeave();
-			}
-			auto name = s.substr(0, dividerPosition);
-			auto buf = new char[s.length() - dividerPosition];
-			parser::fReCaptureEscapedString(buf, s.substr(dividerPosition + 1, std::string::npos).c_str());
-			auto result = (*this).insert(this->end(), std::make_pair(name, buf));
-			fAddSource(&(result->second), aSource);
-		};
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
-			return true;
-		};
-
-		const  Container& fGetValue() const {
-			return *static_cast<Container*> (this);
 		}
 	};
 
@@ -619,7 +577,7 @@ namespace options {
 		  public:
 			baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
 				base(aShortName, aLongName, aExplanation, aNargs) {};
-			virtual bool fIsSet() const {
+			bool fIsSet() const override {
 				return ! lSources.empty();
 			};
 			bool fIsContainer() const override {
@@ -646,7 +604,11 @@ namespace options {
 			}
 			auto it2 = lSources.begin();
 			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=" << *it << "\n";
+				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
+				{
+					using escapedIO::operator<<;
+					aStream << *it << "\n";
+				}
 				if (!it2->fIsUnset()) {
 					aStream << "# set from " << *it2 << "\n";
 				}
@@ -661,20 +623,25 @@ namespace options {
 			if (this->empty()) {
 				aStream << "\"\"";
 			} else {
+				aStream << "\"";
 				for (auto it = this->begin(); it != this->end(); ++it) {
-					if (it != this->begin()) {
-						aStream << ',';
-					}
+					using escapedIO::operator<<;
 					aStream << *it << " ";
 				}
+				aStream << "\"";
 			}
 		}
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-			std::stringstream valueStream(aArg);
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
 			T value;
-			valueStream >> std::setbase(0) >> value;
-			if (valueStream.fail()) {
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << aArg << "' into " << typeid(value).name() << " failed.\n";
+			aStream >> std::setbase(0);
+			{
+				using namespace escapedIO;
+				aStream >> value;
+			}
+			if (aStream.fail()) {
+				std::string arg;
+				aStream >> arg;
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(value).name() << " failed.\n";
 				parser::fGetInstance()->fComplainAndLeave();
 			}
 			this->push_back(value);
@@ -692,127 +659,6 @@ namespace options {
 
 
 
-
-
-/// template specialisation for container based options that contain const char* strings
-	template <typename Container> class container<const char *, Container>: public internal::baseForContainer, public Container {
-	  public:
-		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
-		}
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
-
-		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
-			if (this->empty()) {
-				aStream << aPrefix << this->lLongName << "=value\n";
-			}
-			auto it2 = lSources.begin();
-			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
-				parser::fPrintEscapedString(aStream, *it);
-				aStream << "\n";
-				if (!it2->fIsUnset()) {
-					aStream << "# set from " << *it2 << "\n";
-				}
-			}
-		}
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
-			return true;
-		}
-
-
-		virtual void fWriteValue(std::ostream& aStream) const {
-			if (this->empty()) {
-				aStream << "\"\"";
-			} else {
-				for (auto it = this->begin(); it != this->end(); ++it) {
-					if (it != this->begin()) {
-						aStream << ',';
-					}
-					parser::fPrintEscapedString(aStream, *it);
-				}
-			}
-		}
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-			auto buf = new char[strlen(aArg) + 1];
-			parser::fReCaptureEscapedString(buf, aArg);
-			this->push_back(buf);
-			lSources.push_back(aSource);
-		}
-		operator const Container & () const {
-			return *static_cast<const Container*>(this);
-		}
-		const Container& fGetValue() const  {
-			return *static_cast<const Container*>(this);
-		}
-
-	};
-
-/// template specialisation for container based options that contain std::strings
-	template <typename Container> class container<std::string, Container>: public internal::baseForContainer, public Container {
-	  public:
-		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
-		}
-		virtual void fAddToRangeFromStream(std::istream& aStream) {
-			std::string buf1;
-			std::getline(aStream, buf1);
-			auto buf2 = new char[buf1.length() + 1];
-			parser::fReCaptureEscapedString(buf2, buf1.c_str());
-			//	lRange.push_back(buf2);
-		};
-		virtual void fAddDefaultFromStream(std::istream& aStream) {
-			std::string buf1;
-			std::getline(aStream, buf1);
-			fSetMe(buf1.c_str(), internal::sourceItem());
-		};
-
-		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
-			if (this->empty()) {
-				aStream << aPrefix << this->lLongName << "=value\n";
-			}
-			auto it2 = lSources.begin();
-			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
-				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
-				parser::fPrintEscapedString(aStream, it->c_str());
-				aStream << "\n";
-				if (!it2->fIsUnset()) {
-					aStream << "# set from " << *it2 << "\n";
-				}
-			}
-		}
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
-			return true;
-		}
-
-
-		virtual void fWriteValue(std::ostream& aStream) const {
-			if (this->empty()) {
-				aStream << "\"\"";
-			} else {
-				for (auto it = this->begin(); it != this->end(); ++it) {
-					if (it != this->begin()) {
-						aStream << ',';
-					}
-					parser::fPrintEscapedString(aStream, it->c_str());
-				}
-			}
-		}
-		virtual void fSetMe(const char* aArg, const internal::sourceItem& aSource) {
-			auto buf = new char[strlen(aArg) + 1];
-			parser::fReCaptureEscapedString(buf, aArg);
-			this->push_back(buf);
-			lSources.push_back(aSource);
-		}
-		operator const Container & () const {
-			return *static_cast<const Container*>(this);
-		}
-		const Container& fGetValue() const  {
-			return *static_cast<const Container*>(this);
-		}
-
-	};
 
 	/// interface class that is used for options where the original string rather
 	/// than the streamed value is to be written into config files.

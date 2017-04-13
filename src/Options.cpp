@@ -218,7 +218,8 @@ namespace options {
 							fComplainAndLeave();
 						}
 						auto opt = it->second;
-						opt->fSetMe(equalsAt + 1, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
+						std::stringstream sbuf(equalsAt + 1);
+						opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
 						free(buf);
 					}
 				}
@@ -246,7 +247,8 @@ namespace options {
 						}
 						positionalArgs.pop_back();
 						auto& arg = lUnusedOptions.back();
-						opt2->fSetMe(arg.c_str(), internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+						std::stringstream sbuf(arg);
+						opt2->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
 						lUnusedOptions.pop_back();
 						if (lUnusedOptions.empty()) {
 							break;
@@ -254,8 +256,8 @@ namespace options {
 					}
 				}
 				auto& arg = lUnusedOptions.front();
-
-				opt->fSetMe(arg.c_str(), internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+				std::stringstream sbuf(arg);
+				opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
 				lUnusedOptions.erase(lUnusedOptions.begin());
 				if (! opt->fIsContainer()) {
 					positionalArgs.pop_front();
@@ -346,7 +348,7 @@ namespace options {
 		               || (strchr(aString, '\t') != nullptr)
 		               || (strchr(aString, ',') != nullptr);
 		if (delimit) {
-			aStream << '"';
+			aStream << '\'';
 		}
 		for (const char *rp = aString; *rp != '\0'; rp++) {
 			switch (*rp) {
@@ -367,6 +369,9 @@ namespace options {
 					break;
 				case '\t':
 					aStream << "\\t";
+					break;
+				case ' ':
+					aStream << "\\ ";
 					break;
 				case '\v':
 					aStream << "\\v";
@@ -389,7 +394,7 @@ namespace options {
 			}
 		}
 		if (delimit) {
-			aStream << '"';
+			aStream << '\'';
 		}
 	}
 
@@ -456,6 +461,80 @@ namespace options {
 		*wp = '\0';
 	}
 
+	namespace escapedIO {
+		std::ostream& operator<<(std::ostream& aStream, const std::string& aString) {
+			parser::fPrintEscapedString(aStream, aString.c_str());
+			return aStream;
+		}
+		std::istream& operator>>(std::istream& aStream, std::string& aString) {
+			std::istream::sentry s(aStream);
+			if (s) {
+				aString.clear();
+				auto delimiter = aStream.peek();
+				if (delimiter == '"' || delimiter == '\'') { // string is enclosed in a pair of delimiters
+					aStream.get();
+				} else {
+					delimiter = '\0';
+				}
+				while (! aStream.eof()) {
+					auto c = aStream.peek();
+					if (c == '\n' || aStream.eof()) {
+						break;
+					}
+					aStream.get();
+					if (c == '\\') {
+						c = aStream.get();
+						switch (c) {
+							case 'a':
+								aString.push_back('\a');
+								break;
+							case 'b':
+								aString.push_back('\b');
+								break;
+							case 'f':
+								aString.push_back('\f');
+								break;
+							case 'n':
+								aString.push_back('\n');
+								break;
+							case 'r':
+								aString.push_back('\r');
+								break;
+							case 't':
+								aString.push_back('\t');
+								break;
+							case 'v':
+								aString.push_back('\v');
+								break;
+							default:
+								if (c >= '0' && c <= '7') {
+									char ch = 0;
+									for (int i = 0; i < 3 && c >= '0' && c <= '7'; i++) {
+										ch = (ch << 3) | ((c - '0') & 0x7);
+										c = aStream.get();
+									}
+									aString.push_back(ch);
+								} else {
+									aString.push_back(c);
+								}
+								break;
+						}
+					} else if (c == delimiter) {
+						break;
+					} else {
+						aString.push_back(c);
+					}
+				}
+			}
+			auto eof = aStream.eof();
+			aStream.clear();
+			if (eof) {
+				aStream.setstate(std::ios_base::eofbit);
+			};
+			return aStream;
+		}
+	} // end of namespace escapedIO
+
 /// construct an object of type base
 
 /// The newly created object is inserted into the maps sorted by long name and by short name,
@@ -514,9 +593,10 @@ namespace options {
 			parser::fGetInstance()->fComplainAndLeave();
 		}
 		if (lNargs == 0) {
-			fSetMe(nullptr, internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
+			fSetMeNoarg(internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
 		} else if (lNargs == 1) {
-			fSetMe(argv[*i + 1], internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
+			std::stringstream sbuf(argv[*i + 1]);
+			fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
 			*i += lNargs;
 		}
 		if (fCheckRange(parser::fGetInstance()->fGetErrorStream()) == false) {
@@ -755,7 +835,8 @@ namespace options {
 			}
 			auto option = it->second;
 			{
-				option->fSetMe(line.substr(equalsAt + 1).c_str(), source);
+				std::stringstream sbuf(line.substr(equalsAt + 1));
+				option->fSetMe(sbuf, source);
 				if (preserveWorthyStuff != nullptr) {
 					option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 					preserveWorthyStuff = nullptr;
@@ -779,13 +860,12 @@ namespace options {
 	void single<bool>::fWriteValue(std::ostream & aStream) const {
 		aStream << std::boolalpha << lValue;
 	}
-	void single<bool>::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-		if (aArg == nullptr) {
-			lValue = ! lDefault;
-		} else {
-			std::stringstream buf(aArg);
-			buf >> std::boolalpha >> lValue;
-		}
+	void single<bool>::fSetMeNoarg(const internal::sourceItem& aSource) {
+		lValue = ! lDefault;
+		fSetSource(aSource);
+	}
+	void single<bool>::fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		aStream >> std::boolalpha >> lValue;
 		fSetSource(aSource);
 	}
 	void single<bool>::fAddDefaultFromStream(std::istream& aStream) {
@@ -829,9 +909,7 @@ namespace options {
 		lRange.push_back(buf2);
 	}
 	void single<const char*>::fAddDefaultFromStream(std::istream& aStream) {
-		std::string buf1;
-		std::getline(aStream, buf1);
-		fSetMe(buf1.c_str(), internal::sourceItem());
+		fSetMe(aStream, internal::sourceItem());
 	}
 
 	void  single<const char*>::fWriteRange(std::ostream &aStream) const {
@@ -863,10 +941,11 @@ namespace options {
 			parser::fPrintEscapedString(aStream, lValue);
 		}
 	}
-	void single<const char*>::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-		auto buf = new char[strlen(aArg) + 1];
-		parser::fReCaptureEscapedString(buf, aArg);
-		lValue = buf;
+	void single<const char*>::fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		auto buf = new std::string();
+		using escapedIO::operator>>;
+		aStream >> *buf;
+		lValue = buf->c_str();;
 		fSetSource(aSource);
 	}
 
@@ -897,89 +976,89 @@ namespace options {
 
 
 
-	single<std::string>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault, const std::vector<std::string>& aRange) :
-		base(aShortName, aLongName, aExplanation, 1),
-		lValue(std::move(aDefault)) {
-		if (!aRange.empty()) {
-			fAddToRange(aRange);
-		}
-	}
-	void single<std::string>::fAddToRange( const std::string& aValue) {
-		lRange.push_back(aValue);
-	}
-	void single<std::string>::fAddToRange( const std::vector<std::string>& aRange) {
-		fAddToRange(aRange.cbegin(), aRange.cend());
-	}
-	void single<std::string>::fAddToRangeFromStream(std::istream& aStream) {
-		std::string buf1;
-		std::getline(aStream, buf1);
-		auto buf2 = new char[buf1.length() + 1];
-		parser::fReCaptureEscapedString(buf2, buf1.c_str());
-		lRange.push_back(buf2);
-	}
-	void single<std::string>::fAddDefaultFromStream(std::istream& aStream) {
-		std::string buf1;
-		std::getline(aStream, buf1);
-		fSetMe(buf1.c_str(), internal::sourceItem());
-	}
-
-	bool single<std::string>::fCheckRange(std::ostream& aLogStream) const {
-		if (lRange.empty()) {
-			return true;
-		} else if (lRange.size() == 2) {
-			if (lRange[0].compare(lValue) < 1 && lValue.compare(lRange[1]) < 1) {
-				return true;
-			} else {
-				aLogStream << fGetLongName() << " out of range (" << lValue << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
-				return false;
-			}
-		} else {
-			for (const auto & it : lRange) {
-				if (it == lValue) {
-					return true;
-				}
-			}
-			aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
-			for (const auto & it : lRange) {
-				aLogStream << it << "\n";
-			}
-			return false;
-		}
-	}
-
-
-	void single<std::string>::fWriteValue(std::ostream & aStream) const {
-		parser::fPrintEscapedString(aStream, lValue.c_str());
-	}
-	void single<std::string>::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-		auto buf = new char[strlen(aArg) + 1];
-		parser::fReCaptureEscapedString(buf, aArg);
-		lValue = buf;
-		delete[] buf;
-		fSetSource(aSource);
-	}
-
-	void  single<std::string>::fWriteRange(std::ostream &aStream) const {
-		if (! lRange.empty()) {
-			aStream << "# allowed range is";
-			if (lRange.size() == 2) {
-				aStream << " [";
-				parser::fPrintEscapedString(aStream, lRange[0].c_str());
-				aStream << ",";
-				parser::fPrintEscapedString(aStream, lRange[1].c_str());
-				aStream << "]\n";
-			} else {
-				aStream << ":";
-				for (const auto & it : lRange) {
-					aStream << "\n# ";
-					parser::fPrintEscapedString(aStream, it.c_str());
-				}
-				aStream << "\n# end of range\n#\n";
-			}
-		}
-	}
-
-
+// 	single<std::string>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, std::string  aDefault, const std::vector<std::string>& aRange) :
+// 		base(aShortName, aLongName, aExplanation, 1),
+// 		lValue(std::move(aDefault)) {
+// 		if (!aRange.empty()) {
+// 			fAddToRange(aRange);
+// 		}
+// 	}
+// 	void single<std::string>::fAddToRange( const std::string& aValue) {
+// 		lRange.push_back(aValue);
+// 	}
+// 	void single<std::string>::fAddToRange( const std::vector<std::string>& aRange) {
+// 		fAddToRange(aRange.cbegin(), aRange.cend());
+// 	}
+// 	void single<std::string>::fAddToRangeFromStream(std::istream& aStream) {
+// 		std::string buf1;
+// 		std::getline(aStream, buf1);
+// 		auto buf2 = new char[buf1.length() + 1];
+// 		parser::fReCaptureEscapedString(buf2, buf1.c_str());
+// 		lRange.push_back(buf2);
+// 	}
+// 	void single<std::string>::fAddDefaultFromStream(std::istream& aStream) {
+// 		std::string buf1;
+// 		std::getline(aStream, buf1);
+// 		fSetMe(buf1.c_str(), internal::sourceItem());
+// 	}
+//
+// 	bool single<std::string>::fCheckRange(std::ostream& aLogStream) const {
+// 		if (lRange.empty()) {
+// 			return true;
+// 		} else if (lRange.size() == 2) {
+// 			if (lRange[0].compare(lValue) < 1 && lValue.compare(lRange[1]) < 1) {
+// 				return true;
+// 			} else {
+// 				aLogStream << fGetLongName() << " out of range (" << lValue << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
+// 				return false;
+// 			}
+// 		} else {
+// 			for (const auto & it : lRange) {
+// 				if (it == lValue) {
+// 					return true;
+// 				}
+// 			}
+// 			aLogStream << fGetLongName() << " out of range (" << lValue << "), must be one of:\n";
+// 			for (const auto & it : lRange) {
+// 				aLogStream << it << "\n";
+// 			}
+// 			return false;
+// 		}
+// 	}
+//
+//
+// 	void single<std::string>::fWriteValue(std::ostream & aStream) const {
+// 		parser::fPrintEscapedString(aStream, lValue.c_str());
+// 	}
+// 	void single<std::string>::fSetMe(const char *aArg, const internal::sourceItem& aSource) {
+// 		auto buf = new char[strlen(aArg) + 1];
+// 		parser::fReCaptureEscapedString(buf, aArg);
+// 		lValue = buf;
+// 		delete[] buf;
+// 		fSetSource(aSource);
+// 	}
+//
+// 	void  single<std::string>::fWriteRange(std::ostream &aStream) const {
+// 		if (! lRange.empty()) {
+// 			aStream << "# allowed range is";
+// 			if (lRange.size() == 2) {
+// 				aStream << " [";
+// 				parser::fPrintEscapedString(aStream, lRange[0].c_str());
+// 				aStream << ",";
+// 				parser::fPrintEscapedString(aStream, lRange[1].c_str());
+// 				aStream << "]\n";
+// 			} else {
+// 				aStream << ":";
+// 				for (const auto & it : lRange) {
+// 					aStream << "\n# ";
+// 					parser::fPrintEscapedString(aStream, it.c_str());
+// 				}
+// 				aStream << "\n# end of range\n#\n";
+// 			}
+// 		}
+// 	}
+//
+//
 	namespace internal { // put clases and options for internal use
 		// into internal namespace
 
@@ -989,7 +1068,7 @@ namespace options {
 			OptionHelp():
 				single('h', "help", "give this help") {
 			}
-			void fSetMe(const char * /*aArg*/, const sourceItem& /*aSource*/) override {
+			void fSetMe(std::istream& /*aArg*/, const sourceItem& /*aSource*/) override {
 				parser::fGetInstance()->fHelp();
 				exit(parser::fGetInstance()->fGetHelpReturnValue());
 			}
@@ -1019,14 +1098,14 @@ namespace options {
 
 
 /// special derived class used to write out config files
-		class OptionWriteCfgFile : public supressed<const char *> {
+		class OptionWriteCfgFile : public supressed<std::string> {
 		  public:
 			OptionWriteCfgFile():
-				supressed('\0', "writeCfgFile", "write a config file") {
+				supressed('\0', "writeCfgFile", "write a config file", "") {
 			}
-			void fSetMe(const char *aArg, const sourceItem&/* aSource */) override {
-				lValue = aArg;
-				parser::fGetInstance()->fWriteCfgFile(aArg);
+			void fSetMe(std::istream& aStream, const sourceItem&/* aSource */) override {
+				aStream >> *this;
+				parser::fGetInstance()->fWriteCfgFile(c_str());
 				exit(parser::fGetInstance()->fGetHelpReturnValue());
 			}
 		};
@@ -1038,12 +1117,12 @@ namespace options {
 			OptionReadCfgFile():
 				single('\0', "readCfgFile", "read a config file") {
 			}
-			void fSetMe(const char *aArg, const sourceItem& aSource) override {
-				single<const char *>::fSetMe(aArg, aSource);
+			void fSetMe(std::istream& aStream, const sourceItem& aSource) override {
+				single<const char *>::fSetMe(aStream, aSource);
 				if (gNoCfgFileRecursion && aSource.fGetFile() != &sourceFile::gCmdLine) {
 					return;
 				}
-				parser::fGetInstance()->fReadCfgFile(aArg, aSource);
+				parser::fGetInstance()->fReadCfgFile(*this, aSource);
 			};
 			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
 				single<const char *>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");

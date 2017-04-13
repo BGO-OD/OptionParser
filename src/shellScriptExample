@@ -20,12 +20,8 @@ uint p pid the pid of the process
 default $$
 export string - test a test
 positional 10 list - files all the files to process
-range bla
-range blubb
 bool v verbose be verbose
 list l list list of strings
-default string1
-default string2
 milliseconds s msecs a time range
 idate d date a time point
 trailer:
@@ -48,3 +44,6 @@ if [ $pid -ne $$ ]; then
 		echo "you were fooled! you can't change the pid of this process."
 fi
 
+for f in $files; do
+    echo $f
+done

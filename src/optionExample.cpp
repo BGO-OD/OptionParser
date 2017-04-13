@@ -12,7 +12,7 @@ int main(int argc, const char *argv[]) {
 	options::single<const char *>cs('c', "cstring", "a c string", nullptr, {"bla", "blubb"});
 	options::single<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
 	options::container<double> dnums('d', "doubles", "double numbers");
-	options::container<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
+	//	options::container<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");
 	options::container<std::string, std::list<std::string>> stringS('X', "liststring", "list of std::strings");
 	options::single<double> complexDescription('\0', "ComplexDescription", "Pass here the Bremsstrahl-Tagging-Hodoscope-Engineering-Assemply-Rate in Hz", 84.);
 	options::single<double> moreComplexDescription('\0', "MoreComplexDescription", "very complicated example option with very long explanation to illustrate automatic wrapping in help output when the explanations become very long and would break readability otherwise.", 42.);
@@ -50,9 +50,9 @@ int main(int argc, const char *argv[]) {
 	for (double & dnum : dnums) {
 		std::cout << " double number '" << dnum << "'\n";
 	}
-	for (auto & it : stringl) {
-		std::cout << " list string '" << it << "'\n";
-	}
+	//	for (auto & it : stringl) {
+	//	std::cout << " list string '" << it << "'\n";
+	//}
 	for (auto & it : stringS) {
 		std::cout << " list std::string '" << it << "'\n";
 	}

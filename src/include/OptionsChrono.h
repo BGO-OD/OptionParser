@@ -41,7 +41,7 @@ namespace options {
 		virtual void fWriteRange(std::ostream& aStream) const;
 		virtual bool fCheckRange(std::ostream& aLogStream) const;
 		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource);
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource);
 		operator const valueType () const {
 			return lValue;
 		}
@@ -173,9 +173,10 @@ namespace options {
 		virtual void fWriteValue(std::ostream& aStream) const {
 			lValuePrinter(aStream, lValue);
 		}
-		virtual void fSetMe(const char *aArg, const internal::sourceItem& aSource) {
-			lOriginalString = aArg;
-			internal::parseDurationString(lValue, aArg);
+		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+			using escapedIO::operator>>;
+			aStream >> lOriginalString;
+			internal::parseDurationString(lValue, lOriginalString);
 			fSetSource(aSource);
 		}
 		operator const valueType () const {

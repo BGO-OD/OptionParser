@@ -7,7 +7,7 @@ set > $tmpfile
 
 . <(shellScriptOptionParser "$(cd "$(dirname "$0")"; echo "$(pwd)/$(basename "$0")")" "$@"<<EOF | tee test.log
 A shell script to demonstrate option parsing with the shellScriptOptionParser
-the input so shellScriptOptionParser up to the line containing only options:
+the input to shellScriptOptionParser up to the line containing only 'options:'
 will be used as description of the script,
 then follow the options with the optionn type (int, bool, string) first,
 then the short option character, then the long name,

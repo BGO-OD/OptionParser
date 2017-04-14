@@ -75,7 +75,7 @@ namespace options {
 
 	parser* parser::gParser = nullptr;
 
-	parser::parser(const char *aDescription, const char *aTrailer, const std::vector<std::string>& aSearchPaths):
+	parser::parser(const std::string& aDescription, const std::string& aTrailer, const std::vector<std::string>& aSearchPaths):
 		lDescription(aDescription),
 		lTrailer(aTrailer),
 		lSearchPaths(aSearchPaths),
@@ -348,7 +348,7 @@ namespace options {
 		if (delimit) {
 			aStream << '\'';
 		}
-		for (auto c: aString) {
+		for (auto c : aString) {
 			switch (c) {
 				case '\a':
 					aStream << "\\a";
@@ -682,9 +682,7 @@ namespace options {
 			*lMessageStream << "\n";
 		}
 
-		if (lTrailer != nullptr) {
-			*lMessageStream << lTrailer;
-		}
+		*lMessageStream << lTrailer;
 		*lMessageStream << std::endl;
 	}
 	void parser::fWriteCfgFile(const std::string& aFileName) {
@@ -833,9 +831,12 @@ namespace options {
 			OptionHelp():
 				single('h', "help", "give this help") {
 			}
-			void fSetMe(std::istream& /*aArg*/, const sourceItem& /*aSource*/) override {
+			void fSetMeNoarg(const sourceItem& /*aSource*/) override {
 				parser::fGetInstance()->fHelp();
 				exit(parser::fGetInstance()->fGetHelpReturnValue());
+			}
+			void fSetMe(std::istream& /*aArg*/, const sourceItem& aSource) override {
+				fSetMeNoarg(aSource);
 			}
 		};
 		static OptionHelp gHelp;

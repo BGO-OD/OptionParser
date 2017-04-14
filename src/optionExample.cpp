@@ -8,7 +8,7 @@ int main(int argc, const char *argv[]) {
 	options::single<int> number2('k', "kumber", "some other number", 0, {0, 3, 3});
 	options::map<int, std::vector<std::pair<std::string, int> > > numbers('m', "numbers", "several numbers");
 	options::map<std::string, std::list<std::pair<std::string, std::string> > > strings('s', "strings", "several strings");
-	options::single<const char *>cs('c', "cstring", "a c string", nullptr, {"bla", "blubb"});
+	options::single<const char *>cs('c', "cstring", "a c string", "", {"bla", "blubb"});
 	options::single<std::string>Cs('C', "Cstring", "a C++ string", "",  {"bla", "blubb"});
 	options::container<double> dnums('d', "doubles", "double numbers");
 	//	options::container<const char*, std::list<const char*>> stringl('S', "listString", "list of strings");

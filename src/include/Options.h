@@ -224,8 +224,8 @@ namespace options {
 	class parser {
 	  protected:
 		static parser* gParser;
-		const char *lDescription;
-		const char *lTrailer;
+		const std::string lDescription;
+		const std::string lTrailer;
 		const std::vector<std::string> lSearchPaths;
 		std::vector<std::string> lUnusedOptions;
 		std::vector<std::string> lStuffAfterMinusMinus;
@@ -247,7 +247,7 @@ namespace options {
 		void fPrintOptionHelp(std::ostream& aMessageStream, const base& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const;
 		void fCheckConsistency();
 	  public:
-		parser(const char *aDescription = NULL, const char *aTrailer = NULL, const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
+		parser(const std::string& aDescription = "", const std::string& aTrailer = "", const std::vector<std::string>& aSearchPaths = {"/etc/", "~/.", "~/.config/", "./."});
 		~parser();
 
 		bool fIsParsingDone() const;

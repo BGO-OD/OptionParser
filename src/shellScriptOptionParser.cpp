@@ -33,7 +33,7 @@ template <typename T> options::single<T>* fOptionFromStream(std::istream &aStrea
 	if (shortName == '-') {
 		shortName = '\0';
 	}
-	return new options::single<T>(shortName, longName.c_str(), description.c_str(), defaultValue);
+	return new options::single<T>(shortName, longName, description, defaultValue);
 }
 template <typename T> options::container<T>* fContainerOptionFromStream(std::istream &aStream) {
 	char shortName;
@@ -48,7 +48,7 @@ template <typename T> options::container<T>* fContainerOptionFromStream(std::ist
 	if (shortName == '-') {
 		shortName = '\0';
 	}
-	return new options::container<T>(shortName, longName.c_str(), description.c_str());
+	return new options::container<T>(shortName, longName, description);
 }
 
 int main(int argc, const char *argv[]) {
@@ -203,7 +203,7 @@ int main(int argc, const char *argv[]) {
 		trailer += "\n";
 	}
 
-	options::parser parser(description.c_str(), trailer.c_str(), searchPath);
+	options::parser parser(description, trailer, searchPath);
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);
 	parser.fSetExecutableName(argv[1]);

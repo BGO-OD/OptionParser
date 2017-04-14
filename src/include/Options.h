@@ -441,11 +441,11 @@ namespace options {
 		void fWriteValue(std::ostream& aStream) const override;
 		void fSetMeNoarg(const internal::sourceItem& aSource) override;
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
+		bool fCheckRange(std::ostream& /*aLogStream*/) const override {
 			return true;
 		};
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-		virtual void fAddDefaultFromStream(std::istream& aStream);
+		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) override {};
+		virtual void fAddDefaultFromStream(std::istream& aStream) override;
 
 		operator bool () const {
 			return lValue;
@@ -527,7 +527,7 @@ namespace options {
 		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
 		}
-		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
+		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
 			}
@@ -544,7 +544,7 @@ namespace options {
 			}
 		}
 
-		virtual void fWriteValue(std::ostream& aStream) const {
+		void fWriteValue(std::ostream& aStream) const override {
 			using escapedIO::operator<<;
 			if (this->empty()) {
 				aStream << "\"\"";
@@ -554,7 +554,7 @@ namespace options {
 				}
 			}
 		}
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			std::string name;
 			std::getline(aStream, name, parser::fGetInstance()->fGetSecondaryAssignment());
 			if (aStream.eof()) { // not found, complain!
@@ -618,7 +618,7 @@ namespace options {
 		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
 		}
-		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
+		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=value\n";
 			}
@@ -636,7 +636,7 @@ namespace options {
 		}
 
 
-		virtual void fWriteValue(std::ostream& aStream) const {
+		void fWriteValue(std::ostream& aStream) const override {
 			if (this->empty()) {
 				aStream << "\"\"";
 			} else {
@@ -648,7 +648,7 @@ namespace options {
 				aStream << "\"";
 			}
 		}
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			T value;
 			aStream >> std::setbase(0);
 			{

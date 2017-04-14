@@ -42,10 +42,10 @@ namespace options {
 		              const char *aCanonicalForm);
 		void fSetMe(std::istream& aArg, const internal::sourceItem& aSource) override;
 		void fSetMeNoarg(const internal::sourceItem& aSource) override;
-		virtual bool fCheckRange(std::ostream& aLogStream) const;
-		virtual void fAddToRangeFromStream(std::istream& aStream);
-		virtual void fAddDefaultFromStream(std::istream& aStream);
-		virtual void fWriteValue(std::ostream& aStream) const;
+		bool fCheckRange(std::ostream& aLogStream) const override;
+		void fAddToRangeFromStream(std::istream& aStream) override;
+		void fAddDefaultFromStream(std::istream& aStream) override;
+		void fWriteValue(std::ostream& aStream) const override;
 		virtual ~ForeignOption();
 		virtual void fAddArgs() const;
 	};

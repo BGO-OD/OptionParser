@@ -82,6 +82,7 @@ namespace options {
 	  protected:
 		T lValue;
 	  public:
+		fundamental_wrapper() {};
 		fundamental_wrapper(T aValue): lValue(aValue) {};
 		fundamental_wrapper& operator=(const T aValue) {
 			lValue = aValue;
@@ -410,6 +411,9 @@ namespace options {
 			if (!aRange.empty()) {
 				this->fAddToRange(aRange);
 			}
+		};
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 		};
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			using escapedIO::operator>>;

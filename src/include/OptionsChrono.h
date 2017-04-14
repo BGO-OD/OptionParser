@@ -125,7 +125,7 @@ namespace options {
 			std::getline(aStream, lOriginalString);
 			internal::parseDurationString(*this, lOriginalString);
 		}
-		virtual void fWriteValue(std::ostream& aStream) const {
+		void fWriteValue(std::ostream& aStream) const override {
 			lValuePrinter(aStream, *this);
 		}
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {

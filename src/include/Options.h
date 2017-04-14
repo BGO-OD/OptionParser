@@ -91,18 +91,20 @@ namespace options {
 		operator T& () {
 			return lValue;
 		}
+		operator const T& () const {
+			return lValue;
+		}
 	};
 
 
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const fundamental_wrapper<T>& aWrapper) {
-		T oerks = aWrapper;
+		const T& oerks = aWrapper;
 		aStream << oerks;
 		return aStream;
 	};
 	template <typename T> std::istream& operator>>(std::istream& aStream, fundamental_wrapper<T>& aWrapper) {
-		T oerks;
+		T& oerks = aWrapper;
 		aStream >> oerks;
-		aWrapper = oerks;
 		return aStream;
 	};
 
@@ -295,6 +297,82 @@ namespace options {
 	};
 
 
+	namespace internal {
+		template <typename T> class typed_base: public base {
+		  protected:
+			std::multiset<T> lRange;
+		  public:
+			template <class ... Types> typed_base(Types ... args) :
+				base(args...) {
+			};
+			/// add an value to the range of allowed values
+			virtual void fAddToRange(T aValue) {
+				lRange.emplace(aValue);
+			};
+			/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
+			template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
+				for (auto it = aBegin; it != aEnd; ++it) {
+					fAddToRange(*it);
+				}
+			};
+			/// add values from a vector (may be given as initializer list) to the range of allowed values
+			virtual void fAddToRange(const std::vector<T>& aRange) {
+				fAddToRange(aRange.cbegin(), aRange.cend());
+			}
+			/// \details read a line from aStream and then add as many values as can be read from that line to the list of allowed values
+			virtual void fAddToRangeFromStream(std::istream& aStream) {
+				std::string buf;
+				std::getline(aStream, buf);
+				std::stringstream sbuf(buf);
+				while (!sbuf.eof()) {
+					T value;
+					using escapedIO::operator>>;
+					sbuf >> std::setbase(0) >> value;
+					fAddToRange(value);
+				}
+			};
+			virtual void  fWriteRange(std::ostream &aStream) const {
+				using escapedIO::operator<<;
+				if (! lRange.empty()) {
+					aStream << "# allowed range is";
+					if (lRange.size() == 2) {
+						aStream << " [" << *(lRange.cbegin()) << "," << *(lRange.crbegin()) << "]\n";
+					} else {
+						aStream << ":";
+						for (const auto& it : lRange) {
+							aStream << " " << it;
+						}
+						aStream << "\n";
+					}
+				}
+			};
+			virtual bool fCheckValueForRange(const T& aValue, std::ostream& aLogStream) const {
+				using escapedIO::operator<<;
+				if (lRange.empty()) {
+					return true;
+				} else if (lRange.size() == 2) {
+					if (*(lRange.cbegin()) <= aValue && aValue <= *(lRange.crbegin())) {
+						return true;
+					} else {
+						aLogStream << fGetLongName() << " out of range (" << aValue << ")\n";
+						fWriteRange(aLogStream);
+						return false;
+					}
+				} else {
+					for (const auto& it : lRange) {
+						if (it == aValue) {
+							return true;
+						}
+					}
+					aLogStream << fGetLongName() << " out of range (" << aValue << ")\n";
+					fWriteRange(aLogStream);
+					return false;
+				}
+			}
+		};
+	} // end of namespace internal
+
+
 /// generic option class with any type that can be used with std::istream and std::ostream
 
 /// It is called 'single' because it's meant for single values as opposed to containers
@@ -303,7 +381,7 @@ namespace options {
 		public std::conditional<std::is_fundamental<T>::value,
 		fundamental_wrapper<T>,
 		T>::type,
-		public base {
+		public internal::typed_base<T> {
 	  private:
 		std::vector<T> lRange;
 	  public:
@@ -315,55 +393,14 @@ namespace options {
 			std::conditional<std::is_fundamental<T>::value,
 			fundamental_wrapper<T>,
 			T>::type (aDefault),
-			base(aShortName, aLongName, aExplanation, 1) {
+			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 			if (!aRange.empty()) {
-				fAddToRange(aRange);
-			}
-		};
-		/// add an value to the range of allowed values
-		virtual void fAddToRange(T aValue) {
-			lRange.push_back(aValue);
-		};
-		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
-		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
-			for (auto it = aBegin; it != aEnd; ++it) {
-				fAddToRange(*it);
-			}
-		};
-		/// add values from a vector (may be given as initializer list) to the range of allowed values
-		virtual void fAddToRange(const std::vector<T>& aRange) {
-			fAddToRange(aRange.cbegin(), aRange.cend());
-		}
-		/// \details read a line from aStream and then add as many values as can be read from that line to the list of allowed values
-		virtual void fAddToRangeFromStream(std::istream& aStream) {
-			std::string buf;
-			std::getline(aStream, buf);
-			std::stringstream sbuf(buf);
-			while (!sbuf.eof()) {
-				T value;
-				using escapedIO::operator>>;
-				sbuf >> std::setbase(0) >> value;
-				fAddToRange(value);
+				this->fAddToRange(aRange);
 			}
 		};
 		virtual void fAddDefaultFromStream(std::istream& aStream) {
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> *this;
-		}
-		virtual void  fWriteRange(std::ostream &aStream) const {
-			using escapedIO::operator<<;
-			if (! lRange.empty()) {
-				aStream << "# allowed range is";
-				if (lRange.size() == 2) {
-					aStream << " [" << lRange[0] << "," << lRange[1] << "]\n";
-				} else {
-					aStream << ":";
-					for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-						aStream << " " << *it;
-					}
-					aStream << "\n";
-				}
-			}
 		}
 
 		virtual void fWriteValue(std::ostream& aStream) const {
@@ -371,28 +408,7 @@ namespace options {
 			aStream << *this;
 		}
 		virtual bool fCheckRange(std::ostream& aLogStream) const {
-			using escapedIO::operator<<;
-			if (lRange.empty()) {
-				return true;
-			} else if (lRange.size() == 2) {
-				if (lRange[0] <= *this && *this <= lRange[1]) {
-					return true;
-				} else {
-					aLogStream << fGetLongName() << " out of range (" << *this << "), must be in [" << lRange[0] << ", " << lRange[1] << "]\n";
-					return false;
-				}
-			} else {
-				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					if (*it == *this) {
-						return true;
-					}
-				}
-				aLogStream << fGetLongName() << " out of range (" << *this << "), must be one of:\n";
-				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					aLogStream << *it << "\n";
-				}
-				return false;
-			}
+			return this->fCheckValueForRange(*this, aLogStream);
 		}
 
 
@@ -405,7 +421,7 @@ namespace options {
 				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(T).name() << " failed.\n";
 				parser::fGetInstance()->fComplainAndLeave(false);
 			}
-			fSetSource(aSource);
+			this->fSetSource(aSource);
 		}
 		const T &fGetValue() const {
 			return *this;
@@ -471,12 +487,12 @@ namespace options {
 	namespace internal {
 /// This class is an intermediate helper class for options that
 /// are map-based. It is not to be used directly.
-		template <typename T> class baseForMap: public base {
+		template <typename T> class baseForMap: public typed_base<T> {
 		  protected:
 			std::map<const T*, const internal::sourceItem> lSources;
 		  public:
 			baseForMap(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-				base(aShortName, aLongName, aExplanation, aNargs) {};
+				typed_base<T>(aShortName, aLongName, aExplanation, aNargs) {};
 			void fAddSource(const T* aValueLocation, const internal::sourceItem& aSource) {
 				lSources.insert(std::make_pair(aValueLocation, aSource));
 			};
@@ -494,6 +510,8 @@ namespace options {
 			bool fIsContainer() const override {
 				return true;
 			};
+			void fAddDefaultFromStream(std::istream& /*aStream*/) override {};
+
 		};
 	} // end of namespace internal
 
@@ -509,9 +527,6 @@ namespace options {
 		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
 		}
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
-
 		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
@@ -527,10 +542,6 @@ namespace options {
 					aStream << "# set from " << source << "\n";
 				}
 			}
-		}
-
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
-			return true;
 		}
 
 		virtual void fWriteValue(std::ostream& aStream) const {
@@ -561,7 +572,18 @@ namespace options {
 			}
 			auto result = (*this).insert(this->end(), std::make_pair(name, value));
 			this->fAddSource(&(result->second), aSource);
-		}
+		};
+
+		bool fCheckRange(std::ostream& aLogStream) const override {
+			for (const auto& pair : *this) {
+				const auto& value = pair.second;
+				if (this->fCheckValueForRange(value, aLogStream) == false) {
+					return false;
+				}
+			}
+			return true;
+		};
+
 		const std::map<std::string, T>& fGetValue() const  {
 			return *static_cast<const std::map<std::string, T>*>(this);
 		}
@@ -571,18 +593,19 @@ namespace options {
 	namespace internal {
 /// This class is an intermediate helper class for options that
 /// are container-based. It is not to be used directly.
-		class baseForContainer: public base {
+		template <typename T> class baseForContainer: public typed_base<T> {
 		  protected:
 			std::vector<internal::sourceItem> lSources;
 		  public:
 			baseForContainer(char aShortName, std::string  aLongName, std::string  aExplanation, short aNargs) :
-				base(aShortName, aLongName, aExplanation, aNargs) {};
+				typed_base<T>(aShortName, aLongName, aExplanation, aNargs) {};
 			bool fIsSet() const override {
 				return ! lSources.empty();
 			};
 			bool fIsContainer() const override {
 				return true;
 			};
+			void fAddDefaultFromStream(std::istream& /*aStream*/) override {};
 		};
 	} // end of namespace internal
 
@@ -590,19 +613,16 @@ namespace options {
 
 /// the container is by defalt a std::vector.
 /// If a non-vector container is used it needs to have a push_back.
-	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer, public Container {
+	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer<T>, public Container {
 	  public:
 		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			internal::baseForContainer(aShortName, aLongName, aExplanation, 1) {
+			internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
 		}
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) {};
-		virtual void fAddDefaultFromStream(std::istream& /*aStream*/) {};
-
 		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=value\n";
 			}
-			auto it2 = lSources.begin();
+			auto it2 = this->lSources.begin();
 			for (auto it = this->begin(); it != this->end(); ++it, ++it2) {
 				aStream << (it2->fIsUnset() ? aPrefix : "") << this->lLongName << "=";
 				{
@@ -613,9 +633,6 @@ namespace options {
 					aStream << "# set from " << *it2 << "\n";
 				}
 			}
-		}
-		virtual bool fCheckRange(std::ostream& /*aLogStream*/) const {
-			return true;
 		}
 
 
@@ -645,15 +662,19 @@ namespace options {
 				parser::fGetInstance()->fComplainAndLeave();
 			}
 			this->push_back(value);
-			lSources.push_back(aSource);
+			this->lSources.push_back(aSource);
 		}
 
-		operator const Container& () const {
-			return *static_cast<const Container*>(this);
-		}
-		const Container& fGetValue() const  {
-			return *static_cast<const Container*>(this);
-		}
+		bool fCheckRange(std::ostream& aLogStream) const override {
+			for (const auto& value : *this) {
+				if (this->fCheckValueForRange(value, aLogStream) == false) {
+					return false;
+				}
+			}
+			return true;
+		};
+
+
 
 	};
 

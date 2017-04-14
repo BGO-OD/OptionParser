@@ -145,7 +145,7 @@ namespace options {
 				f.replace(tildePosition, 1, getenv("HOME"));
 			}
 			f += lProgName;
-			fReadCfgFile(f.c_str(), internal::sourceItem(), true);
+			fReadCfgFile(f, internal::sourceItem(), true);
 		}
 	}
 
@@ -343,15 +343,13 @@ namespace options {
 		lMinusMinusJustEndsOptions = false;
 	}
 
-	void parser::fPrintEscapedString(std::ostream & aStream, const char *aString) {
-		bool delimit = (strchr(aString, ' ') != nullptr)
-		               || (strchr(aString, '\t') != nullptr)
-		               || (strchr(aString, ',') != nullptr);
+	void parser::fPrintEscapedString(std::ostream & aStream, const std::string& aString) {
+		bool delimit = aString.find(" \t,") != std::string::npos;
 		if (delimit) {
 			aStream << '\'';
 		}
-		for (const char *rp = aString; *rp != '\0'; rp++) {
-			switch (*rp) {
+		for (auto c: aString) {
+			switch (c) {
 				case '\a':
 					aStream << "\\a";
 					break;
@@ -386,10 +384,10 @@ namespace options {
 					aStream << "\\\"";
 					break;
 				default:
-					if (*rp >= ' ' && *rp < 127) {
-						aStream << *rp;
+					if (c >= ' ' && c < 127) {
+						aStream << c;
 					} else {
-						aStream << '\\' << std::oct << std::setw(3) << std::setfill('0') << static_cast<unsigned int>(*rp) << std::setfill(' ') << std::dec;
+						aStream << '\\' << std::oct << std::setw(3) << std::setfill('0') << static_cast<unsigned int>(c) << std::setfill(' ') << std::dec;
 					}
 			}
 		}
@@ -398,69 +396,10 @@ namespace options {
 		}
 	}
 
-	void parser::fReCaptureEscapedString(char *aDest, const char *aSource) {
-		auto wp = aDest;
-		auto rp = aSource;
-		auto delimiter = *aSource;
-		if (delimiter == '"' || delimiter == '\'') { // string is enclosed in a pair of delimiters
-			rp++;
-		} else { // skip whitespace
-			delimiter = '\0';
-			rp += strspn(rp, " \t");
-		}
-		for (; *rp;) {
-			if (*rp == '\\') {
-				rp++;
-				switch (*rp) {
-					case 'a':
-						*(wp++) = '\a';
-						rp++;
-						break;
-					case 'b':
-						*(wp++) = '\b';
-						rp++;
-						break;
-					case 'f':
-						*(wp++) = '\f';
-						rp++;
-						break;
-					case 'n':
-						*(wp++) = '\n';
-						rp++;
-						break;
-					case 'r':
-						*(wp++) = '\r';
-						rp++;
-						break;
-					case 't':
-						*(wp++) = '\t';
-						rp++;
-						break;
-					case 'v':
-						*(wp++) = '\v';
-						rp++;
-						break;
-					default:
-						if (*rp >= '0' && *rp <= '7') {
-							char c = 0;
-							for (int i = 0; i < 3 && *rp >= '0' && *rp <= '7'; i++) {
-								c = (c << 3) | ((*(rp++) - '0') & 0x7);
-							}
-							*(wp++) = c;
-						} else {
-							*(wp++) = *(rp++);
-						}
-						break;
-				}
-			} else if (*rp == delimiter) {
-				break;
-			} else {
-				*(wp++) = *(rp++);
-			}
-		}
-		*wp = '\0';
+	void parser::fReCaptureEscapedString(std::string& aDest, const std::string& aSource) {
+		std::stringstream buffer(aSource);
+		buffer >> aDest;
 	}
-
 	namespace escapedIO {
 
 		std::istream& operator>> (std::istream &aStream, const char*& aCstring) {
@@ -476,7 +415,7 @@ namespace options {
 
 
 		std::ostream& operator<<(std::ostream& aStream, const std::string& aString) {
-			parser::fPrintEscapedString(aStream, aString.c_str());
+			parser::fPrintEscapedString(aStream, aString);
 			return aStream;
 		}
 		std::istream& operator>>(std::istream& aStream, std::string& aString) {
@@ -748,7 +687,7 @@ namespace options {
 		}
 		*lMessageStream << std::endl;
 	}
-	void parser::fWriteCfgFile(const char *aFileName) {
+	void parser::fWriteCfgFile(const std::string& aFileName) {
 		std::ofstream cfgFile(aFileName, std::ofstream::out | std::ofstream::trunc);
 		if (lExecutableName.empty()) {
 			#ifdef IS_NONBROKEN_SYSTEM
@@ -796,7 +735,7 @@ namespace options {
 		cfgFile.close();
 	}
 
-	void parser::fReadCfgFile(const char *aFileName, const internal::sourceItem& aSource, bool aMayBeAbsent) {
+	void parser::fReadCfgFile(const std::string& aFileName, const internal::sourceItem& aSource, bool aMayBeAbsent) {
 		std::ifstream cfgFile(aFileName);
 		if (!cfgFile.good() && !aMayBeAbsent) {
 			fGetErrorStream() << "can't acccess config file '" << aFileName << "', reason is " << strerror(errno) << std::endl;
@@ -834,10 +773,9 @@ namespace options {
 			}
 			auto equalsAt = line.find_first_of('=');
 			if (equalsAt == std::string::npos || equalsAt < 1 || equalsAt == line.length()) {
-				auto buf = new char[line.length() + 1];
-				fReCaptureEscapedString(buf, line.c_str());
+				std::string buf;
+				fReCaptureEscapedString(buf, line);
 				lUnusedOptions.push_back(buf);
-				delete [] buf;
 				continue;
 			}
 			auto optionName = line.substr(0, equalsAt);
@@ -932,27 +870,27 @@ namespace options {
 			}
 			void fSetMe(std::istream& aStream, const sourceItem&/* aSource */) override {
 				aStream >> *this;
-				parser::fGetInstance()->fWriteCfgFile(c_str());
+				parser::fGetInstance()->fWriteCfgFile(*this);
 				exit(parser::fGetInstance()->fGetHelpReturnValue());
 			}
 		};
 		static OptionWriteCfgFile gWriteCfgFile;
 
 /// special derived class used to read in config files
-		class OptionReadCfgFile : public single<const char *> {
+		class OptionReadCfgFile : public single<std::string> {
 		  public:
 			OptionReadCfgFile():
 				single('\0', "readCfgFile", "read a config file", "") {
 			}
 			void fSetMe(std::istream& aStream, const sourceItem& aSource) override {
-				single<const char *>::fSetMe(aStream, aSource);
+				single<std::string>::fSetMe(aStream, aSource);
 				if (gNoCfgFileRecursion && aSource.fGetFile() != &sourceFile::gCmdLine) {
 					return;
 				}
 				parser::fGetInstance()->fReadCfgFile(*this, aSource);
 			};
 			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
-				single<const char *>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
+				single<std::string>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
 			};
 		};
 		static OptionReadCfgFile gReadCfgFile;

@@ -173,10 +173,9 @@ int main(int argc, const char *argv[]) {
 				continue;
 			} else if (keyWord == "path") {
 				std::string buffer;
-				std::getline(std::cin, buffer);
-				std::vector<char> buffer2(buffer.length() + 1);
-				options::parser::fReCaptureEscapedString(buffer2.data(), buffer.c_str());
-				searchPath.push_back(buffer2.data());
+				using options::escapedIO::operator>>;
+				std::cin >> buffer;
+				searchPath.push_back(buffer);
 			} else if (keyWord == "trailer:") {
 				break;
 			} else {

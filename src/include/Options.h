@@ -284,8 +284,8 @@ namespace options {
 
 		/// print help, normally automatically called by the --help option or in case of problems.
 		void fHelp();
-		void fWriteCfgFile(const char *aFileName);
-		void fReadCfgFile(const char *aFileName, const options::internal::sourceItem& aSource, bool aMayBeAbsent = false);
+		void fWriteCfgFile(const std::string& aFileName);
+		void fReadCfgFile(const std::string& aFileName, const options::internal::sourceItem& aSource, bool aMayBeAbsent = false);
 		void fSetExecutableName(const char *aName);
 
 		/// switch on use of -- to separate a trailer on the command line that is not to be parsed
@@ -294,8 +294,8 @@ namespace options {
 		const std::vector<std::string>& fGetStuffAfterMinusMinus() {
 			return lStuffAfterMinusMinus;
 		};
-		static void fPrintEscapedString(std::ostream &aStream, const char *aString);
-		static void fReCaptureEscapedString(char *aDest, const char *aSource);
+		static void fPrintEscapedString(std::ostream &aStream, const std::string& aString);
+		static void fReCaptureEscapedString(std::string& aDest, const std::string& aSource);
 	};
 
 

@@ -105,6 +105,7 @@ namespace options {
 	};
 	template <typename T> std::istream& operator>>(std::istream& aStream, fundamental_wrapper<T>& aWrapper) {
 		T& oerks = aWrapper;
+		using escapedIO::operator>>;
 		aStream >> oerks;
 		return aStream;
 	};
@@ -300,21 +301,23 @@ namespace options {
 
 	namespace internal {
 		template <typename T> class typed_base: public base {
-		  protected:
-			std::multiset<T> lRange;
 		  public:
-			typedef T valueType;
+			typedef typename std::conditional<std::is_same<T, const char *>::value, std::string, T>::type rangeValueType;
+			typedef T compareValueType;
+		  protected:
+			std::multiset<rangeValueType> lRange;
+		  public:
 
 			template <class ... Types> typed_base(Types ... args) :
 				base(args...) {
 			};
 			/// add a value to the range of allowed values
-			virtual void fAddToRange(T aValue) {
+			virtual void fAddToRange(rangeValueType aValue) {
 				lRange.emplace(aValue);
 			};
-			template <typename TT = std::string> typename std::enable_if < (!std::is_same<T, std::string>::value) && std::is_same<TT, std::string>::value, bool >::type fAddToRange(const TT& aString) {
+			template <typename TT = std::string> typename std::enable_if < (!std::is_same<rangeValueType, std::string>::value) && std::is_same<TT, std::string>::value, bool >::type fAddToRange(const TT& aString) {
 				std::stringstream buf(aString);
-				T value;
+				rangeValueType value;
 				buf >> std::setbase(0);
 				using escapedIO::operator>>;
 				buf >> value;
@@ -336,7 +339,7 @@ namespace options {
 				std::getline(aStream, buf);
 				std::stringstream sbuf(buf);
 				while (!sbuf.eof()) {
-					T value;
+					rangeValueType value;
 					using escapedIO::operator>>;
 					sbuf >> std::setbase(0) >> value;
 					fAddToRange(value);
@@ -357,7 +360,7 @@ namespace options {
 					}
 				}
 			};
-			virtual bool fCheckValueForRange(const T& aValue, std::ostream& aLogStream) const {
+			virtual bool fCheckValueForRange(const compareValueType& aValue, std::ostream& aLogStream) const {
 				using escapedIO::operator<<;
 				if (lRange.empty()) {
 					return true;
@@ -389,21 +392,20 @@ namespace options {
 /// It is called 'single' because it's meant for single values as opposed to containers
 /// as it may contain strings (via specialisations) it's not limited to scalar tyes.
 	template <typename T> class single :
-		public std::conditional<std::is_fundamental<T>::value,
+		public std::conditional < std::is_fundamental<T>::value || std::is_same<T, const char*>::value,
 		fundamental_wrapper<T>,
-		T>::type,
+		T >::type,
 		public internal::typed_base<T> {
-	  private:
-		std::vector<T> lRange;
 	  public:
+		typedef typename std::conditional < std::is_fundamental<T>::value || std::is_same<T, const char*>::value,
+		        fundamental_wrapper<T>,
+		        T >::type deriveFromType;
 		/// \brief construct an object of single<T>
 		/// \copydetails base::base() This generic case always demands one parameter for the option!
 		/// \param [in] aDefault default value that the option has if not set otherwise
 		/// \param [in] aRange range of allowes values, can be given as initializer list. If only two values are given then [first,last] is the allowd interval.
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, T aDefault, const std::vector<T>& aRange = {}) :
-			std::conditional<std::is_fundamental<T>::value,
-			fundamental_wrapper<T>,
-			T>::type (aDefault),
+			deriveFromType(aDefault),
 			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 			if (!aRange.empty()) {
 				this->fAddToRange(aRange);
@@ -467,33 +469,6 @@ namespace options {
 		std::istream& operator>> (std::istream &aStream, const char*& aCstring);
 	} // end of namespace escapedIO
 
-
-/// template specialisation for options that represent simple c-style strings
-	template <> class single<const char *> : public base {
-	  protected:
-		const char *lValue;
-		std::vector<const char*> lRange;
-	  public:
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const char* aDefault = NULL, const std::vector<const char *>& aRange = {});
-		virtual ~single();
-		virtual void fAddToRange(const char *aValue);
-		virtual void fAddToRange(const std::vector<const char *>& aRange);
-		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
-		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
-			for (auto it = aBegin; it != aEnd; ++it) {
-				fAddToRange(*it);
-			}
-		};
-		virtual void fAddToRangeFromStream(std::istream& aStream);
-		virtual void fAddDefaultFromStream(std::istream& aStream);
-		virtual void  fWriteRange(std::ostream &aStream) const;
-		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource);
-		virtual bool fCheckRange(std::ostream& aLogStream) const;
-		operator const char* () const {
-			return lValue;
-		}
-	};
 	/// \namespace options::internal
 	/// special namespace for classes and functions that are meant for internal use only
 

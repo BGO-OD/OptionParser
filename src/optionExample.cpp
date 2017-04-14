@@ -27,7 +27,7 @@ int main(int argc, const char *argv[]) {
 
 	options::positional<options::single<float>>posNumber(10, "posnumber", "positional float number", 0);
 	options::positional<options::container<std::string>>files(20, "files", "positional file list");
-	options::positional<options::single<const char *>>dest(30, "dest", "positional destination file");
+	options::positional<options::single<const char *>>dest(30, "dest", "positional destination file", "");
 
 	options::parser parser("option parsing example");
 

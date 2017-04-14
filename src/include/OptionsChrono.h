@@ -66,6 +66,7 @@ namespace options {
 		public internal::typed_base<std::chrono::system_clock::time_point>,
 		public originalStringKeeper {
 	  public:
+		typedef rangeValueType valueType;
 		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
 		valuePrinterType lValuePrinter;

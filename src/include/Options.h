@@ -73,7 +73,9 @@ namespace options {
 	} // end of namespace internal
 
 	std::ostream& operator<< (std::ostream &aStream, const internal::sourceItem& aItem);
-
+	namespace escapedIO {
+		std::istream& operator>> (std::istream &aStream, const char*& aCstring);
+	} // end of namespace escapedIO
 
 	/// wrapper class for fundamental types
 	template <typename T> class fundamental_wrapper {
@@ -95,7 +97,6 @@ namespace options {
 			return lValue;
 		}
 	};
-
 
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const fundamental_wrapper<T>& aWrapper) {
 		const T& oerks = aWrapper;
@@ -311,7 +312,7 @@ namespace options {
 			virtual void fAddToRange(T aValue) {
 				lRange.emplace(aValue);
 			};
-			template <typename TT = std::string> std::enable_if < (!std::is_same<T, std::string>::value) && std::is_same<TT, std::string>::value > fAddToRange(const TT& aString) {
+			template <typename TT = std::string> typename std::enable_if < (!std::is_same<T, std::string>::value) && std::is_same<TT, std::string>::value, bool >::type fAddToRange(const TT& aString) {
 				std::stringstream buf(aString);
 				T value;
 				buf >> std::setbase(0);
@@ -439,14 +440,14 @@ namespace options {
 	};
 
 /// class specialisation for options of type bool
-	template <> class single<bool> : public base {
+	template <> class single<bool> : public fundamental_wrapper<bool>, public base {
 	  private:
-		bool lValue;
 		bool lDefault;
 	  public:
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, bool aDefault = false) :
+			fundamental_wrapper(aDefault),
 			base(aShortName, aLongName, aExplanation, 0),
-			lValue(aDefault), lDefault(aDefault) {
+			lDefault(aDefault) {
 		}
 		void fWriteValue(std::ostream& aStream) const override;
 		void fSetMeNoarg(const internal::sourceItem& aSource) override;
@@ -457,13 +458,15 @@ namespace options {
 		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) override {};
 		virtual void fAddDefaultFromStream(std::istream& aStream) override;
 
-		operator bool () const {
-			return lValue;
-		}
 		bool fGetValue() const {
 			return lValue;
 		}
 	};
+
+	namespace escapedIO {
+		std::istream& operator>> (std::istream &aStream, const char*& aCstring);
+	} // end of namespace escapedIO
+
 
 /// template specialisation for options that represent simple c-style strings
 	template <> class single<const char *> : public base {

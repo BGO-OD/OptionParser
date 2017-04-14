@@ -462,6 +462,19 @@ namespace options {
 	}
 
 	namespace escapedIO {
+
+		std::istream& operator>> (std::istream &aStream, const char*& aCstring) {
+			auto buffer = new std::string;
+			aStream >> *buffer;
+			if (aStream.fail()) {
+				delete buffer;
+			} else { // leak a string...
+				aCstring = buffer->c_str();
+			}
+			return aStream;
+		}
+
+
 		std::ostream& operator<<(std::ostream& aStream, const std::string& aString) {
 			parser::fPrintEscapedString(aStream, aString.c_str());
 			return aStream;

@@ -302,12 +302,22 @@ namespace options {
 		  protected:
 			std::multiset<T> lRange;
 		  public:
+			typedef T valueType;
+
 			template <class ... Types> typed_base(Types ... args) :
 				base(args...) {
 			};
-			/// add an value to the range of allowed values
+			/// add a value to the range of allowed values
 			virtual void fAddToRange(T aValue) {
 				lRange.emplace(aValue);
+			};
+			template <typename TT = std::string> std::enable_if < (!std::is_same<T, std::string>::value) && std::is_same<TT, std::string>::value > fAddToRange(const TT& aString) {
+				std::stringstream buf(aString);
+				T value;
+				buf >> std::setbase(0);
+				using escapedIO::operator>>;
+				buf >> value;
+				fAddToRange(value);
 			};
 			/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
 			template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
@@ -316,7 +326,7 @@ namespace options {
 				}
 			};
 			/// add values from a vector (may be given as initializer list) to the range of allowed values
-			virtual void fAddToRange(const std::vector<T>& aRange) {
+			template <typename TT> void fAddToRange(const std::vector<TT>& aRange) {
 				fAddToRange(aRange.cbegin(), aRange.cend());
 			}
 			/// \details read a line from aStream and then add as many values as can be read from that line to the list of allowed values

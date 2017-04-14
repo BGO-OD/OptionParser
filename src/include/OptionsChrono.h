@@ -1,57 +1,18 @@
 #ifndef __OptionsChrono_H__
 #define __OptionsChrono_H__
 
-#include "Options.h"
+#include <iostream>
 #include <chrono>
 #include <type_traits>
+#include <sstream>
+#include <iomanip>
+#include <stdexcept>
 
 namespace options {
 /// template specialisation for options that are std::chrono::time_point<std::chrono::system_clock>
-	template <> class single<std::chrono::system_clock::time_point> : public base, public originalStringKeeper {
-	  public:
-		typedef std::chrono::system_clock::time_point valueType;
-		typedef void (*valuePrinterType)(std::ostream&, valueType);
-	  protected:
-		valueType lValue;
-		valuePrinterType lValuePrinter;
-		std::vector<valueType> lRange;
-
-	  public:
-		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue);
-
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
-		static valueType fParseTimePointString(const std::string& aString);
-
-		void fSetValuePrinter(valuePrinterType aValuePrinter);
-
-		virtual void fAddToRange(valueType aValue);
-		virtual void fAddToRange(const std::string& aString);
-
-		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
-		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
-			for (auto it = aBegin; it != aEnd; ++it) {
-				fAddToRange(*it);
-			}
-		};
-		virtual void fAddToRange(const std::vector<valueType>& aRange);
-		virtual void fAddToRange(const std::vector<std::string>& aRange);
-		virtual void fAddToRangeFromStream(std::istream& aStream);
-		virtual void fAddDefaultFromStream(std::istream& aStream);
-		virtual void fWriteRange(std::ostream& aStream) const;
-		virtual bool fCheckRange(std::ostream& aLogStream) const;
-		virtual void fWriteValue(std::ostream& aStream) const;
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource);
-		operator const valueType () const {
-			return lValue;
-		}
-		const valueType fGetValue() const;
-	};
-
-
-
 	namespace internal {
 		std::chrono::duration<double> parseNumberAndUnit(std::stringstream& aStream, int* aMonths = nullptr, int* aYears = nullptr);
+		std::chrono::system_clock::time_point fParseTimePointString(const std::string& aString);
 
 		/// parse a string into a std::chrono::duration, if given set the years and months separately
 		template <class Rep, class Period> void parseDurationString(std::chrono::duration<Rep, Period> &aDuration, const std::string& aString, int* aMonths = nullptr, int* aYears = nullptr) {
@@ -59,8 +20,8 @@ namespace options {
 			if (between != std::string::npos) {
 				auto andpos = aString.find("and");
 				if (andpos != std::string::npos) {
-					auto t0 = single<std::chrono::system_clock::time_point>::fParseTimePointString(aString.substr(between + 8, andpos - 1 - (between + 8) ));
-					auto t1 = single<std::chrono::system_clock::time_point>::fParseTimePointString(aString.substr(andpos + 4));
+					auto t0 = fParseTimePointString(aString.substr(between + 8, andpos - 1 - (between + 8) ));
+					auto t1 = fParseTimePointString(aString.substr(andpos + 4));
 					aDuration = std::chrono::duration_cast<typename std::remove_reference<decltype(aDuration)>::type>(t1 - t0);
 				} else {
 					throw std::runtime_error("duration with 'between' without and");
@@ -74,116 +35,106 @@ namespace options {
 			}
 		};
 	} // end of namespace internal
+	namespace escapedIO {
+		std::ostream& operator<<(std::ostream& aStream, const std::chrono::system_clock::time_point& aTime);
+		std::istream& operator>>(std::istream& aStream, std::chrono::system_clock::time_point& aTime);
 
-/// template specialisation for options that are std::chrono::durations
-	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> : public base, public originalStringKeeper {
+		template <class Rep, class Period> std::ostream& operator<<(std::ostream& aStream, const std::chrono::duration<Rep, Period>& aDuration) {
+			auto flags(aStream.flags());
+			aStream << std::fixed;
+			aStream << aDuration.count();
+			aStream.flags(flags);
+			return aStream;
+		}
+		template <class Rep, class Period> std::istream& operator>>(std::istream& aStream, std::chrono::duration<Rep, Period>& aDuration) {
+			std::string buf;
+			aStream >> buf;
+			if (!aStream.fail()) {
+				internal::parseDurationString(aDuration, buf);
+			}
+			return aStream;
+		};
+	} // end of namespace escapedIO
+} // end of namespace options
+
+#include "Options.h"
+
+
+namespace options {
+	template <> class single<std::chrono::system_clock::time_point> :
+		public std::chrono::system_clock::time_point,
+		public internal::typed_base<std::chrono::system_clock::time_point>,
+		public originalStringKeeper {
 	  public:
-		typedef std::chrono::duration<Rep, Period> valueType;
 		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
-		valueType lValue;
+		valuePrinterType lValuePrinter;
+		std::vector<valueType> lRange;
+
+	  public:
+		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue);
+
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
+
+		void fSetValuePrinter(valuePrinterType aValuePrinter);
+
+		void fAddDefaultFromStream(std::istream& aStream) override;
+		void fWriteRange(std::ostream& aStream) const override;
+		void fWriteValue(std::ostream& aStream) const override;
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;
+		bool fCheckRange(std::ostream& aLogStream) const override {
+			return this->fCheckValueForRange(*this, aLogStream);
+		}
+	};
+
+
+
+
+
+
+/// template specialisation for options that are std::chrono::durations
+	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> :
+		        public std::chrono::duration<Rep, Period>,
+		        public internal::typed_base<std::chrono::duration<Rep, Period>>,
+		        public originalStringKeeper {
+	  public:
+		typedef std::chrono::duration<Rep, Period> valueType; // why does the one in typed_base not work?
+		typedef void (*valuePrinterType)(std::ostream&, valueType);
+	  protected:
 		valuePrinterType lValuePrinter;
 		std::vector<valueType> lRange;
 
 	  public:
 		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
-			auto flags(aStream.flags());
-			aStream << std::fixed;
-			aStream << aValue.count();
-			aStream.flags(flags);
+			using escapedIO::operator<<;
+			aStream << aValue;
 		};
 
 
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter):
-			base(aShortName, aLongName, aExplanation, 1),
-			lValue(aDefault),
+			valueType(aDefault),
+			internal::typed_base<valueType>(aShortName, aLongName, aExplanation, 1),
 			lValuePrinter(aValuePrinter) {
 			if (!aRange.empty()) {
-				fAddToRange(aRange);
+				this->fAddToRange(aRange);
 			}
 		}
-		virtual void fAddToRange(valueType aValue) {
-			lRange.push_back(aValue);
-		}
-		/// add values from the iterator range [aBegin,aEnd) to the range of allowed values
-		template <typename InputIt> void fAddToRange(InputIt aBegin, InputIt aEnd) {
-			for (auto it = aBegin; it != aEnd; ++it) {
-				fAddToRange(*it);
-			}
-		};
-		virtual void fAddToRange(const std::vector<valueType>& aRange) {
-			fAddToRange(aRange.cbegin(), aRange.cend());
-		};
-		virtual void fAddToRangeFromStream(std::istream& aStream) {
-			std::string buf;
-			std::getline(aStream, buf);
-			valueType value;
-			internal::parseDurationString(value, buf);
-			fAddToRange(value);
-		}
-		virtual void fAddDefaultFromStream(std::istream& aStream) {
+		void fAddDefaultFromStream(std::istream& aStream) override {
 			std::getline(aStream, lOriginalString);
-			internal::parseDurationString(lValue, lOriginalString);
-		}
-		virtual void fWriteRange(std::ostream& aStream) const {
-			if (! lRange.empty()) {
-				aStream << "# allowed range is";
-				if (lRange.size() == 2) {
-					aStream << " [";
-					lValuePrinter(aStream, lRange[0]);
-					aStream << ", ";
-					lValuePrinter(aStream, lRange[0]);
-					aStream << "]\n";
-				} else {
-					for (auto& rangeElement : lRange) {
-						lValuePrinter(aStream, rangeElement);
-						aStream << "\n";
-					}
-					aStream << "\n";
-				}
-			}
-
-		}
-		virtual bool fCheckRange(std::ostream& aLogStream) const {
-			if (lRange.empty()) {
-				return true;
-			} else if (lRange.size() == 2) {
-				if (lRange[0] <= lValue && lValue <= lRange[1]) {
-					return true;
-				} else {
-					aLogStream << fGetLongName() << " out of range (" << lValue.count() << "), must be in [" << lRange[0].count() << ", " << lRange[1].count() << "]\n";
-					return false;
-				}
-			} else {
-				for (auto it = lRange.begin(); it != lRange.end(); ++it) {
-					if (*it == lValue) {
-						return true;
-					}
-				}
-				aLogStream << fGetLongName() << " out of range (";
-				lValuePrinter(aLogStream, lValue);
-				aLogStream << "), must be one of:\n";
-				for (auto rangeElement :  lRange) {
-					lValuePrinter(aLogStream, rangeElement);
-					aLogStream  << "\n";
-				}
-				return false;
-			}
+			internal::parseDurationString(*this, lOriginalString);
 		}
 		virtual void fWriteValue(std::ostream& aStream) const {
-			lValuePrinter(aStream, lValue);
+			lValuePrinter(aStream, *this);
 		}
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			using escapedIO::operator>>;
 			aStream >> lOriginalString;
-			internal::parseDurationString(lValue, lOriginalString);
-			fSetSource(aSource);
+			internal::parseDurationString(*this, lOriginalString);
+			this->fSetSource(aSource);
 		}
-		operator const valueType () const {
-			return lValue;
-		}
-		const valueType fGetValue() const {
-			return lValue;
+		bool fCheckRange(std::ostream& aLogStream) const override {
+			return this->fCheckValueForRange(*this, aLogStream);
 		}
 	};
 

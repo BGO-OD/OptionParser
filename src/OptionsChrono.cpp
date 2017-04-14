@@ -141,271 +141,253 @@ namespace options {
 			parser::fGetInstance()->fComplainAndLeave();
 			return std::chrono::duration<double>::zero();
 		}
+
+		std::chrono::system_clock::time_point fParseTimePointString(const std::string& aString) {
+			std::string::size_type pointStringStart = 0;
+			std::string::size_type pointStringLength = std::string::npos;
+			std::string::size_type offsetStringStart = std::string::npos;
+			std::string::size_type offsetStringLength = std::string::npos;
+			bool offsetIsNegative = false;
+			{
+				auto after = aString.find("after");
+				if (after == 0) { // we have no time point
+					offsetStringStart = 6; // the offset starts after after
+					pointStringStart = std::string::npos;
+				} else if (after != std::string::npos) { // "after" after the offset before the point
+					offsetStringStart = 0;
+					offsetStringLength = after - 1;
+					pointStringStart = after + 6;
+				}
+			}
+			{
+				auto before = aString.find("before");
+				if (before == 0) { // we have no time point
+					offsetStringStart = 6; // the offset starts after before
+					pointStringStart = std::string::npos;
+					offsetIsNegative = true;
+				} else if (before != std::string::npos) { // "before" after the offset before the point
+					offsetStringStart = 0;
+					offsetStringLength = before - 1;
+					pointStringStart = before + 7;
+					offsetIsNegative = true;
+				}
+			}
+
+			std::chrono::system_clock::time_point timePoint;
+			enum dateBitType {
+				kNow = 1 << 0,
+				kToday = 1 << 1,
+				kTomorrow = 1 << 2,
+				kYesterday = 1 << 3,
+				kWeekday = 1 << 4,
+				kDay = kToday | kTomorrow | kYesterday | kWeekday,
+				kLast = 1 << 5,
+				kThis = 1 << 6,
+				kNoon = 1 << 7
+
+			};
+			if (pointStringStart < aString.size()) {
+				auto pointString = aString.substr(pointStringStart, pointStringLength);
+				std::transform(pointString.begin(), pointString.end(), pointString.begin(), ::tolower);
+
+				typename std::underlying_type<dateBitType>::type dateBits = 0;
+				int weekDay = 0;
+				if (pointString.find("now") != std::string::npos) {
+					dateBits |= kNow;
+				} else if (pointString.find("today") != std::string::npos) {
+					dateBits |= kToday;
+				} else if (pointString.find("yesterday") != std::string::npos) {
+					dateBits |= kYesterday;
+				} else if (pointString.find("tomorrow") != std::string::npos) {
+					dateBits |= kTomorrow;
+				} else if (pointString.find("sun") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 0;
+				} else if (pointString.find("mon") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 1;
+				} else if (pointString.find("tue") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 2;
+				} else if (pointString.find("wed") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 3;
+				} else if (pointString.find("thu") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 4;
+				} else if (pointString.find("fri") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 5;
+				} else if (pointString.find("sat") != std::string::npos) {
+					dateBits |= kWeekday;
+					weekDay = 6;
+				}
+				if (pointString.find("noon") != std::string::npos) {
+					dateBits |= kNoon;
+				}
+				if (pointString.find("last") != std::string::npos) {
+					dateBits |= kLast;
+				}
+				if (pointString.find("this") != std::string::npos) {
+					dateBits |= kThis;
+				}
+
+				if (dateBits != 0) {
+					timePoint = std::chrono::system_clock::now();
+					if (dateBits & kDay) {
+						auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
+						auto broken_down_time = std::localtime(&coarse_time);
+
+						broken_down_time->tm_sec = 0;
+						broken_down_time->tm_min = 0;
+						broken_down_time->tm_hour = (dateBits & kNoon) ? 12 : 0;
+						if (dateBits & kYesterday) {
+							broken_down_time->tm_mday--;
+						} else if (dateBits & kTomorrow) {
+							broken_down_time->tm_mday++;
+						} else if (dateBits & kWeekday) {
+							auto dayOffset = weekDay - broken_down_time->tm_wday;
+							if (dateBits & kLast) {
+								if (dayOffset >= 0) {
+									dayOffset -= 7;
+								}
+							} else if (dateBits & kThis) {
+								// no change to the Offset
+							} else { // we imply the next day of that name
+								if (dayOffset <= 0) {
+									dayOffset += 7;
+								}
+							}
+							broken_down_time->tm_mday += dayOffset;
+						}
+
+						timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
+					}
+				} else { // no date bits found, we have a direct specification
+					if (pointString[0] == '@') { // as for date(1) this is seconds since 1970
+						auto seconds = std::stod(pointString.substr(1));
+						timePoint =  std::chrono::system_clock::from_time_t(0) +
+						             std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::duration<double>(seconds));
+					} else {
+						std::tm broken_down_time;
+						memset(&broken_down_time, 0, sizeof(broken_down_time));
+						int consumedCharacters;
+						auto items = sscanf(pointString.c_str(), "%d/%d/%d %d:%d:%d%n",
+						                    &(broken_down_time.tm_year), &(broken_down_time.tm_mon), &(broken_down_time.tm_mday),
+						                    &(broken_down_time.tm_hour), &(broken_down_time.tm_min), &(broken_down_time.tm_sec),
+						                    &consumedCharacters);
+						if (items >= 3) { // we have y/m/d
+							broken_down_time.tm_year -= 1900;
+							broken_down_time.tm_mon--;
+							broken_down_time.tm_isdst = -1;
+							#ifdef TZFILE_PATH
+							auto oldTZ = getenv("TZ");
+							std::string oldTZstring;
+							if (oldTZ) {
+								oldTZstring = oldTZ;
+							}
+							auto tzlength = pointString.size() - consumedCharacters;
+							if (tzlength > 3) {
+								auto timezone = aString.substr(pointStringStart + consumedCharacters + 1, tzlength - 1);
+								std::string tzfilename(TZFILE_PATH);
+								tzfilename += timezone;
+								struct stat s;
+								if (stat(tzfilename.c_str(), &s) < 0) {
+									parser::fGetInstance()->fGetErrorStream() << "can't find timezone file '" << tzfilename << "'\n";
+									parser::fGetInstance()->fComplainAndLeave();
+								}
+								setenv("TZ", timezone.c_str(), true);
+							}
+							#endif
+							timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
+							#ifdef TZFILE_PATH
+							if (tzlength > 3) {
+								if (oldTZ) {
+									setenv("TZ", oldTZstring.c_str(), true);
+								} else {
+									unsetenv("TZ");
+								}
+							}
+							#endif
+						} else {
+							parser::fGetInstance()->fGetErrorStream() << "Unrecognized time in '" << pointString << "'\n";
+							parser::fGetInstance()->fComplainAndLeave();
+						}
+					}
+				}
+			} else {
+				timePoint = std::chrono::system_clock::now();
+			}
+
+			if (offsetStringStart < aString.size()) {
+				std::chrono::system_clock::duration offset;
+				auto offsetString = aString.substr(offsetStringStart, offsetStringLength);
+				std::transform(offsetString.begin(), offsetString.end(), offsetString.begin(), ::tolower);
+
+				int months = 0;
+				int years = 0;
+				internal::parseDurationString(offset, offsetString, &months, &years);
+
+				if (offsetIsNegative) {
+					timePoint -= offset;
+				} else {
+					timePoint += offset;
+				}
+				if (months != 0 || years != 0) {
+					auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
+					auto fractionalPart = timePoint - std::chrono::system_clock::from_time_t(coarse_time);
+					auto broken_down_time = std::localtime(&coarse_time);
+					if (offsetIsNegative) {
+						broken_down_time->tm_mon -= months;
+						broken_down_time->tm_year -= years;
+					} else {
+						broken_down_time->tm_mon += months;
+						broken_down_time->tm_year += years;
+					}
+					timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
+					timePoint += fractionalPart;
+				}
+			}
+			return timePoint;
+		}
 	} // end of namespace internal
 
 
-	std::chrono::system_clock::time_point options::single<std::chrono::system_clock::time_point>::fParseTimePointString(const std::string& aString) {
-		std::string::size_type pointStringStart = 0;
-		std::string::size_type pointStringLength = std::string::npos;
-		std::string::size_type offsetStringStart = std::string::npos;
-		std::string::size_type offsetStringLength = std::string::npos;
-		bool offsetIsNegative = false;
-		{
-			auto after = aString.find("after");
-			if (after == 0) { // we have no time point
-				offsetStringStart = 6; // the offset starts after after
-				pointStringStart = std::string::npos;
-			} else if (after != std::string::npos) { // "after" after the offset before the point
-				offsetStringStart = 0;
-				offsetStringLength = after - 1;
-				pointStringStart = after + 6;
-			}
-		}
-		{
-			auto before = aString.find("before");
-			if (before == 0) { // we have no time point
-				offsetStringStart = 6; // the offset starts after before
-				pointStringStart = std::string::npos;
-				offsetIsNegative = true;
-			} else if (before != std::string::npos) { // "before" after the offset before the point
-				offsetStringStart = 0;
-				offsetStringLength = before - 1;
-				pointStringStart = before + 7;
-				offsetIsNegative = true;
-			}
-		}
-
-		valueType timePoint;
-		enum dateBitType {
-			kNow = 1 << 0,
-			kToday = 1 << 1,
-			kTomorrow = 1 << 2,
-			kYesterday = 1 << 3,
-			kWeekday = 1 << 4,
-			kDay = kToday | kTomorrow | kYesterday | kWeekday,
-			kLast = 1 << 5,
-			kThis = 1 << 6,
-			kNoon = 1 << 7
-
-		};
-		if (pointStringStart < aString.size()) {
-			auto pointString = aString.substr(pointStringStart, pointStringLength);
-			std::transform(pointString.begin(), pointString.end(), pointString.begin(), ::tolower);
-
-			typename std::underlying_type<dateBitType>::type dateBits = 0;
-			int weekDay = 0;
-			if (pointString.find("now") != std::string::npos) {
-				dateBits |= kNow;
-			} else if (pointString.find("today") != std::string::npos) {
-				dateBits |= kToday;
-			} else if (pointString.find("yesterday") != std::string::npos) {
-				dateBits |= kYesterday;
-			} else if (pointString.find("tomorrow") != std::string::npos) {
-				dateBits |= kTomorrow;
-			} else if (pointString.find("sun") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 0;
-			} else if (pointString.find("mon") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 1;
-			} else if (pointString.find("tue") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 2;
-			} else if (pointString.find("wed") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 3;
-			} else if (pointString.find("thu") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 4;
-			} else if (pointString.find("fri") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 5;
-			} else if (pointString.find("sat") != std::string::npos) {
-				dateBits |= kWeekday;
-				weekDay = 6;
-			}
-			if (pointString.find("noon") != std::string::npos) {
-				dateBits |= kNoon;
-			}
-			if (pointString.find("last") != std::string::npos) {
-				dateBits |= kLast;
-			}
-			if (pointString.find("this") != std::string::npos) {
-				dateBits |= kThis;
-			}
-
-			if (dateBits != 0) {
-				timePoint = std::chrono::system_clock::now();
-				if (dateBits & kDay) {
-					auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
-					auto broken_down_time = std::localtime(&coarse_time);
-
-					broken_down_time->tm_sec = 0;
-					broken_down_time->tm_min = 0;
-					broken_down_time->tm_hour = (dateBits & kNoon) ? 12 : 0;
-					if (dateBits & kYesterday) {
-						broken_down_time->tm_mday--;
-					} else if (dateBits & kTomorrow) {
-						broken_down_time->tm_mday++;
-					} else if (dateBits & kWeekday) {
-						auto dayOffset = weekDay - broken_down_time->tm_wday;
-						if (dateBits & kLast) {
-							if (dayOffset >= 0) {
-								dayOffset -= 7;
-							}
-						} else if (dateBits & kThis) {
-							// no change to the Offset
-						} else { // we imply the next day of that name
-							if (dayOffset <= 0) {
-								dayOffset += 7;
-							}
-						}
-						broken_down_time->tm_mday += dayOffset;
-					}
-
-					timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
-				}
-			} else { // no date bits found, we have a direct specification
-				if (pointString[0] == '@') { // as for date(1) this is seconds since 1970
-					auto seconds = std::stod(pointString.substr(1));
-					timePoint =  std::chrono::system_clock::from_time_t(0) +
-					             std::chrono::duration_cast<valueType::duration>(std::chrono::duration<double>(seconds));
-				} else {
-					std::tm broken_down_time;
-					memset(&broken_down_time, 0, sizeof(broken_down_time));
-					int consumedCharacters;
-					auto items = sscanf(pointString.c_str(), "%d/%d/%d %d:%d:%d%n",
-					                    &(broken_down_time.tm_year), &(broken_down_time.tm_mon), &(broken_down_time.tm_mday),
-					                    &(broken_down_time.tm_hour), &(broken_down_time.tm_min), &(broken_down_time.tm_sec),
-					                    &consumedCharacters);
-					if (items >= 3) { // we have y/m/d
-						broken_down_time.tm_year -= 1900;
-						broken_down_time.tm_mon--;
-						broken_down_time.tm_isdst = -1;
-						#ifdef TZFILE_PATH
-						auto oldTZ = getenv("TZ");
-						std::string oldTZstring;
-						if (oldTZ) {
-							oldTZstring = oldTZ;
-						}
-						auto tzlength = pointString.size() - consumedCharacters;
-						if (tzlength > 3) {
-							auto timezone = aString.substr(pointStringStart + consumedCharacters + 1, tzlength - 1);
-							std::string tzfilename(TZFILE_PATH);
-							tzfilename += timezone;
-							struct stat s;
-							if (stat(tzfilename.c_str(), &s) < 0) {
-								parser::fGetInstance()->fGetErrorStream() << "can't find timezone file '" << tzfilename << "'\n";
-								parser::fGetInstance()->fComplainAndLeave();
-							}
-							setenv("TZ", timezone.c_str(), true);
-						}
-						#endif
-						timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
-						#ifdef TZFILE_PATH
-						if (tzlength > 3) {
-							if (oldTZ) {
-								setenv("TZ", oldTZstring.c_str(), true);
-							} else {
-								unsetenv("TZ");
-							}
-						}
-						#endif
-					} else {
-						parser::fGetInstance()->fGetErrorStream() << "Unrecognized time in '" << pointString << "'\n";
-						parser::fGetInstance()->fComplainAndLeave();
-					}
-				}
-			}
-		} else {
-			timePoint = std::chrono::system_clock::now();
-		}
-
-		if (offsetStringStart < aString.size()) {
-			valueType::duration offset;
-			auto offsetString = aString.substr(offsetStringStart, offsetStringLength);
-			std::transform(offsetString.begin(), offsetString.end(), offsetString.begin(), ::tolower);
-
-			int months = 0;
-			int years = 0;
-			internal::parseDurationString(offset, offsetString, &months, &years);
-
-			if (offsetIsNegative) {
-				timePoint -= offset;
-			} else {
-				timePoint += offset;
-			}
-			if (months != 0 || years != 0) {
-				auto coarse_time = std::chrono::system_clock::to_time_t(timePoint);
-				auto fractionalPart = timePoint - std::chrono::system_clock::from_time_t(coarse_time);
-				auto broken_down_time = std::localtime(&coarse_time);
-				if (offsetIsNegative) {
-					broken_down_time->tm_mon -= months;
-					broken_down_time->tm_year -= years;
-				} else {
-					broken_down_time->tm_mon += months;
-					broken_down_time->tm_year += years;
-				}
-				timePoint = std::chrono::system_clock::from_time_t(std::mktime(broken_down_time));
-				timePoint += fractionalPart;
-			}
-		}
-		return timePoint;
-	}
-
-	void options::single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+	void single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
 		auto flags(aStream.flags());
 		aStream << std::fixed;
 		aStream << std::chrono::duration<double>(aValue.time_since_epoch()).count();
 		aStream.flags(flags);
 	}
-	options::single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault, const std::vector<valueType>& aRange, valuePrinterType aValuePrinter):
-		base(aShortName, aLongName, aExplanation, 1),
-		lValue(aDefault),
+	single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault, const std::vector<valueType>& aRange, valuePrinterType aValuePrinter):
+		internal::typed_base<std::chrono::system_clock::time_point>(aShortName, aLongName, aExplanation, 1),
 		lValuePrinter(aValuePrinter) {
+		*static_cast<valueType*>(this) = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
 		}
 	}
-	options::single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange, valuePrinterType aValuePrinter):
-		base(aShortName, aLongName, aExplanation, 1),
+	single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange, valuePrinterType aValuePrinter):
+		internal::typed_base<std::chrono::system_clock::time_point>(aShortName, aLongName, aExplanation, 1),
 		lValuePrinter(aValuePrinter) {
-		lValue = fParseTimePointString(aDefault);
+		*static_cast<valueType*>(this) = internal::fParseTimePointString(aDefault);
 		lOriginalString = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
 		}
 	}
 
-	void options::single<std::chrono::system_clock::time_point>::fSetValuePrinter(valuePrinterType aValuePrinter) {
+	void single<std::chrono::system_clock::time_point>::fSetValuePrinter(valuePrinterType aValuePrinter) {
 		lValuePrinter = aValuePrinter;
 	}
 
 
-	void options::single<std::chrono::system_clock::time_point>::fAddToRange(valueType aValue) {
-		lRange.push_back(aValue);
-	}
-	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::string& aString) {
-		fAddToRange(fParseTimePointString(aString));
-	}
-
-	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::vector<valueType>& aRange) {
-		fAddToRange(aRange.cbegin(), aRange.cend());
-	};
-	void options::single<std::chrono::system_clock::time_point>::fAddToRange(const std::vector<std::string>& aRange) {
-		fAddToRange(aRange.cbegin(), aRange.cend());
-	};
-	void options::single<std::chrono::system_clock::time_point>::fAddToRangeFromStream(std::istream& aStream) {
-		std::string buf;
-		std::getline(aStream, buf);
-		fAddToRange(buf);
-	}
-	void options::single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
+	void single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
 		std::getline(aStream, lOriginalString);
-		lValue = fParseTimePointString(lOriginalString);
+		*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
 	}
 
-	void options::single<std::chrono::system_clock::time_point>::fWriteRange(std::ostream& aStream) const {
+	void single<std::chrono::system_clock::time_point>::fWriteRange(std::ostream& aStream) const {
 		if (! lRange.empty()) {
 			aStream << "# allowed range is";
 			if (lRange.size() == 2) {
@@ -423,49 +405,32 @@ namespace options {
 			}
 		}
 	}
-	bool options::single<std::chrono::system_clock::time_point>::fCheckRange(std::ostream& aLogStream) const {
-		if (lRange.empty()) {
-			return true;
-		} else if (lRange.size() == 2) {
-			if (lRange[0] <= lValue && lValue <= lRange[1]) {
-				return true;
-			} else {
-				aLogStream << fGetLongName() << " out of range (";
-				lValuePrinter(aLogStream, lValue);
-				aLogStream << "), must be in [";
-				lValuePrinter(aLogStream, lRange[0]);
-				aLogStream << ", ";
-				lValuePrinter(aLogStream, lRange[1]);
-				aLogStream << "]\n";
-				return false;
-			}
-		} else {
-			for (auto& it : lRange) {
-				if (it == lValue) {
-					return true;
-				}
-			}
-			aLogStream << fGetLongName() << " out of range (";
-			lValuePrinter(aLogStream, lValue);
-			aLogStream << "), must be one of:\n";
-			for (auto& rangeElement : lRange) {
-				lValuePrinter(aLogStream, rangeElement);
-				aLogStream << "\n";
-			}
-			return false;
-		}
+
+	void single<std::chrono::system_clock::time_point>::fWriteValue(std::ostream& aStream) const {
+		lValuePrinter(aStream, *this);
 	}
-	void options::single<std::chrono::system_clock::time_point>::fWriteValue(std::ostream& aStream) const {
-		lValuePrinter(aStream, lValue);
-	}
-	void options::single<std::chrono::system_clock::time_point>::fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+	void single<std::chrono::system_clock::time_point>::fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
 		using escapedIO::operator>>;
 		aStream >> lOriginalString;
-		lValue = fParseTimePointString(lOriginalString);
+		*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
 		fSetSource(aSource);
 	}
-	const options::single<std::chrono::system_clock::time_point>::valueType options::single<std::chrono::system_clock::time_point>::fGetValue() const {
-		return lValue;
-	}
+
+
+	namespace escapedIO {
+		std::ostream& operator<<(std::ostream& aStream, const std::chrono::system_clock::time_point& aTime) {
+			single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(aStream, aTime);
+			return aStream;
+		}
+		std::istream& operator>>(std::istream& aStream, std::chrono::system_clock::time_point& aTime) {
+			std::string buf;
+			aStream >> buf;
+			if (!aStream.fail()) {
+				aTime = internal::fParseTimePointString(buf);
+			}
+			return aStream;
+		}
+
+	} // end of namespace escapedIO
 
 } // end of namespace options

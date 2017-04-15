@@ -17,10 +17,49 @@
 */
 #include "OptionsChrono.h"
 #include <limits>
+#include <ratio>
 #include <set>
 #include <unistd.h>
 
-template <typename T> options::single<T>* fOptionFromStream(std::istream &aStream, T defaultValue) {
+template <typename T> class arrayOption: public  options::container<T> {
+  public:
+	template <class ... Types> arrayOption(Types ... args) :
+		options::container<T>(args...) {
+	};
+	void fWriteValue(std::ostream& aStream) const override {
+		aStream << "(";
+		for (auto item : *this) {
+			aStream << ' ';
+			using options::escapedIO::operator<<;
+			aStream << item;
+		}
+		aStream << ")";
+	};
+};
+
+template <typename T> class mapOption: public  options::map<T> {
+  public:
+	template <class ... Types> mapOption(Types ... args) :
+		options::map<T>(args...) {
+	};
+	void fWriteValue(std::ostream& aStream) const override {
+		aStream << "; unset " << this->fGetLongName() << "; declare -A " << this->fGetLongName() << "=(";
+		for (const auto& item : *this) {
+			aStream << " [" << item.first << "]=";
+			using options::escapedIO::operator<<;
+			aStream << item.second << ']';
+		}
+		aStream << ")";
+	};
+};
+
+enum typeModifierType {
+	kSimple,
+	kAsArray,
+	kAsMap
+};
+
+template <typename T> options::base* fOptionFromStream(std::istream &aStream, T defaultValue, typeModifierType aAsWhat) {
 	char shortName;
 	std::string longName;
 	std::string description;
@@ -33,7 +72,14 @@ template <typename T> options::single<T>* fOptionFromStream(std::istream &aStrea
 	if (shortName == '-') {
 		shortName = '\0';
 	}
-	return new options::single<T>(shortName, longName, description, defaultValue);
+	switch (aAsWhat) {
+		case kSimple:
+			return new options::single<T>(shortName, longName, description, defaultValue);
+		case kAsArray:
+			return new arrayOption<T>(shortName, longName, description);
+		case kAsMap:
+			return new mapOption<T>(shortName, longName, description);
+	}
 }
 template <typename T> options::container<T>* fContainerOptionFromStream(std::istream &aStream) {
 	char shortName;
@@ -82,7 +128,7 @@ int main(int argc, const char *argv[]) {
 		          "test $? != 0 && echo exit\n"
 		          ")\n"
 		          "Option sytax is:\n"
-		          "[export][positional number] type shortOpt longOpt descripton\n"
+		          "[export|array|map][positional number] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
 		          "\tfor durations the type 'seconds' is provided\n"
 		          "\tfor short durations the type 'milliseconds' is provided\n"
@@ -92,9 +138,14 @@ int main(int argc, const char *argv[]) {
 		          "\tshortOpt is the one-letter variant, use '-' to have none\n"
 		          "\tlongOpt is the long variant and the name of the shell variable\n"
 		          "\tthe rest of the line is the description\n"
+		          "\tif 'array' is set the option will be a shell array, which can be\n"
+		          "\t  expanded with \"${longOpt[@]}\" which will produce words preserving spaces\n"
+		          "\tif 'map' is set the option will be a shell array, which can be\n"
+		          "\t  expanded with \"${longOpt[@]}\" which will produce words preserving spaces\n"
+		          "\t  other than the 'array' variant maps have string subscripts\n"
 		          "\tif 'export' is set the shell variable will be exported\n"
-		          "\tif 'positional' is set the variable will be set as postional,"
-		          "\t  with 'number' defining the order in the positional parameter list."
+		          "\tif 'positional' is set the variable will be set as postional,\n"
+		          "\t  with 'number' defining the order in the positional parameter list.\n"
 		          "\tif the next line starts with 'range' the values following are added\n"
 		          "\tto the allowed value range of the option, many range lines may follow!\n"
 		          "\tif only two are given they denote a true range in the closed interval\n"
@@ -121,6 +172,7 @@ int main(int argc, const char *argv[]) {
 	{
 		std::string keyWord;
 		bool exportNextOption = false;
+		typeModifierType nextOptionAsWhat = kSimple;
 		int nextOptionPositional = 0;
 		while (std::cin.good()) {
 			std::cin >> keyWord;
@@ -128,25 +180,27 @@ int main(int argc, const char *argv[]) {
 				break;
 			}
 			if (keyWord == "string") {
-				options.push_back(fOptionFromStream<std::string>(std::cin, ""));
+				options.push_back(fOptionFromStream<std::string>(std::cin, "", nextOptionAsWhat));
 			} else if (keyWord == "int") {
-				options.push_back(fOptionFromStream<int>(std::cin, 0));
+				options.push_back(fOptionFromStream<int>(std::cin, 0, nextOptionAsWhat));
 			} else if (keyWord == "uint") {
-				options.push_back(fOptionFromStream<int>(std::cin, 0));
+				options.push_back(fOptionFromStream<unsigned int>(std::cin, 0, nextOptionAsWhat));
 			} else if (keyWord == "bool") {
-				options.push_back(fOptionFromStream<bool>(std::cin, false));
+				options.push_back(fOptionFromStream<bool>(std::cin, false, nextOptionAsWhat));
 			} else if (keyWord == "seconds") {
-				options.push_back(fOptionFromStream<std::chrono::duration<long long>>(std::cin, std::chrono::seconds(1)));
+				options.push_back(fOptionFromStream<std::chrono::duration<long long>>(std::cin, std::chrono::seconds(1), nextOptionAsWhat));
 			} else if (keyWord == "milliseconds") {
-				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::ratio<1, 1000>>>(std::cin, std::chrono::seconds(1)));
+				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::milli>>(std::cin, std::chrono::seconds(1), nextOptionAsWhat));
 			} else if (keyWord == "microseconds") {
-				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::ratio<1, 1000000>>>(std::cin, std::chrono::seconds(1)));
+				options.push_back(fOptionFromStream<std::chrono::duration<long long, std::micro>>(std::cin, std::chrono::seconds(1), nextOptionAsWhat));
 			} else if (keyWord == "date") {
-				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now()));
+				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now(), nextOptionAsWhat));
 			} else if (keyWord == "idate") {
-				auto opt = fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now());
-				opt->fSetValuePrinter([](std::ostream & aStream, std::chrono::system_clock::time_point aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
-				options.push_back(opt);
+				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now(), nextOptionAsWhat));
+				auto opt = dynamic_cast<options::single<std::chrono::system_clock::time_point>*>(options.back());
+				if (opt) {
+					opt->fSetValuePrinter([](std::ostream & aStream, std::chrono::system_clock::time_point aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
+				}
 			} else if (keyWord == "list") {
 				options.push_back(fContainerOptionFromStream<std::string>(std::cin));
 			} else if (keyWord == "range") {
@@ -155,6 +209,12 @@ int main(int argc, const char *argv[]) {
 				options.back()->fAddDefaultFromStream(std::cin);
 			} else if (keyWord == "export") {
 				exportNextOption = true;
+				continue;
+			} else if (keyWord == "array") {
+				nextOptionAsWhat = kAsArray;
+				continue;
+			} else if (keyWord == "map") {
+				nextOptionAsWhat = kAsMap;
 				continue;
 			} else if (keyWord == "positional") {
 				std::cin >> nextOptionPositional;
@@ -189,6 +249,7 @@ int main(int argc, const char *argv[]) {
 				exportedOptions.insert(options.back());
 			}
 			exportNextOption = false;
+			nextOptionAsWhat = kSimple;
 			nextOptionPositional = 0;
 		}
 	}

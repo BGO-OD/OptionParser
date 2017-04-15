@@ -23,6 +23,8 @@ int main(int argc, const char *argv[]) {
 	cs.fForbid(&Cs);
 	Cs.fForbid(&cs);
 
+	options::container<std::chrono::system_clock::time_point> dates('\0', "dates", "list of dates");
+
 	options::OptionsForTApplication TApplicationOptions(argv[0]);
 
 	options::positional<options::single<float>>posNumber(10, "posnumber", "positional float number", 0);

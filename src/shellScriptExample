@@ -19,11 +19,12 @@ range $(seq -s ' ' 4 10 100)
 uint p pid the pid of the process
 default $$
 export string - test a test
-positional 10 list - files all the files to process
+positional 10 array string - files all the files to process
 bool v verbose be verbose
 list l list list of strings
 milliseconds s msecs a time range
 idate d date a time point
+map idate - dates an array of dates
 trailer:
 It is also possible to add text to the help output after the list of options.
 EOF
@@ -44,6 +45,6 @@ if [ $pid -ne $$ ]; then
 		echo "you were fooled! you can't change the pid of this process."
 fi
 
-for f in $files; do
+for f in "${files[@]}"; do
     echo $f
 done

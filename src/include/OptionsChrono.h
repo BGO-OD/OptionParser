@@ -1,6 +1,10 @@
 #ifndef __OptionsChrono_H__
 #define __OptionsChrono_H__
 
+#ifdef __Options_H__
+#error When using OptionsChrono.h do not include Options.h, at least not before!
+#endif
+
 #include <iostream>
 #include <chrono>
 #include <type_traits>

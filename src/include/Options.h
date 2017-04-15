@@ -116,6 +116,22 @@ namespace options {
 		std::istream& operator>>(std::istream& aStream, std::string& aString);
 	} // end of namespace escapedIO
 
+	/// template interface class for options that provide a value printer
+
+	template <typename T> class valuePrinter {
+	  public:
+		typedef void (*valuePrinterType)(std::ostream&, const T&);
+	  protected:
+		valuePrinterType lValuePrinter;
+	  public:
+		valuePrinter(): lValuePrinter(nullptr) {};
+		valuePrinter(valuePrinterType aValuePrinter): lValuePrinter(aValuePrinter) {};
+		virtual void fSetValuePrinter(valuePrinterType aValuePrinter) {
+			lValuePrinter = aValuePrinter;
+		};
+	};
+
+
 /// base class for options
 
 /// Only the templated classes that derive from this base class can contain values.

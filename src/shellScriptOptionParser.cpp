@@ -47,9 +47,9 @@ template <typename T> class mapOption: public  options::map<T> {
 		for (const auto& item : *this) {
 			aStream << " [" << item.first << "]=";
 			using options::escapedIO::operator<<;
-			aStream << item.second << ']';
+			aStream << item.second;
 		}
-		aStream << ")";
+		aStream << " )";
 	};
 };
 
@@ -197,9 +197,9 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now(), nextOptionAsWhat));
 			} else if (keyWord == "idate") {
 				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now(), nextOptionAsWhat));
-				auto opt = dynamic_cast<options::single<std::chrono::system_clock::time_point>*>(options.back());
+				auto opt = dynamic_cast<options::valuePrinter<std::chrono::system_clock::time_point>*>(options.back());
 				if (opt) {
-					opt->fSetValuePrinter([](std::ostream & aStream, std::chrono::system_clock::time_point aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
+					opt->fSetValuePrinter([](std::ostream & aStream, const std::chrono::system_clock::time_point & aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
 				}
 			} else if (keyWord == "list") {
 				options.push_back(fContainerOptionFromStream<std::string>(std::cin));

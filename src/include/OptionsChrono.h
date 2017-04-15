@@ -68,21 +68,19 @@ namespace options {
 	template <> class single<std::chrono::system_clock::time_point> :
 		public std::chrono::system_clock::time_point,
 		public internal::typed_base<std::chrono::system_clock::time_point>,
-		public originalStringKeeper {
+		public originalStringKeeper,
+		public valuePrinter<std::chrono::system_clock::time_point> {
 	  public:
 		typedef rangeValueType valueType;
-		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
-		valuePrinterType lValuePrinter;
 		std::vector<valueType> lRange;
 
 	  public:
-		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue);
+		static void fDefaultValuePrinter(std::ostream& aStream, const valueType& aValue);
 
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::clock::now(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter);
 
-		void fSetValuePrinter(valuePrinterType aValuePrinter);
 
 		void fAddDefaultFromStream(std::istream& aStream) override;
 		void fWriteRange(std::ostream& aStream) const override;
@@ -102,25 +100,24 @@ namespace options {
 	template <class Rep, class Period> class single<std::chrono::duration<Rep, Period>> :
 		        public std::chrono::duration<Rep, Period>,
 		        public internal::typed_base<std::chrono::duration<Rep, Period>>,
+		        public valuePrinter<std::chrono::duration<Rep, Period>>,
 		        public originalStringKeeper {
 	  public:
 		typedef std::chrono::duration<Rep, Period> valueType; // why does the one in typed_base not work?
-		typedef void (*valuePrinterType)(std::ostream&, valueType);
 	  protected:
-		valuePrinterType lValuePrinter;
 		std::vector<valueType> lRange;
 
 	  public:
-		static void fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+		static void fDefaultValuePrinter(std::ostream& aStream, const valueType& aValue) {
 			using escapedIO::operator<<;
 			aStream << aValue;
 		};
 
 
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}, valuePrinterType aValuePrinter = fDefaultValuePrinter):
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault = valueType::zero(), const std::vector<valueType>& aRange = {}, typename valuePrinter<valueType>::valuePrinterType aValuePrinter = fDefaultValuePrinter):
 			valueType(aDefault),
 			internal::typed_base<valueType>(aShortName, aLongName, aExplanation, 1),
-			lValuePrinter(aValuePrinter) {
+			valuePrinter<valueType>(aValuePrinter) {
 			if (!aRange.empty()) {
 				this->fAddToRange(aRange);
 			}
@@ -130,7 +127,7 @@ namespace options {
 			internal::parseDurationString(*this, lOriginalString);
 		}
 		void fWriteValue(std::ostream& aStream) const override {
-			lValuePrinter(aStream, *this);
+			this->lValuePrinter(aStream, *this);
 		}
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			using escapedIO::operator>>;

@@ -353,7 +353,7 @@ namespace options {
 	} // end of namespace internal
 
 
-	void single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(std::ostream& aStream, valueType aValue) {
+	void single<std::chrono::system_clock::time_point>::fDefaultValuePrinter(std::ostream& aStream, const valueType& aValue) {
 		auto flags(aStream.flags());
 		aStream << std::fixed;
 		aStream << std::chrono::duration<double>(aValue.time_since_epoch()).count();
@@ -361,7 +361,7 @@ namespace options {
 	}
 	single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, valueType aDefault, const std::vector<valueType>& aRange, valuePrinterType aValuePrinter):
 		internal::typed_base<std::chrono::system_clock::time_point>(aShortName, aLongName, aExplanation, 1),
-		lValuePrinter(aValuePrinter) {
+		valuePrinter(aValuePrinter) {
 		*static_cast<valueType*>(this) = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
@@ -369,18 +369,13 @@ namespace options {
 	}
 	single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange, valuePrinterType aValuePrinter):
 		internal::typed_base<std::chrono::system_clock::time_point>(aShortName, aLongName, aExplanation, 1),
-		lValuePrinter(aValuePrinter) {
+		valuePrinter(aValuePrinter) {
 		*static_cast<valueType*>(this) = internal::fParseTimePointString(aDefault);
 		lOriginalString = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
 		}
 	}
-
-	void single<std::chrono::system_clock::time_point>::fSetValuePrinter(valuePrinterType aValuePrinter) {
-		lValuePrinter = aValuePrinter;
-	}
-
 
 	void single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
 		std::getline(aStream, lOriginalString);

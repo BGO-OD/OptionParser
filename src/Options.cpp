@@ -344,7 +344,7 @@ namespace options {
 	}
 
 	void parser::fPrintEscapedString(std::ostream & aStream, const std::string& aString) {
-		bool delimit = aString.find(" \t,") != std::string::npos;
+		bool delimit = aString.find_first_of(" \t,") != std::string::npos;
 		if (delimit) {
 			aStream << '\'';
 		}

@@ -21,7 +21,7 @@ default $$
 export string - test a test
 positional 10 array string - files all the files to process
 bool v verbose be verbose
-list l list list of strings
+list string l list list of strings
 milliseconds s msecs a time range
 idate d date a time point
 map idate - dates an array of dates

@@ -28,7 +28,7 @@ template <typename T> class arrayOption: public  options::container<T> {
 	};
 	void fWriteValue(std::ostream& aStream) const override {
 		aStream << "(";
-		for (auto item : *this) {
+		for (const auto& item : *this) {
 			aStream << ' ';
 			using options::escapedIO::operator<<;
 			aStream << item;
@@ -53,10 +53,31 @@ template <typename T> class mapOption: public  options::map<T> {
 	};
 };
 
+template <typename T> class listOption: public  options::container<T> {
+  public:
+	template <class ... Types> listOption(Types ... args) :
+		options::container<T>(args...) {
+	};
+	void fWriteValue(std::ostream& aStream) const override {
+		aStream << "\"";
+		bool start=true;
+		for (const auto& item : *this) {
+			if (!start) {
+				aStream << ' ';
+			}
+			start = false;
+			using options::escapedIO::operator<<;
+			aStream << item;
+		}
+		aStream << "\"";
+	};
+};
+
 enum typeModifierType {
 	kSimple,
 	kAsArray,
-	kAsMap
+	kAsMap,
+	kAsList
 };
 
 template <typename T> options::base* fOptionFromStream(std::istream &aStream, T defaultValue, typeModifierType aAsWhat) {
@@ -79,23 +100,11 @@ template <typename T> options::base* fOptionFromStream(std::istream &aStream, T 
 			return new arrayOption<T>(shortName, longName, description);
 		case kAsMap:
 			return new mapOption<T>(shortName, longName, description);
+		case kAsList:
+			return new listOption<T>(shortName, longName, description);
 	}
 }
-template <typename T> options::container<T>* fContainerOptionFromStream(std::istream &aStream) {
-	char shortName;
-	std::string longName;
-	std::string description;
 
-	aStream >> shortName;
-	aStream >> longName;
-	aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
-	std::getline(aStream, description);
-
-	if (shortName == '-') {
-		shortName = '\0';
-	}
-	return new options::container<T>(shortName, longName, description);
-}
 
 int main(int argc, const char *argv[]) {
 	std::string description;
@@ -128,7 +137,7 @@ int main(int argc, const char *argv[]) {
 		          "test $? != 0 && echo exit\n"
 		          ")\n"
 		          "Option sytax is:\n"
-		          "[export|array|map][positional number] type shortOpt longOpt descripton\n"
+		          "[export|array|map|list][positional number] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
 		          "\tfor durations the type 'seconds' is provided\n"
 		          "\tfor short durations the type 'milliseconds' is provided\n"
@@ -143,6 +152,8 @@ int main(int argc, const char *argv[]) {
 		          "\tif 'map' is set the option will be a shell array, which can be\n"
 		          "\t  expanded with \"${longOpt[@]}\" which will produce words preserving spaces\n"
 		          "\t  other than the 'array' variant maps have string subscripts\n"
+		          "\tif 'list' is set the option will be a list, i.e. a variable with the\n"
+		          "\t  values separated by spaces, i.e. values may not contain spaces"
 		          "\tif 'export' is set the shell variable will be exported\n"
 		          "\tif 'positional' is set the variable will be set as postional,\n"
 		          "\t  with 'number' defining the order in the positional parameter list.\n"
@@ -201,8 +212,6 @@ int main(int argc, const char *argv[]) {
 				if (opt) {
 					opt->fSetValuePrinter([](std::ostream & aStream, const std::chrono::system_clock::time_point & aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
 				}
-			} else if (keyWord == "list") {
-				options.push_back(fContainerOptionFromStream<std::string>(std::cin));
 			} else if (keyWord == "range") {
 				options.back()->fAddToRangeFromStream(std::cin);
 			} else if (keyWord == "default") {
@@ -215,6 +224,9 @@ int main(int argc, const char *argv[]) {
 				continue;
 			} else if (keyWord == "map") {
 				nextOptionAsWhat = kAsMap;
+				continue;
+			} else if (keyWord == "list") {
+				nextOptionAsWhat = kAsList;
 				continue;
 			} else if (keyWord == "positional") {
 				std::cin >> nextOptionPositional;

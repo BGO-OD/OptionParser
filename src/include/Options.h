@@ -19,6 +19,7 @@
 #define __Options_H__
 
 #include <string.h>
+#include <limits>
 #include <string>
 #include <map>
 #include <vector>
@@ -518,7 +519,10 @@ namespace options {
 			bool fIsContainer() const override {
 				return true;
 			};
-			void fAddDefaultFromStream(std::istream& /*aStream*/) override {};
+			void fAddDefaultFromStream(std::istream& aStream) override {
+				aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
+				this->fSetMe(aStream, internal::sourceItem());
+			};
 
 		};
 	} // end of namespace internal
@@ -613,7 +617,10 @@ namespace options {
 			bool fIsContainer() const override {
 				return true;
 			};
-			void fAddDefaultFromStream(std::istream& /*aStream*/) override {};
+			void fAddDefaultFromStream(std::istream& aStream) override {
+				aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
+				this->fSetMe(aStream,internal::sourceItem());
+			};
 		};
 	} // end of namespace internal
 

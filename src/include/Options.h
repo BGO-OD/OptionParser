@@ -618,7 +618,7 @@ namespace options {
 			};
 			void fAddDefaultFromStream(std::istream& aStream) override {
 				aStream.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
-				this->fSetMe(aStream,internal::sourceItem());
+				this->fSetMe(aStream, internal::sourceItem());
 			};
 		};
 	} // end of namespace internal

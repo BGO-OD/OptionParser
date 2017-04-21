@@ -60,7 +60,7 @@ template <typename T> class listOption: public  options::container<T> {
 	};
 	void fWriteValue(std::ostream& aStream) const override {
 		aStream << "\"";
-		bool start=true;
+		bool start = true;
 		for (const auto& item : *this) {
 			if (!start) {
 				aStream << ' ';
@@ -181,7 +181,7 @@ int main(int argc, const char *argv[]) {
 	unsigned int minUnusedParameters = 0;
 	unsigned int maxUnusedParameters = std::numeric_limits<unsigned int>::max();
 	{
-	  options::parser throwAwayInstance("tAI1");
+		options::parser throwAwayInstance("tAI1");
 		std::string keyWord;
 		bool exportNextOption = false;
 		typeModifierType nextOptionAsWhat = kSimple;
@@ -211,7 +211,7 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<std::chrono::system_clock::time_point>(std::cin, std::chrono::system_clock::now(), nextOptionAsWhat));
 				auto opt = dynamic_cast<options::valuePrinter<std::chrono::system_clock::time_point>*>(options.back());
 				if (opt) {
-					opt->fSetValuePrinter([](std::ostream & aStream, const std::chrono::system_clock::time_point & aValue)->void{aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
+					opt->fSetValuePrinter([](std::ostream & aStream, const std::chrono::system_clock::time_point & aValue)->void {aStream << std::chrono::duration_cast<std::chrono::duration<long>>(aValue.time_since_epoch()).count();});
 				}
 			} else if (keyWord == "range") {
 				options.back()->fAddToRangeFromStream(std::cin);
@@ -276,7 +276,7 @@ int main(int argc, const char *argv[]) {
 		trailer += line;
 		trailer += "\n";
 	}
-	
+
 	options::parser parser(description, trailer, searchPath);
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);

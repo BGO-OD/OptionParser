@@ -156,7 +156,7 @@ namespace options {
 			if (aStream.fail()) {
 				return false;
 			}
-		  aStream >> aBrokenDownTime->tm_hour;
+			aStream >> aBrokenDownTime->tm_hour;
 			if (!aStream.fail()) {
 				if (aStream.get() != ':') {
 					return false;
@@ -176,10 +176,10 @@ namespace options {
 				}
 			}
 			aStream >> timezone;
-			
+
 			return true;
 		}
-		
+
 		std::chrono::system_clock::time_point fParseTimePointString(const std::string& aString) {
 			std::string::size_type pointStringStart = 0;
 			std::string::size_type pointStringLength = std::string::npos;
@@ -312,7 +312,7 @@ namespace options {
 						double fractionalPart;
 						std::stringstream buf(aString.substr(pointStringStart, pointStringLength));
 						std::string timezone;
-						if (internal::fParseStreamToBrokenDownTime(buf,&broken_down_time,fractionalPart,timezone)) {
+						if (internal::fParseStreamToBrokenDownTime(buf, &broken_down_time, fractionalPart, timezone)) {
 							broken_down_time.tm_year -= 1900;
 							broken_down_time.tm_mon--;
 							broken_down_time.tm_isdst = -1;
@@ -330,7 +330,7 @@ namespace options {
 									parser::fGetInstance()->fGetErrorStream() << "can't find timezone file '" << tzfilename << "'\n";
 									parser::fGetInstance()->fComplainAndLeave();
 								}
-								timezone=":" + timezone;
+								timezone = ":" + timezone;
 								setenv("TZ", timezone.c_str(), true);
 								tzset();
 							}

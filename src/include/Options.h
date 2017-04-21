@@ -18,7 +18,6 @@
 #ifndef __Options_H__
 #define __Options_H__
 
-#include <string.h>
 #include <limits>
 #include <string>
 #include <map>

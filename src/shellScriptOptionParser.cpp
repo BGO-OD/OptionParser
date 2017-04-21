@@ -181,6 +181,7 @@ int main(int argc, const char *argv[]) {
 	unsigned int minUnusedParameters = 0;
 	unsigned int maxUnusedParameters = std::numeric_limits<unsigned int>::max();
 	{
+	  options::parser throwAwayInstance("tAI1");
 		std::string keyWord;
 		bool exportNextOption = false;
 		typeModifierType nextOptionAsWhat = kSimple;
@@ -275,7 +276,7 @@ int main(int argc, const char *argv[]) {
 		trailer += line;
 		trailer += "\n";
 	}
-
+	
 	options::parser parser(description, trailer, searchPath);
 	parser.fSetMessageStream(&std::cerr);
 	parser.fSetHelpReturnValue(1);

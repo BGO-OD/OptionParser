@@ -142,6 +142,43 @@ namespace options {
 			return std::chrono::duration<double>::zero();
 		}
 
+		bool fParseStreamToBrokenDownTime(std::istream &aStream, std::tm* aBrokenDownTime, double& aFractional, std::string& timezone) {
+			aStream >> aBrokenDownTime->tm_year;
+			if (aStream.fail() || aStream.get() != '/') {
+				return false;
+			}
+			aStream >> aBrokenDownTime->tm_mon;
+			if (aStream.fail() || aStream.get() != '/') {
+				return false;
+			}
+			aStream >> aBrokenDownTime->tm_mday;
+			if (aStream.fail()) {
+				return false;
+			}
+		  aStream >> aBrokenDownTime->tm_hour;
+			if (!aStream.fail()) {
+				if (aStream.get() != ':') {
+					return false;
+				}
+				aStream >> aBrokenDownTime->tm_min;
+				if (aStream.fail()) {
+					return false;
+				}
+				if (aStream.peek() == ':') {
+					aStream.get();
+					aStream >> aFractional;
+					aBrokenDownTime->tm_sec = aFractional;
+					aFractional -= aBrokenDownTime->tm_sec;
+					if (aStream.fail()) {
+						return false;
+					}
+				}
+			}
+			aStream >> timezone;
+			
+			return true;
+		}
+		
 		std::chrono::system_clock::time_point fParseTimePointString(const std::string& aString) {
 			std::string::size_type pointStringStart = 0;
 			std::string::size_type pointStringLength = std::string::npos;
@@ -268,15 +305,13 @@ namespace options {
 						auto seconds = std::stod(pointString.substr(1));
 						timePoint =  std::chrono::system_clock::from_time_t(0) +
 						             std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::duration<double>(seconds));
-					} else {
+					} else { // try direct spec like yyy/mm/dd [HH:MM:SS]
 						std::tm broken_down_time;
 						memset(&broken_down_time, 0, sizeof(broken_down_time));
-						int consumedCharacters;
-						auto items = sscanf(pointString.c_str(), "%d/%d/%d %d:%d:%d%n",
-						                    &(broken_down_time.tm_year), &(broken_down_time.tm_mon), &(broken_down_time.tm_mday),
-						                    &(broken_down_time.tm_hour), &(broken_down_time.tm_min), &(broken_down_time.tm_sec),
-						                    &consumedCharacters);
-						if (items >= 3) { // we have y/m/d
+						double fractionalPart;
+						std::stringstream buf(aString.substr(pointStringStart, pointStringLength));
+						std::string timezone;
+						if (internal::fParseStreamToBrokenDownTime(buf,&broken_down_time,fractionalPart,timezone)) {
 							broken_down_time.tm_year -= 1900;
 							broken_down_time.tm_mon--;
 							broken_down_time.tm_isdst = -1;
@@ -286,9 +321,7 @@ namespace options {
 							if (oldTZ) {
 								oldTZstring = oldTZ;
 							}
-							auto tzlength = pointString.size() - consumedCharacters;
-							if (tzlength > 3) {
-								auto timezone = aString.substr(pointStringStart + consumedCharacters + 1, tzlength - 1);
+							if (timezone.length() > 2) {
 								std::string tzfilename(TZFILE_PATH);
 								tzfilename += timezone;
 								struct stat s;
@@ -296,12 +329,15 @@ namespace options {
 									parser::fGetInstance()->fGetErrorStream() << "can't find timezone file '" << tzfilename << "'\n";
 									parser::fGetInstance()->fComplainAndLeave();
 								}
+								timezone=":" + timezone;
 								setenv("TZ", timezone.c_str(), true);
+								tzset();
 							}
 							#endif
 							timePoint = std::chrono::system_clock::from_time_t(std::mktime(&broken_down_time));
+							timePoint += std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::duration<double>(fractionalPart));
 							#ifdef TZFILE_PATH
-							if (tzlength > 3) {
+							if (timezone.length() > 2) {
 								if (oldTZ) {
 									setenv("TZ", oldTZstring.c_str(), true);
 								} else {

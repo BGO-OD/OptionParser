@@ -103,6 +103,7 @@ template <typename T> options::base* fOptionFromStream(std::istream &aStream, T 
 		case kAsList:
 			return new listOption<T>(shortName, longName, description);
 	}
+	return nullptr;
 }
 
 

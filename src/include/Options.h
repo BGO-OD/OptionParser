@@ -120,10 +120,12 @@ namespace options {
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const postFixedNumber<T>& aNumber) {
 		T n = aNumber;
 		int m = 0;
-		while (n != 0 && (n & ((static_cast<T>(1) << 10) - 1)) == 0) {
-			n = n >> 10;
-			m++;
-		}
+		// as long as no better solution pops up for the shell scrip parser
+		// always write just normally
+		//while (n != 0 && (n & ((static_cast<T>(1) << 10) - 1)) == 0) {
+		//	n = n >> 10;
+		//	m++;
+		//}
 		aStream << n;
 		if (m > 0) {
 			static std::string gMultipliers("kMGTPEZY");

@@ -140,6 +140,7 @@ int main(int argc, const char *argv[]) {
 		          "Option sytax is:\n"
 		          "[export|array|map|list][positional number] type shortOpt longOpt descripton\n"
 		          "\ttype may be one of 'int', 'uint', 'bool' or 'string'\n"
+		          "\tfor (file)sizes the type 'size' which understands kMG.. postfixes\n"
 		          "\tfor durations the type 'seconds' is provided\n"
 		          "\tfor short durations the type 'milliseconds' is provided\n"
 		          "\tfor very short durations the type 'microseconds' is provided\n"
@@ -154,7 +155,7 @@ int main(int argc, const char *argv[]) {
 		          "\t  expanded with \"${longOpt[@]}\" which will produce words preserving spaces\n"
 		          "\t  other than the 'array' variant maps have string subscripts\n"
 		          "\tif 'list' is set the option will be a list, i.e. a variable with the\n"
-		          "\t  values separated by spaces, i.e. values may not contain spaces"
+		          "\t  values separated by spaces, i.e. values may not contain spaces\n"
 		          "\tif 'export' is set the shell variable will be exported\n"
 		          "\tif 'positional' is set the variable will be set as postional,\n"
 		          "\t  with 'number' defining the order in the positional parameter list.\n"
@@ -198,6 +199,8 @@ int main(int argc, const char *argv[]) {
 				options.push_back(fOptionFromStream<int>(std::cin, 0, nextOptionAsWhat));
 			} else if (keyWord == "uint") {
 				options.push_back(fOptionFromStream<unsigned int>(std::cin, 0, nextOptionAsWhat));
+			} else if (keyWord == "size") {
+				options.push_back(fOptionFromStream<options::postFixedNumber<size_t>>(std::cin, 0, nextOptionAsWhat));
 			} else if (keyWord == "bool") {
 				options.push_back(fOptionFromStream<bool>(std::cin, false, nextOptionAsWhat));
 			} else if (keyWord == "seconds") {

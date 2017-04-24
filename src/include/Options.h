@@ -99,6 +99,56 @@ namespace options {
 		}
 	};
 
+	template <typename T> class postFixedNumber {
+	  protected:
+		T lValue;
+	  public:
+		postFixedNumber() {};
+		postFixedNumber(T aValue): lValue(aValue) {};
+		postFixedNumber& operator=(const T aValue) {
+			lValue = aValue;
+			return *this;
+		}
+		operator T () const {
+			return lValue;
+		}
+		operator T& () {
+			return lValue;
+		}
+
+	};
+	template <typename T> std::ostream& operator<<(std::ostream& aStream, const postFixedNumber<T>& aNumber) {
+		T n = aNumber;
+		int m = 0;
+		while (n != 0 && (n & ((static_cast<T>(1) << 10) - 1)) == 0) {
+			n = n >> 10;
+			m++;
+		}
+		aStream << n;
+		if (m > 0) {
+			static std::string gMultipliers("kMGTPEZY");
+			aStream << gMultipliers.at(m - 1);
+		}
+		return aStream;
+	}
+	template <typename T> std::istream& operator>>(std::istream& aStream, postFixedNumber<T>& aNumber) {
+		T n;
+		aStream >> n;
+		if (!aStream.eof()) {
+			auto c = aStream.peek();
+			static std::string gMultipliers("kMGTPEZY");
+			auto m = gMultipliers.find(c);
+			if (m != std::string::npos) {
+				aStream.get();
+				n = n << ((m + 1) * 10);
+			}
+		}
+		aNumber = n;
+		return aStream;
+	};
+
+
+
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const fundamental_wrapper<T>& aWrapper) {
 		const T& oerks = aWrapper;
 		aStream << oerks;

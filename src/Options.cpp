@@ -221,6 +221,7 @@ namespace options {
 						auto opt = it->second;
 						std::stringstream sbuf(equalsAt + 1);
 						opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
+						opt->fCheckRange(fGetErrorStream());
 						free(buf);
 					}
 				}
@@ -250,6 +251,7 @@ namespace options {
 						auto& arg = lUnusedOptions.back();
 						std::stringstream sbuf(arg);
 						opt2->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+						opt2->fCheckRange(fGetErrorStream());
 						lUnusedOptions.pop_back();
 						if (lUnusedOptions.empty()) {
 							break;
@@ -259,6 +261,7 @@ namespace options {
 				auto& arg = lUnusedOptions.front();
 				std::stringstream sbuf(arg);
 				opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+				opt->fCheckRange(fGetErrorStream());
 				lUnusedOptions.erase(lUnusedOptions.begin());
 				if (! opt->fIsContainer()) {
 					positionalArgs.pop_front();
@@ -655,6 +658,18 @@ namespace options {
 
 	void parser::fHelp() {
 		*lMessageStream << lProgName << ": " << lDescription << "\n";
+
+		if (!internal::positional_base::fGetPositonalArgs().empty()) {
+			*lMessageStream << "Usage: " << lProgName << " [option]...";
+			for (const auto& it : internal::positional_base::fGetPositonalArgs()) {
+				*lMessageStream << " [" << it.second->fGetLongName() << "]";
+				if (it.second->fIsContainer()) {
+					*lMessageStream << "...";
+				}
+			}
+			*lMessageStream << "\n";
+		}
+
 		size_t maxName = 0;
 		size_t maxExplain = 0;
 		size_t lineLenght = 132;

@@ -221,7 +221,9 @@ namespace options {
 						auto opt = it->second;
 						std::stringstream sbuf(equalsAt + 1);
 						opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
-						opt->fCheckRange(fGetErrorStream());
+						if (!opt->fCheckRange(fGetErrorStream())) {
+							fComplainAndLeave(false);
+						}
 						free(buf);
 					}
 				}
@@ -251,7 +253,9 @@ namespace options {
 						auto& arg = lUnusedOptions.back();
 						std::stringstream sbuf(arg);
 						opt2->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
-						opt2->fCheckRange(fGetErrorStream());
+						if (!opt2->fCheckRange(fGetErrorStream())) {
+							fComplainAndLeave(false);
+						}
 						lUnusedOptions.pop_back();
 						if (lUnusedOptions.empty()) {
 							break;
@@ -261,7 +265,9 @@ namespace options {
 				auto& arg = lUnusedOptions.front();
 				std::stringstream sbuf(arg);
 				opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
-				opt->fCheckRange(fGetErrorStream());
+				if (!opt->fCheckRange(fGetErrorStream())) {
+					fComplainAndLeave(false);
+				}
 				lUnusedOptions.erase(lUnusedOptions.begin());
 				if (! opt->fIsContainer()) {
 					positionalArgs.pop_front();
@@ -807,7 +813,7 @@ namespace options {
 					preserveWorthyStuff = nullptr;
 				}
 				if (option->fCheckRange(fGetErrorStream()) == false) {
-					fComplainAndLeave();
+					fComplainAndLeave(false);
 				}
 			}
 		}

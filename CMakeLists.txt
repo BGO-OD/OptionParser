@@ -12,6 +12,8 @@ OPTION(INSTALL_DOCUMENTATION "Also install the HTML based API documentation (you
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
+include(GNUInstallDirs)
+
 include(CheckCXXCompilerFlag)
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -58,7 +60,7 @@ SET(PROJECT_VERSION "${${CMAKE_PROJECT_NAME}_LATEST_TAG}")
 INCLUDE(WritePkgConfig)
 
 # Install CMake find + external build macro. 
-set(ConfigPackageLocation lib/cmake/OptionParser)
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/OptionParser)
 install(FILES cmake/FindOptionParser.cmake DESTINATION ${ConfigPackageLocation})
 
 # add a target to generate API documentation with Doxygen
@@ -77,7 +79,7 @@ if(DOXYGEN_FOUND)
     VERBATIM)
 
   IF(INSTALL_DOCUMENTATION)
-     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc OPTIONAL)
+     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
   ENDIF()
 ELSE()
   message(STATUS "Doxygen not found, not adding 'doc' target.")

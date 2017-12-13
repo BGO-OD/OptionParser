@@ -262,6 +262,9 @@ namespace options {
 						}
 					}
 				}
+				if (lUnusedOptions.empty()) {
+				  break;
+				}
 				auto& arg = lUnusedOptions.front();
 				std::stringstream sbuf(arg);
 				opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));

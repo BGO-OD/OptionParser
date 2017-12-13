@@ -8,4 +8,4 @@ endforeach()
 configure_file("${CMAKE_PROJECT_NAME}.pc.in" "${CMAKE_PROJECT_NAME}.pc" @ONLY)
 install(FILES
 	"${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.pc"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")

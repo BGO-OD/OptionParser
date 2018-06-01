@@ -88,9 +88,6 @@ namespace options {
 			lValue = aValue;
 			return *this;
 		}
-		operator T () const {
-			return lValue;
-		}
 		operator T& () {
 			return lValue;
 		}

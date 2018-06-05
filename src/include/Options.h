@@ -366,10 +366,10 @@ namespace options {
 
 
 	namespace internal {
-		template <typename T> class typed_base: public base {
+	  template <typename T, bool forceRangeValueTypeString=false> class typed_base: public base {
 		  public:
-			typedef typename std::conditional<std::is_same<T, const char *>::value, std::string, T>::type rangeValueType;
-			typedef T compareValueType;
+			typedef typename std::conditional<std::is_same<T, const char *>::value || forceRangeValueTypeString, std::string, T>::type rangeValueType;
+		  typedef typename std::conditional<forceRangeValueTypeString, std::string, T>::type compareValueType;
 		  protected:
 			std::multiset<rangeValueType> lRange;
 		  public:

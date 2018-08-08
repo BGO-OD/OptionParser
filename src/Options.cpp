@@ -263,7 +263,7 @@ namespace options {
 					}
 				}
 				if (lUnusedOptions.empty()) {
-				  break;
+					break;
 				}
 				auto& arg = lUnusedOptions.front();
 				std::stringstream sbuf(arg);
@@ -903,23 +903,24 @@ namespace options {
 		static OptionWriteCfgFile gWriteCfgFile;
 
 /// special derived class used to read in config files
-		class OptionReadCfgFile : public single<std::string> {
+		template <bool mayBeMissing> class OptionReadCfgFile : public single<std::string> {
 		  public:
-			OptionReadCfgFile():
-				single('\0', "readCfgFile", "read a config file", "") {
+			OptionReadCfgFile(const char *name, const char *description):
+				single('\0', name, description, "") {
 			}
 			void fSetMe(std::istream& aStream, const sourceItem& aSource) override {
 				single<std::string>::fSetMe(aStream, aSource);
 				if (gNoCfgFileRecursion && aSource.fGetFile() != &sourceFile::gCmdLine) {
 					return;
 				}
-				parser::fGetInstance()->fReadCfgFile(*this, aSource);
+				parser::fGetInstance()->fReadCfgFile(*this, aSource, mayBeMissing);
 			};
 			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
 				single<std::string>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
 			};
 		};
-		static OptionReadCfgFile gReadCfgFile;
+		static OptionReadCfgFile<false> gReadCfgFile("readCfgFile", "read a config file");
+		static OptionReadCfgFile<true> gReadCfgFileIfThere("readCfgFileIfThere", "read a config file if it's there");
 	} // end of name internal
 
 	void originalStringKeeper::fWriteOriginalString(std::ostream& aStream) const {

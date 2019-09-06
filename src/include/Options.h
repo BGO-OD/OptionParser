@@ -400,7 +400,7 @@ namespace options {
 				fAddToRange(aRange.cbegin(), aRange.cend());
 			}
 			/// \details read a line from aStream and then add as many values as can be read from that line to the list of allowed values
-			virtual void fAddToRangeFromStream(std::istream& aStream) {
+			void fAddToRangeFromStream(std::istream& aStream) override {
 				std::string buf;
 				std::getline(aStream, buf);
 				std::stringstream sbuf(buf);
@@ -411,7 +411,7 @@ namespace options {
 					fAddToRange(value);
 				}
 			};
-			virtual void  fWriteRange(std::ostream &aStream) const {
+			void  fWriteRange(std::ostream &aStream) const override {
 				using escapedIO::operator<<;
 				if (! lRange.empty()) {
 					aStream << "# allowed range is";
@@ -480,21 +480,21 @@ namespace options {
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 		};
-		virtual void fAddDefaultFromStream(std::istream& aStream) {
+		void fAddDefaultFromStream(std::istream& aStream) override {
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> *this;
 		}
 
-		virtual void fWriteValue(std::ostream& aStream) const {
+		void fWriteValue(std::ostream& aStream) const override {
 			using escapedIO::operator<<;
 			aStream << *this;
 		}
-		virtual bool fCheckRange(std::ostream& aLogStream) const {
+		bool fCheckRange(std::ostream& aLogStream) const override {
 			return this->fCheckValueForRange(*this, aLogStream);
 		}
 
 
-		virtual void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> std::noskipws >> *this;
 			if (aStream.fail()) {
@@ -526,8 +526,8 @@ namespace options {
 		bool fCheckRange(std::ostream& /*aLogStream*/) const override {
 			return true;
 		};
-		virtual void fAddToRangeFromStream(std::istream& /*aStream*/) override {};
-		virtual void fAddDefaultFromStream(std::istream& aStream) override;
+		void fAddToRangeFromStream(std::istream& /*aStream*/) override {};
+		void fAddDefaultFromStream(std::istream& aStream) override;
 
 		bool fGetValue() const {
 			return lValue;

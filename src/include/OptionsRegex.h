@@ -19,20 +19,20 @@ namespace options {
 	}
 	lOriginalString = aDefault;
       }
-  void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
+  void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
     using escapedIO::operator>>;
     aStream >> lOriginalString;
     static_cast<std::regex*>(this)->assign(lOriginalString);
     fSetSource(aSource);
   }
-  bool fCheckRange(std::ostream&) const {
+  bool fCheckRange(std::ostream&) const override {
     return true;
   }
-  void fAddDefaultFromStream(std::istream& aStream) {
+  void fAddDefaultFromStream(std::istream& aStream) override {
     std::getline(aStream, lOriginalString);
     assign(lOriginalString);
   }
-  void fWriteValue(std::ostream& aStream) const {
+  void fWriteValue(std::ostream& aStream) const override {
     aStream << lOriginalString;
   }
     };

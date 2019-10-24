@@ -116,10 +116,6 @@ namespace options {
 		operator T& () {
 			return lValue;
 		}
-		T operator=(const T& aValue) {
-			lValue = aValue;
-			return lValue;
-		}
 	};
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const postFixedNumber<T>& aNumber) {
 		T n = aNumber;

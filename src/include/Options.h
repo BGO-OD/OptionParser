@@ -94,6 +94,10 @@ namespace options {
 		operator const T& () const {
 			return lValue;
 		}
+		T operator=(const T& aValue) {
+			lValue = aValue;
+			return lValue;
+		}
 	};
 
 	template <typename T> class postFixedNumber {
@@ -112,7 +116,10 @@ namespace options {
 		operator T& () {
 			return lValue;
 		}
-
+		T operator=(const T& aValue) {
+			lValue = aValue;
+			return lValue;
+		}
 	};
 	template <typename T> std::ostream& operator<<(std::ostream& aStream, const postFixedNumber<T>& aNumber) {
 		T n = aNumber;
@@ -480,6 +487,13 @@ namespace options {
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 		};
+
+		T operator=(const T& aValue) {
+			T& thisAsReference(*this);
+			return thisAsReference=aValue;
+		}
+
+			
 		void fAddDefaultFromStream(std::istream& aStream) override {
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> *this;
@@ -519,7 +533,12 @@ namespace options {
 			fundamental_wrapper(aDefault),
 			base(aShortName, aLongName, aExplanation, 0),
 			lDefault(aDefault) {
+	  }
+		bool operator=(const bool& aValue) {
+			lValue = aValue;
+			return lValue;
 		}
+
 		void fWriteValue(std::ostream& aStream) const override;
 		void fSetMeNoarg(const internal::sourceItem& aSource) override;
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;

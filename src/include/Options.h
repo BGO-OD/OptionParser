@@ -375,6 +375,7 @@ namespace options {
 	namespace internal {
 	  template <typename T, bool forceRangeValueTypeString=false> class typed_base: public base {
 		  public:
+		  typedef T valueType;
 			typedef typename std::conditional<std::is_same<T, const char *>::value || forceRangeValueTypeString, std::string, T>::type rangeValueType;
 		  typedef typename std::conditional<forceRangeValueTypeString, std::string, T>::type compareValueType;
 		  protected:
@@ -783,6 +784,9 @@ namespace options {
 			T('\0', args...),
 			internal::positional_base(aOrderingNumber, this) {
 		};
+			typename T::valueType operator=(const typename T::valueType& aValue) {
+				return *this = aValue;
+			}
 	};
 
 } // end of namespace options

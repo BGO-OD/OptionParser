@@ -369,11 +369,11 @@ namespace options {
 
 
 	namespace internal {
-	  template <typename T, bool forceRangeValueTypeString=false> class typed_base: public base {
+		template <typename T, bool forceRangeValueTypeString = false> class typed_base: public base {
 		  public:
-		  typedef T valueType;
-			typedef typename std::conditional<std::is_same<T, const char *>::value || forceRangeValueTypeString, std::string, T>::type rangeValueType;
-		  typedef typename std::conditional<forceRangeValueTypeString, std::string, T>::type compareValueType;
+			typedef T valueType;
+			typedef typename std::conditional < std::is_same<T, const char *>::value || forceRangeValueTypeString, std::string, T >::type rangeValueType;
+			typedef typename std::conditional<forceRangeValueTypeString, std::string, T>::type compareValueType;
 		  protected:
 			std::multiset<rangeValueType> lRange;
 		  public:
@@ -487,10 +487,10 @@ namespace options {
 
 		T operator=(const T& aValue) {
 			T& thisAsReference(*this);
-			return thisAsReference=aValue;
+			return thisAsReference = aValue;
 		}
 
-			
+
 		void fAddDefaultFromStream(std::istream& aStream) override {
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> *this;
@@ -530,7 +530,7 @@ namespace options {
 			fundamental_wrapper(aDefault),
 			base(aShortName, aLongName, aExplanation, 0),
 			lDefault(aDefault) {
-	  }
+		}
 		bool operator=(const bool& aValue) {
 			lValue = aValue;
 			return lValue;
@@ -600,12 +600,12 @@ namespace options {
 /// which the items were specified.
 	template <typename T, typename Container = std::map<std::string, T>> class map: public internal::baseForMap<T>, public Container {
 	  public:
-	map(char aShortName, const std::string& aLongName, const std::string& aExplanation,
-	    std::initializer_list<typename Container::value_type> aDefault={}) :
+		map(char aShortName, const std::string& aLongName, const std::string& aExplanation,
+		    std::initializer_list<typename Container::value_type> aDefault = {}) :
 			internal::baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
-				for (const auto& defaultValue: aDefault) {
-					this->insert(this->end(),defaultValue);
-				}
+			for (const auto& defaultValue : aDefault) {
+				this->insert(this->end(), defaultValue);
+			}
 		}
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
@@ -634,25 +634,25 @@ namespace options {
 				}
 			}
 		}
-	  template <typename C = Container>
-	  typename std::enable_if<std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
-	                                                typename Container::value_type::second_type>,
-	                                       C>::value,
-	                          typename C::iterator>::type
-	  insertOrUpdate(typename C::value_type aPair) {
-		  (*this)[aPair.first]=aPair.second;
-		  return this->find(aPair.first);
-	  }
-	  template <typename C = Container>
-	  typename std::enable_if<!std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
-	                                                 typename Container::value_type::second_type>,
-	                                        C>::value,
-	                          typename Container::iterator>::type
-	  insertOrUpdate(typename C::value_type aPair) {
-		  return this->insert(this->end(),aPair);
-	  }
+		template <typename C = Container>
+		typename std::enable_if<std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
+		         typename Container::value_type::second_type>,
+		         C>::value,
+		         typename C::iterator>::type
+		insertOrUpdate(typename C::value_type aPair) {
+			(*this)[aPair.first] = aPair.second;
+			return this->find(aPair.first);
+		}
+		template <typename C = Container>
+		typename std::enable_if < !std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
+		         typename Container::value_type::second_type>,
+		         C>::value,
+		         typename Container::iterator >::type
+		insertOrUpdate(typename C::value_type aPair) {
+			return this->insert(this->end(), aPair);
+		}
 
-	  void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			std::string name;
 			std::getline(aStream, name, parser::fGetInstance()->fGetSecondaryAssignment());
 			if (aStream.eof()) { // not found, complain!
@@ -689,8 +689,8 @@ namespace options {
 			return true;
 		};
 
-	  typename std::add_rvalue_reference<std::add_const<Container>>::type fGetValue() const  {
-		  return *static_cast<typename std::add_pointer<std::add_const<Container>>::type>(this);
+		typename std::add_rvalue_reference<std::add_const<Container>>::type fGetValue() const  {
+			return *static_cast<typename std::add_pointer<std::add_const<Container>>::type>(this);
 		}
 	};
 
@@ -723,12 +723,12 @@ namespace options {
 /// If a non-vector container is used it needs to have a push_back.
 	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer<T>, public Container {
 	  public:
-	container(char aShortName, const std::string& aLongName, const std::string& aExplanation,
-	          std::initializer_list<typename Container::value_type> aDefault={}) :
-	  internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
-		  for (const auto& defaultValue: aDefault) {
-			  this->push_back(defaultValue);
-		  }
+		container(char aShortName, const std::string& aLongName, const std::string& aExplanation,
+		          std::initializer_list<typename Container::value_type> aDefault = {}) :
+			internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
+			for (const auto& defaultValue : aDefault) {
+				this->push_back(defaultValue);
+			}
 		}
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
@@ -813,9 +813,9 @@ namespace options {
 			T('\0', args...),
 			internal::positional_base(aOrderingNumber, this) {
 		};
-			typename T::valueType operator=(const typename T::valueType& aValue) {
-				return *this = aValue;
-			}
+		typename T::valueType operator=(const typename T::valueType& aValue) {
+			return *this = aValue;
+		}
 	};
 
 } // end of namespace options

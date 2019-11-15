@@ -385,7 +385,7 @@ namespace options {
 			virtual void fAddToRange(rangeValueType aValue) {
 				lRange.emplace(aValue);
 			};
-			template <typename TT = std::string> typename std::enable_if < (!std::is_same<rangeValueType, std::string>::value) && std::is_same<TT, std::string>::value, bool >::type fAddToRange(const TT& aString) {
+			template <typename TT = std::string> typename std::enable_if < (!std::is_same<rangeValueType, std::string>::value) && std::is_same<TT, std::string>::value, void >::type fAddToRange(const TT& aString) {
 				std::stringstream buf(aString);
 				rangeValueType value;
 				buf >> std::setbase(0);
@@ -594,14 +594,18 @@ namespace options {
 /// template for map-based options.
 
 /// The map key is always a std::string but the mapped value is arbitrary.
-/// the container is by defalt a std::map. It is assumed that the container always containds std::pairs
+/// the container is by defalt a std::map. It is assumed that the container always contains std::pairs
 /// of a std::string as first and the value type T as second, e.g. a
 /// std::list<std::pair<std::string,int>> which, in contrast to the map would preserve the order in
 /// which the items were specified.
 	template <typename T, typename Container = std::map<std::string, T>> class map: public internal::baseForMap<T>, public Container {
 	  public:
-		map(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
+	map(char aShortName, const std::string& aLongName, const std::string& aExplanation,
+	    std::initializer_list<typename Container::value_type> aDefault={}) :
 			internal::baseForMap<T>(aShortName, aLongName, aExplanation, 1) {
+				for (const auto& defaultValue: aDefault) {
+					this->insert(this->end(),defaultValue);
+				}
 		}
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
@@ -630,7 +634,25 @@ namespace options {
 				}
 			}
 		}
-		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
+	  template <typename C = Container>
+	  typename std::enable_if<std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
+	                                                typename Container::value_type::second_type>,
+	                                       C>::value,
+	                          typename C::iterator>::type
+	  insertOrUpdate(typename C::value_type aPair) {
+		  (*this)[aPair.first]=aPair.second;
+		  return this->find(aPair.first);
+	  }
+	  template <typename C = Container>
+	  typename std::enable_if<!std::is_same<std::map<typename std::remove_const<typename Container::value_type::first_type>::type,
+	                                                 typename Container::value_type::second_type>,
+	                                        C>::value,
+	                          typename Container::iterator>::type
+	  insertOrUpdate(typename C::value_type aPair) {
+		  return this->insert(this->end(),aPair);
+	  }
+
+	  void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			std::string name;
 			std::getline(aStream, name, parser::fGetInstance()->fGetSecondaryAssignment());
 			if (aStream.eof()) { // not found, complain!
@@ -646,7 +668,14 @@ namespace options {
 				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(value).name() << " failed.\n";
 				parser::fGetInstance()->fComplainAndLeave();
 			}
-			auto result = (*this).insert(this->end(), std::make_pair(name, value));
+			typename std::remove_const<typename Container::value_type::first_type>::type key;
+			std::istringstream conversionStream(name);
+			conversionStream >> key;
+			if (conversionStream.fail()) {
+				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << name << "' into " << typeid(key).name() << " failed.\n";
+				parser::fGetInstance()->fComplainAndLeave();
+			}
+			auto result = (*this).insertOrUpdate(std::make_pair(key, value));
 			this->fAddSource(&(result->second), aSource);
 		};
 
@@ -660,8 +689,8 @@ namespace options {
 			return true;
 		};
 
-		const std::map<std::string, T>& fGetValue() const  {
-			return *static_cast<const std::map<std::string, T>*>(this);
+	  typename std::add_rvalue_reference<std::add_const<Container>>::type fGetValue() const  {
+		  return *static_cast<typename std::add_pointer<std::add_const<Container>>::type>(this);
 		}
 	};
 
@@ -694,8 +723,12 @@ namespace options {
 /// If a non-vector container is used it needs to have a push_back.
 	template <typename T, typename Container = std::vector<T>> class container: public internal::baseForContainer<T>, public Container {
 	  public:
-		container(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
-			internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
+	container(char aShortName, const std::string& aLongName, const std::string& aExplanation,
+	          std::initializer_list<typename Container::value_type> aDefault={}) :
+	  internal::baseForContainer<T>(aShortName, aLongName, aExplanation, 1) {
+		  for (const auto& defaultValue: aDefault) {
+			  this->push_back(defaultValue);
+		  }
 		}
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {

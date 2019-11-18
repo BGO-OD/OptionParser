@@ -28,6 +28,7 @@
 #include <sstream>
 #include <fstream>
 #include <typeinfo>
+#include <functional>
 
 namespace options {
 	namespace internal {
@@ -363,6 +364,9 @@ namespace options {
 		const std::vector<std::string>& fGetStuffAfterMinusMinus() {
 			return lStuffAfterMinusMinus;
 		};
+		const std::string& fGetProgName() const {
+			return lProgName;
+		}
 		static void fPrintEscapedString(std::ostream &aStream, const std::string& aString);
 		static void fReCaptureEscapedString(std::string& aDest, const std::string& aSource);
 	};
@@ -815,6 +819,23 @@ namespace options {
 		};
 		typename T::valueType operator=(const typename T::valueType& aValue) {
 			return *this = aValue;
+		}
+	};
+
+	template <class T> class withAction: public T {
+		std::function<void(T&)> action;
+	  public:
+		template<class ... Types> withAction(std::function<void(T&)> aAction, Types ... args) :
+			T(args...),
+			action(aAction) {
+		}
+		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
+			T::fSetMe(aStream, aSource);
+			action(*this);
+		}
+		void fSetMeNoarg(const internal::sourceItem& aSource) override {
+			T::fSetMeNoarg(aSource);
+			action(*this);
 		}
 	};
 

@@ -282,17 +282,17 @@ namespace options {
 				}
 			}
 		} catch (const internal::rangeError& e) {
-			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName() << " value " << e.fGetBadValue() << "\n";
+			fGetErrorStream() << e.what() << " in option '" << e.fGetOption().fGetLongName() << "' value '" << e.fGetBadValue() << "'\n";
 			e.fGetOption().fWriteRange(fGetErrorStream());
 			fComplainAndLeave();
 		} catch (const internal::conversionError& e) {
-			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName()
-			                  << " cannot convert '" << e.fGetArgument() << "' to type '" << e.fGetType().name() << "'\n";
+			fGetErrorStream() << e.what() << " in option '" << e.fGetOption().fGetLongName()
+			                  << "' cannot convert '" << e.fGetArgument() << "' to type '" << e.fGetType().name() << "'\n";
 			fComplainAndLeave();
 		} catch (const internal::optionError& e) {
-			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName() << "\n";
+			fGetErrorStream() << e.what() << " in option '" << e.fGetOption().fGetLongName() << "'\n";
 			fComplainAndLeave();
-		} catch (std::runtime_error& e) {
+		} catch (std::exception& e) {
 			fGetErrorStream() << e.what() << "\n";
 			fComplainAndLeave();
 		}
@@ -767,64 +767,69 @@ namespace options {
 
 	void parser::fReadCfgFile(const std::string& aFileName, const internal::sourceItem& aSource, bool aMayBeAbsent) {
 		std::ifstream cfgFile(aFileName);
-		if (!cfgFile.good() && !aMayBeAbsent) {
-			fGetErrorStream() << "can't acccess config file '" << aFileName << "', reason is " << strerror(errno) << std::endl;
-			fComplainAndLeave(false);
+		if (!cfgFile.good() && !(aMayBeAbsent && errno == ENOENT)) {
+			throw std::system_error(errno, std::system_category(),
+			                        internal::conCat("can't acccess config file '", aFileName , "'."));
 		}
 		auto sourceF = new internal::sourceFile(aFileName, *(aSource.fGetFile()));
 		int lineNumber = 0;
 		std::vector<std::string>* preserveWorthyStuff = nullptr;
-		while (cfgFile.good()) {
-			std::string line;
-			std::getline(cfgFile, line);
-			lineNumber++;
-			internal::sourceItem source(sourceF, lineNumber);
-			if (line.length() == 0) {
-				continue;
-			} else if (line[0] == '#') {
-				if (line[1] == '#') {
-					if (preserveWorthyStuff == nullptr) {
-						preserveWorthyStuff = new std::vector<std::string>;
-					}
-					preserveWorthyStuff->push_back(line);
-				} else if (preserveWorthyStuff != nullptr) {
-					auto equalsAt = line.find_first_of('=');
-					if (equalsAt != std::string::npos) {
-						auto optionName = line.substr(2, equalsAt - 2);
-						auto it = base::fGetOptionMap().find(optionName);
-						if (it != base::fGetOptionMap().end()) {
-							auto option = it->second;
-							option->fSetPreserveWorthyStuff(preserveWorthyStuff);
-							preserveWorthyStuff = nullptr;
+		try {
+			while (cfgFile.good()) {
+				std::string line;
+				std::getline(cfgFile, line);
+				lineNumber++;
+				internal::sourceItem source(sourceF, lineNumber);
+				if (line.length() == 0) {
+					continue;
+				} else if (line[0] == '#') {
+					if (line[1] == '#') {
+						if (preserveWorthyStuff == nullptr) {
+							preserveWorthyStuff = new std::vector<std::string>;
+						}
+						preserveWorthyStuff->push_back(line);
+					} else if (preserveWorthyStuff != nullptr) {
+						auto equalsAt = line.find_first_of('=');
+						if (equalsAt != std::string::npos) {
+							auto optionName = line.substr(2, equalsAt - 2);
+							auto it = base::fGetOptionMap().find(optionName);
+							if (it != base::fGetOptionMap().end()) {
+								auto option = it->second;
+								option->fSetPreserveWorthyStuff(preserveWorthyStuff);
+								preserveWorthyStuff = nullptr;
+							}
 						}
 					}
+					continue;
 				}
-				continue;
-			}
-			auto equalsAt = line.find_first_of('=');
-			if (equalsAt == std::string::npos || equalsAt < 1 || equalsAt == line.length()) {
-				std::string buf;
-				fReCaptureEscapedString(buf, line);
-				lUnusedOptions.push_back(buf);
-				continue;
-			}
-			auto optionName = line.substr(0, equalsAt);
-			auto it = base::fGetOptionMap().find(optionName);
-			if (it == base::fGetOptionMap().end()) {
-				fGetErrorStream() << source << ": error: unknown option '" << optionName << "' ,line is '" << line << "'" << std::endl;
-				continue;
-			}
-			auto option = it->second;
-			{
-				std::stringstream sbuf(line.substr(equalsAt + 1));
-				option->fSetMe(sbuf, source);
-				if (preserveWorthyStuff != nullptr) {
-					option->fSetPreserveWorthyStuff(preserveWorthyStuff);
-					preserveWorthyStuff = nullptr;
+				auto equalsAt = line.find_first_of('=');
+				if (equalsAt == std::string::npos || equalsAt < 1 || equalsAt == line.length()) {
+					std::string buf;
+					fReCaptureEscapedString(buf, line);
+					lUnusedOptions.push_back(buf);
+					continue;
 				}
-				option->fCheckRange();
+				auto optionName = line.substr(0, equalsAt);
+				auto it = base::fGetOptionMap().find(optionName);
+				if (it == base::fGetOptionMap().end()) {
+					throw std::runtime_error(internal::conCat("unknown option '", optionName, "'"));
+				}
+				auto option = it->second;
+				{
+					std::stringstream sbuf(line.substr(equalsAt + 1));
+					option->fSetMe(sbuf, source);
+					if (preserveWorthyStuff != nullptr) {
+						option->fSetPreserveWorthyStuff(preserveWorthyStuff);
+						preserveWorthyStuff = nullptr;
+					}
+					option->fCheckRange();
+				}
 			}
+		} catch (const std::exception& e) {
+			fGetErrorStream() << aFileName << ":" << lineNumber << ": error: " << e.what() << "\n";
+			throw;
 		}
+
 		cfgFile.close();
 	}
 

@@ -74,8 +74,8 @@ namespace options {
 		}
 	}
 /// range checking does not work, we know no ranges
-	bool ForeignOption::fCheckRange(std::ostream& /*aLogStream*/) const {
-		return true;
+	void ForeignOption::fCheckRange() const {
+		return;
 	}
 /// just read away the line, we cannot do anything sensible here
 	void ForeignOption::fAddToRangeFromStream(std::istream& aStream) {

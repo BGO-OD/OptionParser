@@ -39,6 +39,16 @@ namespace options {
 		// we have only one constructor that needs the reference as parameter
 		const sourceFile sourceFile::gUnsetSource("unset",   sourceFile::gUnsetSource);
 		const sourceFile sourceFile::gCmdLine("commandLine", sourceFile::gUnsetSource);
+
+		optionError::optionError(const base* aOffendingOption, const std::string& aWhat):
+			std::runtime_error(aWhat),
+			offendingOption(*aOffendingOption) {}
+		optionError::optionError(const base* aOffendingOption, const char* aWhat):
+			std::runtime_error(aWhat),
+			offendingOption(*aOffendingOption) {}
+		const base& optionError::fGetOption() const {
+			return offendingOption;
+		}
 	} // end of namespace internal
 
 
@@ -169,116 +179,122 @@ namespace options {
 			#endif
 		}
 		bool firstOptionNotSeen = true;
-		for (int i = 1; i < argc; i++) {
-			if (firstOptionNotSeen && !(argv[i][0] == '-' && argv[i][1] == '-' && internal::gOptionNoCfgFiles.lLongName.compare(argv[i] + 2) == 0)) {
+		try {
+			for (int i = 1; i < argc; i++) {
+				if (firstOptionNotSeen && !(argv[i][0] == '-' && argv[i][1] == '-' && internal::gOptionNoCfgFiles.lLongName.compare(argv[i] + 2) == 0)) {
+					fReadConfigFiles();
+				}
+				if (argv[i][0] == '-' && argv[i][1] != '-') {
+					auto length = strlen(argv[i]);
+					for (unsigned int j = 1; j < length; j++) {
+						auto it =  base::fGetShortOptionMap().find(argv[i][j]);
+						if (it == base::fGetShortOptionMap().end()) {
+							throw std::runtime_error(internal::conCat("unknown short option '", argv[i][j], "'"));
+						} else {
+							auto opt = it->second;
+							if (opt->lNargs > 0 && strlen(argv[i]) > 2) {
+								throw internal::optionError(opt, internal::conCat("run-together short options '", argv[i], "'may not use parameters"));
+							}
+							opt->fHandleOption(argc, argv, &i);
+						}
+					}
+				} else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] != '-') {
+					auto length = strlen(argv[i]);
+					if (length == 2) { // end of options
+						for (i++; i < argc; i++) {
+							if (lMinusMinusJustEndsOptions) {
+								lUnusedOptions.push_back(argv[i]);
+							} else {
+								lStuffAfterMinusMinus.push_back(argv[i]);
+							}
+						}
+						break;
+					} else {
+						if (nullptr == strchr(argv[i], lPrimaryAssignment)) {
+							auto it = base::fGetOptionMap().find(argv[i] + 2);
+							if (it == base::fGetOptionMap().end()) {
+								throw std::runtime_error(internal::conCat("unknown long option '", argv[i], "'"));
+							}
+							auto opt = it->second;
+							opt->fHandleOption(argc, argv, &i);
+						} else {
+							auto buf = strdup(argv[i]);
+							auto equalsAt = strchr(buf, lPrimaryAssignment);
+							*equalsAt = '\0';
+							auto it = base::fGetOptionMap().find(buf + 2);
+							if (it == base::fGetOptionMap().end()) {
+								throw std::runtime_error(internal::conCat("unknown long option '", argv[i], "'"));
+							}
+							auto opt = it->second;
+							std::stringstream sbuf(equalsAt + 1);
+							opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
+							opt->fCheckRange();
+							free(buf);
+						}
+					}
+				} else {
+					lUnusedOptions.push_back(argv[i]);
+				}
+				firstOptionNotSeen = false;
+			}
+			if (firstOptionNotSeen) { // read cfg files if no options set at all
 				fReadConfigFiles();
 			}
-			if (argv[i][0] == '-' && argv[i][1] != '-') {
-				auto length = strlen(argv[i]);
-				for (unsigned int j = 1; j < length; j++) {
-					auto it =  base::fGetShortOptionMap().find(argv[i][j]);
-					if (it == base::fGetShortOptionMap().end()) {
-						fGetErrorStream() << "unknown short option '" << argv[i][j] << "'"  << std::endl;
-						fComplainAndLeave();
-					} else {
-						auto opt = it->second;
-						if (opt->lNargs > 0 && strlen(argv[i]) > 2) {
-							fGetErrorStream() << "run-together short options may not use parameters" << std::endl;
-							fComplainAndLeave();
-						}
-						opt->fHandleOption(argc, argv, &i);
-					}
-				}
-			} else if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] != '-') {
-				auto length = strlen(argv[i]);
-				if (length == 2) { // end of options
-					for (i++; i < argc; i++) {
-						if (lMinusMinusJustEndsOptions) {
-							lUnusedOptions.push_back(argv[i]);
-						} else {
-							lStuffAfterMinusMinus.push_back(argv[i]);
-						}
-					}
-					break;
-				} else {
-					if (nullptr == strchr(argv[i], lPrimaryAssignment)) {
-						auto it = base::fGetOptionMap().find(argv[i] + 2);
-						if (it == base::fGetOptionMap().end()) {
-							fGetErrorStream() << "unknown long option '" << argv[i] << "'"  << std::endl;
-							fComplainAndLeave();
-						}
-						auto opt = it->second;
-						opt->fHandleOption(argc, argv, &i);
-					} else {
-						auto buf = strdup(argv[i]);
-						auto equalsAt = strchr(buf, lPrimaryAssignment);
-						*equalsAt = '\0';
-						auto it = base::fGetOptionMap().find(buf + 2);
-						if (it == base::fGetOptionMap().end()) {
-							fGetErrorStream() << "unknown long option '" << argv[i] << "'"  << std::endl;
-							fComplainAndLeave();
-						}
-						auto opt = it->second;
-						std::stringstream sbuf(equalsAt + 1);
-						opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, i));
-						if (!opt->fCheckRange(fGetErrorStream())) {
-							fComplainAndLeave(false);
-						}
-						free(buf);
-					}
-				}
-			} else {
-				lUnusedOptions.push_back(argv[i]);
-			}
-			firstOptionNotSeen = false;
-		}
-		if (firstOptionNotSeen) { // read cfg files if no options set at all
-			fReadConfigFiles();
-		}
 
-		if (!internal::positional_base::fGetPositonalArgs().empty()) {
-			std::list<base*> positionalArgs;
-			for (auto it : internal::positional_base::fGetPositonalArgs()) {
-				positionalArgs.push_back(it.second);
-			}
-			while (!lUnusedOptions.empty()) {
-				auto opt = positionalArgs.front();
-				if (opt->fIsContainer()) { // process first options from the back
-					for (;;) {
-						auto opt2 = positionalArgs.back();
-						if (opt2 == opt) {
-							break;
-						}
-						positionalArgs.pop_back();
-						auto& arg = lUnusedOptions.back();
-						std::stringstream sbuf(arg);
-						opt2->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
-						if (!opt2->fCheckRange(fGetErrorStream())) {
-							fComplainAndLeave(false);
-						}
-						lUnusedOptions.pop_back();
-						if (lUnusedOptions.empty()) {
-							break;
+			if (!internal::positional_base::fGetPositonalArgs().empty()) {
+				std::list<base*> positionalArgs;
+				for (auto it : internal::positional_base::fGetPositonalArgs()) {
+					positionalArgs.push_back(it.second);
+				}
+				while (!lUnusedOptions.empty()) {
+					auto opt = positionalArgs.front();
+					if (opt->fIsContainer()) { // process first options from the back
+						for (;;) {
+							auto opt2 = positionalArgs.back();
+							if (opt2 == opt) {
+								break;
+							}
+							positionalArgs.pop_back();
+							auto& arg = lUnusedOptions.back();
+							std::stringstream sbuf(arg);
+							opt2->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+							opt2->fCheckRange();
+							lUnusedOptions.pop_back();
+							if (lUnusedOptions.empty()) {
+								break;
+							}
 						}
 					}
-				}
-				if (lUnusedOptions.empty()) {
-					break;
-				}
-				auto& arg = lUnusedOptions.front();
-				std::stringstream sbuf(arg);
-				opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
-				if (!opt->fCheckRange(fGetErrorStream())) {
-					fComplainAndLeave(false);
-				}
-				lUnusedOptions.erase(lUnusedOptions.begin());
-				if (! opt->fIsContainer()) {
-					positionalArgs.pop_front();
-					if (positionalArgs.empty()) {
+					if (lUnusedOptions.empty()) {
 						break;
 					}
+					auto& arg = lUnusedOptions.front();
+					std::stringstream sbuf(arg);
+					opt->fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, 0));
+					opt->fCheckRange();
+					lUnusedOptions.erase(lUnusedOptions.begin());
+					if (! opt->fIsContainer()) {
+						positionalArgs.pop_front();
+						if (positionalArgs.empty()) {
+							break;
+						}
+					}
 				}
 			}
+		} catch (const internal::rangeError& e) {
+			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName() << " value " << e.fGetBadValue() << "\n";
+			e.fGetOption().fWriteRange(fGetErrorStream());
+			fComplainAndLeave();
+		} catch (const internal::conversionError& e) {
+			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName()
+			                  << " cannot convert '" << e.fGetArgument() << "' to type '" << e.fGetType().name() << "'\n";
+			fComplainAndLeave();
+		} catch (const internal::optionError& e) {
+			fGetErrorStream() << e.what() << " in " << e.fGetOption().fGetLongName() << "\n";
+			fComplainAndLeave();
+		} catch (std::runtime_error& e) {
+			fGetErrorStream() << e.what() << "\n";
+			fComplainAndLeave();
 		}
 
 
@@ -347,7 +363,7 @@ namespace options {
 /// as normaly the call to exit() is what is required this is the default action.
 	void parser::fComplainAndLeave(bool aWithHelp) {
 		if (aWithHelp) {
-			fHelp();
+			fGetErrorStream() << "\nFor complete usage: " << fGetProgName() << " --help\n";
 		}
 		exit(1);
 	}
@@ -519,24 +535,18 @@ namespace options {
 			auto p = parser::fGetInstance();
 			if (p != nullptr) {
 				if (p->fIsParsingDone()) {
-					std::string exceptionText(lLongName + " construction after parsing is done");
-					throw std::logic_error(exceptionText);
+					throw std::logic_error(internal::conCat(lLongName, " construction after parsing is done"));
 				}
 			}
 		}
 
-
-		if (fGetOptionMap().find(lLongName) != fGetOptionMap().end()) {
-			std::string exceptionText(lLongName + " already set");
-			throw std::invalid_argument(exceptionText);
-		};
-		fGetOptionMap().insert(std::make_pair(lLongName, this));
+		if (fGetOptionMap().emplace(lLongName, this).second == false) {
+			throw std::logic_error(internal::conCat(lLongName, " already registered"));
+		}
 		if (lShortName != '\0') {
-			if (fGetShortOptionMap().find(lShortName) != fGetShortOptionMap().end()) {
-				std::string exceptionText(lLongName + ": short name '" + lShortName + "' already set");
-				throw std::invalid_argument(exceptionText);
-			};
-			fGetShortOptionMap().insert(std::make_pair(lShortName, this));
+			if (fGetShortOptionMap().emplace(lShortName, this).second == false) {
+				throw std::logic_error(internal::conCat(lLongName, ": short name '", lShortName, " already registered"));
+			}
 		}
 		lPreserveWorthyStuff = nullptr;
 	}
@@ -554,8 +564,7 @@ namespace options {
 
 	void base::fHandleOption(int argc, const char *argv[], int *i) {
 		if (*i + lNargs >= argc) {
-			parser::fGetInstance()->fGetErrorStream() << "option " << lLongName << " needs " << lNargs << " args, but only " << argc - *i - 1 << " remain." << std::endl;
-			parser::fGetInstance()->fComplainAndLeave();
+			throw internal::optionError(this, internal::conCat(lNargs, " args needed, but only ", argc - *i - 1 , " remain."));
 		}
 		if (lNargs == 0) {
 			fSetMeNoarg(internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
@@ -564,9 +573,7 @@ namespace options {
 			fSetMe(sbuf, internal::sourceItem(&internal::sourceFile::gCmdLine, *i));
 			*i += lNargs;
 		}
-		if (fCheckRange(parser::fGetInstance()->fGetErrorStream()) == false) {
-			parser::fGetInstance()->fComplainAndLeave(false);
-		}
+		fCheckRange();
 	}
 
 	void base::fWriteCfgLines(std::ostream & aStream, const char *aPrefix) const {
@@ -815,9 +822,7 @@ namespace options {
 					option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 					preserveWorthyStuff = nullptr;
 				}
-				if (option->fCheckRange(fGetErrorStream()) == false) {
-					fComplainAndLeave(false);
-				}
+				option->fCheckRange();
 			}
 		}
 		cfgFile.close();

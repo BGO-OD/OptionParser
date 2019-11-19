@@ -407,7 +407,11 @@ namespace options {
 	single<std::chrono::system_clock::time_point>::single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault, const std::vector<std::string>& aRange, valuePrinterType aValuePrinter):
 		internal::typed_base<std::chrono::system_clock::time_point>(aShortName, aLongName, aExplanation, 1),
 		valuePrinter(aValuePrinter) {
-		*static_cast<valueType*>(this) = internal::fParseTimePointString(aDefault);
+		try {
+			*static_cast<valueType*>(this) = internal::fParseTimePointString(aDefault);
+		} catch (const std::runtime_error& e) {
+			throw internal::optionError(this, e.what());
+		}
 		lOriginalString = aDefault;
 		if (!aRange.empty()) {
 			fAddToRange(aRange);
@@ -416,7 +420,11 @@ namespace options {
 
 	void single<std::chrono::system_clock::time_point>::fAddDefaultFromStream(std::istream& aStream) {
 		std::getline(aStream, lOriginalString);
-		*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
+		try {
+			*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
+		} catch (const std::runtime_error& e) {
+			throw internal::optionError(this, e.what());
+		}
 	}
 
 	void single<std::chrono::system_clock::time_point>::fWriteRange(std::ostream& aStream) const {
@@ -444,7 +452,11 @@ namespace options {
 	void single<std::chrono::system_clock::time_point>::fSetMe(std::istream& aStream, const internal::sourceItem& aSource) {
 		using escapedIO::operator>>;
 		aStream >> lOriginalString;
-		*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
+		try {
+			*static_cast<valueType*>(this) = internal::fParseTimePointString(lOriginalString);
+		} catch (const std::runtime_error& e) {
+			throw internal::optionError(this, e.what());
+		}
 		fSetSource(aSource);
 	}
 

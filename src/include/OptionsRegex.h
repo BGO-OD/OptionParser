@@ -25,8 +25,8 @@ namespace options {
 			static_cast<std::regex*>(this)->assign(lOriginalString);
 			fSetSource(aSource);
 		}
-		bool fCheckRange(std::ostream&) const override {
-			return true;
+		void fCheckRange() const override {
+			return;
 		}
 		void fAddDefaultFromStream(std::istream& aStream) override {
 			std::getline(aStream, lOriginalString);

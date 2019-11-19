@@ -221,7 +221,7 @@ namespace options {
 
 	  protected:
 		virtual void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const;
-		virtual bool fCheckRange(std::ostream& aLogStream) const = 0;
+		virtual void fCheckRange() const = 0;
 		virtual void fWriteRange(std::ostream &/*aStream*/) const {};
 		void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
 
@@ -273,6 +273,72 @@ namespace options {
 	};
 
 	namespace internal {
+		class optionError: public std::runtime_error {
+		  protected:
+			const base& offendingOption;
+		  public:
+			optionError(const base* aOffendingOption, const std::string& aWhat);
+			optionError(const base* aOffendingOption, const char* aWhat);
+			~optionError() override = default;
+			const base& fGetOption() const;
+		};
+		class rangeError: public optionError {
+		  protected:
+			std::string badValue;
+		  public:
+			rangeError(const base* aOffendingOption) :
+				optionError(aOffendingOption, "value out of range") {}
+			~rangeError() override = default;
+			const std::string& fGetBadValue() const {
+				return badValue;
+			};
+		};
+		template <typename T> class typedRangeError: public rangeError {
+		  public:
+			typedRangeError(const base* aOffendingOption, const T& aBadValue) :
+				rangeError(aOffendingOption) {
+				using escapedIO::operator<<;
+				std::ostringstream valueString;
+				valueString << aBadValue;
+				badValue = valueString.str();
+			};
+			~typedRangeError() override = default;
+		};
+		class conversionError: public optionError {
+		  protected:
+			std::string badArgument;
+			const std::type_info& type;
+		  public:
+			conversionError(const base* aOffendingOption, const std::string& aBadArgument, const std::type_info& aType) :
+				optionError(aOffendingOption, "conversion failed"),
+				badArgument(aBadArgument),
+				type(aType) {};
+			~conversionError() override = default;
+			const std::string& fGetArgument() const {
+				return badArgument;
+			};
+			const std::type_info& fGetType() const {
+				return type;
+			};
+		};
+		template <typename T> void conCatStr(std::ostringstream& msg, const T& begin) {
+			msg << begin;
+		}
+		template <typename T, typename ... Args> inline void conCatStr(std::ostringstream& msg,
+		        const T& begin,
+		        const Args& ... args) {
+			msg << begin;
+			if (sizeof...(args)) {
+				conCatStr(msg, args...);
+			}
+		}
+		template <typename ... Args> inline std::string conCat(const Args& ... args) {
+			std::ostringstream msg;
+			conCatStr(msg, args...);
+			return msg.str();
+		}
+
+
 		class positional_base {
 		  public:
 			positional_base(int aOrderingNumber,
@@ -434,27 +500,23 @@ namespace options {
 					}
 				}
 			};
-			virtual bool fCheckValueForRange(const compareValueType& aValue, std::ostream& aLogStream) const {
+			virtual void fCheckValueForRange(const compareValueType& aValue) const {
 				using escapedIO::operator<<;
 				if (lRange.empty()) {
-					return true;
+					return;
 				} else if (lRange.size() == 2) {
 					if (*(lRange.cbegin()) <= aValue && aValue <= *(lRange.crbegin())) {
-						return true;
+						return;
 					} else {
-						aLogStream << fGetLongName() << " out of range (" << aValue << ")\n";
-						fWriteRange(aLogStream);
-						return false;
+						throw typedRangeError<compareValueType>(this, aValue);
 					}
 				} else {
 					for (const auto& it : lRange) {
 						if (it == aValue) {
-							return true;
+							return;
 						}
 					}
-					aLogStream << fGetLongName() << " out of range (" << aValue << ")\n";
-					fWriteRange(aLogStream);
-					return false;
+					throw typedRangeError<compareValueType>(this, aValue);
 				}
 			}
 		};
@@ -504,8 +566,8 @@ namespace options {
 			using escapedIO::operator<<;
 			aStream << *this;
 		}
-		bool fCheckRange(std::ostream& aLogStream) const override {
-			return this->fCheckValueForRange(*this, aLogStream);
+		void fCheckRange() const override {
+			this->fCheckValueForRange(*this);
 		}
 
 
@@ -514,9 +576,9 @@ namespace options {
 			aStream >> std::setbase(0) >> std::noskipws >> *this;
 			if (aStream.fail()) {
 				std::string arg;
+				aStream.clear();
 				aStream >> arg;
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(T).name() << " failed.\n";
-				parser::fGetInstance()->fComplainAndLeave(false);
+				throw internal::conversionError(this, arg, typeid(T));
 			}
 			this->fSetSource(aSource);
 		}
@@ -543,8 +605,7 @@ namespace options {
 		void fWriteValue(std::ostream& aStream) const override;
 		void fSetMeNoarg(const internal::sourceItem& aSource) override;
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;
-		bool fCheckRange(std::ostream& /*aLogStream*/) const override {
-			return true;
+		void fCheckRange() const override {
 		};
 		void fAddToRangeFromStream(std::istream& /*aStream*/) override {};
 		void fAddDefaultFromStream(std::istream& aStream) override;
@@ -660,37 +721,31 @@ namespace options {
 			std::string name;
 			std::getline(aStream, name, parser::fGetInstance()->fGetSecondaryAssignment());
 			if (aStream.eof()) { // not found, complain!
-				parser::fGetInstance()->fGetErrorStream() << "The option " << this->fGetLongName() << " requires a '" << parser::fGetInstance()->fGetSecondaryAssignment() << "' separator, none given\n";
-				parser::fGetInstance()->fComplainAndLeave();
+				throw internal::optionError(this, internal::conCat(" a '", parser::fGetInstance()->fGetSecondaryAssignment(), "' separator is required, none given"));
 			}
 			T value;
 			using escapedIO::operator>>;
 			aStream >> std::setbase(0) >> value;
 			if (aStream.fail()) {
 				std::string arg;
+				aStream.clear();
 				aStream >> arg;
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(value).name() << " failed.\n";
-				parser::fGetInstance()->fComplainAndLeave();
+				throw internal::conversionError(this, arg, typeid(value));
 			}
 			typename std::remove_const<typename Container::value_type::first_type>::type key;
 			std::istringstream conversionStream(name);
 			conversionStream >> key;
 			if (conversionStream.fail()) {
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << name << "' into " << typeid(key).name() << " failed.\n";
-				parser::fGetInstance()->fComplainAndLeave();
+				throw internal::conversionError(this, name, typeid(key));
 			}
 			auto result = (*this).insertOrUpdate(std::make_pair(key, value));
 			this->fAddSource(&(result->second), aSource);
 		};
 
-		bool fCheckRange(std::ostream& aLogStream) const override {
+		void fCheckRange() const override {
 			for (const auto& pair : *this) {
-				const auto& value = pair.second;
-				if (this->fCheckValueForRange(value, aLogStream) == false) {
-					return false;
-				}
+				this->fCheckValueForRange(pair.second);
 			}
-			return true;
 		};
 
 		typename std::add_rvalue_reference<std::add_const<Container>>::type fGetValue() const  {
@@ -773,21 +828,18 @@ namespace options {
 			}
 			if (aStream.fail()) {
 				std::string arg;
+				aStream.clear();
 				aStream >> arg;
-				parser::fGetInstance()->fGetErrorStream() << "conversion of '" << arg << "' into " << typeid(value).name() << " failed.\n";
-				parser::fGetInstance()->fComplainAndLeave();
+				throw internal::conversionError(this, arg, typeid(value));
 			}
 			this->push_back(value);
 			this->lSources.push_back(aSource);
 		}
 
-		bool fCheckRange(std::ostream& aLogStream) const override {
+		void fCheckRange() const override {
 			for (const auto& value : *this) {
-				if (this->fCheckValueForRange(value, aLogStream) == false) {
-					return false;
-				}
+				this->fCheckValueForRange(value);
 			}
-			return true;
 		};
 
 
@@ -831,10 +883,12 @@ namespace options {
 		}
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			T::fSetMe(aStream, aSource);
+			this->fCheckRange();
 			action(*this);
 		}
 		void fSetMeNoarg(const internal::sourceItem& aSource) override {
 			T::fSetMeNoarg(aSource);
+			this->fCheckRange();
 			action(*this);
 		}
 	};

@@ -86,8 +86,8 @@ namespace options {
 		void fWriteRange(std::ostream& aStream) const override;
 		void fWriteValue(std::ostream& aStream) const override;
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override;
-		bool fCheckRange(std::ostream& aLogStream) const override {
-			return this->fCheckValueForRange(*this, aLogStream);
+		void fCheckRange() const override {
+			this->fCheckValueForRange(*this);
 		}
 	};
 
@@ -124,7 +124,11 @@ namespace options {
 		}
 		void fAddDefaultFromStream(std::istream& aStream) override {
 			std::getline(aStream, lOriginalString);
-			internal::parseDurationString(*this, lOriginalString);
+			try {
+				internal::parseDurationString(*this, lOriginalString);
+			} catch (const std::runtime_error& e) {
+				throw internal::optionError(this, e.what());
+			}
 		}
 		void fWriteValue(std::ostream& aStream) const override {
 			this->lValuePrinter(aStream, *this);
@@ -132,11 +136,15 @@ namespace options {
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			using escapedIO::operator>>;
 			aStream >> lOriginalString;
-			internal::parseDurationString(*this, lOriginalString);
+			try {
+				internal::parseDurationString(*this, lOriginalString);
+			} catch (const std::runtime_error& e) {
+				throw internal::optionError(this, e.what());
+			}
 			this->fSetSource(aSource);
 		}
-		bool fCheckRange(std::ostream& aLogStream) const override {
-			return this->fCheckValueForRange(*this, aLogStream);
+		void fCheckRange() const override {
+			this->fCheckValueForRange(*this);
 		}
 	};
 

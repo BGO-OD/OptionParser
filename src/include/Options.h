@@ -207,6 +207,7 @@ namespace options {
 		const std::string lExplanation;
 		internal::sourceItem lSource;
 		short lNargs;
+		bool lHidden;
 		std::vector<std::string>* lPreserveWorthyStuff;
 
 		std::vector<const base*> lRequiredOptions;
@@ -224,7 +225,9 @@ namespace options {
 		virtual void fCheckRange() const = 0;
 		virtual void fWriteRange(std::ostream &/*aStream*/) const {};
 		void fSetPreserveWorthyStuff(std::vector<std::string>* aStuff);
-
+		void fHide();
+		bool fIsHidden() const;
+		void fDisable();
 	  public:
 		base(char aShortName, const std::string&  aLongName, const std::string&  aExplanation, short aNargs);
 		virtual ~base();

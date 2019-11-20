@@ -591,6 +591,21 @@ namespace options {
 		lPreserveWorthyStuff = aStuff;
 	}
 
+	/// hide option, will be respected by help
+	void base::fHide() {
+		lHidden = true;
+	}
+
+	bool base::fIsHidden() const {
+		return lHidden;
+	}
+
+	/// disable option by removing it from the maps
+	void base::fDisable() {
+		fHide(); // needed to hide forbidden options
+		fGetOptionMap().erase(lLongName);
+		fGetShortOptionMap().erase(lShortName);
+	}
 
 	void base::fRequire(const base* aOtherOption) {
 		lRequiredOptions.push_back(aOtherOption);
@@ -605,6 +620,27 @@ namespace options {
 		lForbiddenOptions.insert(lForbiddenOptions.end(), aOtherOptions.cbegin(), aOtherOptions.cend());
 	}
 
+	namespace internal {
+		/// special class for options which never have a value setting in cfg files
+		template <typename T> class supressed : public single<T> {
+		  public:
+			template <class ... Types> supressed (Types ... args) :
+				single<T>(args...) {
+			};
+			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
+				single<T>::fWriteCfgLines(aStream, "# ");
+			}
+		};
+
+		/// standard option to suppress parsing of config files within config files
+		class NoCfgFileRecursion: public supressed<bool> {
+		  public:
+			NoCfgFileRecursion():
+				supressed('\0', "noCfgFileRecursion", "do not read config files recursively, must be set before use") {
+			};
+		};
+		static NoCfgFileRecursion gNoCfgFileRecursion;
+	} // end namespace internal
 
 	void parser::fPrintOptionHelp(std::ostream& aMessageStream, const base& aOption, std::size_t aMaxName, std::size_t aMaxExplain, size_t lineLenght) const {
 		std::size_t fullNameLength = 8 + aMaxName;
@@ -655,15 +691,27 @@ namespace options {
 			}
 			aMessageStream << "\n";
 		} while (explanation.length() > 0);
-		if (! aOption.lRequiredOptions.empty()) {
+		if (std::count_if(aOption.lRequiredOptions.cbegin(), aOption.lRequiredOptions.cend(),
+		[](const base * opt) {
+		return ! opt->fIsHidden();
+		})) {
 			aMessageStream << "      " << std::setw(aMaxName) << " " << " Requires the following other options:\n";
 			for (auto opt : aOption.lRequiredOptions) {
+				if (opt->fIsHidden()) {
+					continue;
+				}
 				aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
 			}
 		}
-		if (! aOption.lForbiddenOptions.empty()) {
+		if (std::count_if(aOption.lForbiddenOptions.cbegin(), aOption.lForbiddenOptions.cend(),
+		[](const base * opt) {
+		return ! opt->fIsHidden();
+		})) {
 			aMessageStream << "      " << std::setw(aMaxName) << " " << " Forbids the following other options:\n";
 			for (auto opt : aOption.lForbiddenOptions) {
+				if (opt->fIsHidden()) {
+					continue;
+				}
 				aMessageStream << "      " << std::setw(aMaxName) << " " << "  " << opt->fGetLongName() << "\n";
 			}
 		}
@@ -704,7 +752,9 @@ namespace options {
 		}
 		for (auto & it : base::fGetOptionMap()) {
 			const auto opt = it.second;
-			fPrintOptionHelp(*lMessageStream, *opt, maxName, maxExplain, lineLenght);
+			if (! opt->fIsHidden()) {
+				fPrintOptionHelp(*lMessageStream, *opt, maxName, maxExplain, lineLenght);
+			}
 		}
 		if (!lSearchPaths.empty()) {
 			*lMessageStream << "Looking for config files in ";
@@ -774,6 +824,8 @@ namespace options {
 		auto sourceF = new internal::sourceFile(aFileName, *(aSource.fGetFile()));
 		int lineNumber = 0;
 		std::vector<std::string>* preserveWorthyStuff = nullptr;
+		bool hideNextOption = false;
+		bool disableNextOption = false;
 		try {
 			while (cfgFile.good()) {
 				std::string line;
@@ -781,6 +833,8 @@ namespace options {
 				lineNumber++;
 				internal::sourceItem source(sourceF, lineNumber);
 				if (line.length() == 0) {
+					hideNextOption = false;
+					disableNextOption = false;
 					continue;
 				} else if (line[0] == '#') {
 					if (line[1] == '#') {
@@ -788,6 +842,11 @@ namespace options {
 							preserveWorthyStuff = new std::vector<std::string>;
 						}
 						preserveWorthyStuff->push_back(line);
+						if (line == "## hide") {
+							hideNextOption = true;
+						} else if (line == "## disable" && ! internal::gNoCfgFileRecursion) {
+							disableNextOption = true;
+						}
 					} else if (preserveWorthyStuff != nullptr) {
 						auto equalsAt = line.find_first_of('=');
 						if (equalsAt != std::string::npos) {
@@ -797,6 +856,12 @@ namespace options {
 								auto option = it->second;
 								option->fSetPreserveWorthyStuff(preserveWorthyStuff);
 								preserveWorthyStuff = nullptr;
+								if (hideNextOption) {
+									option->fHide();
+								}
+								if (disableNextOption) {
+									option->fDisable();
+								}
 							}
 						}
 					}
@@ -815,6 +880,12 @@ namespace options {
 					throw std::runtime_error(internal::conCat("unknown option '", optionName, "'"));
 				}
 				auto option = it->second;
+				if (hideNextOption) {
+					option->fHide();
+				}
+				if (disableNextOption) {
+					option->fDisable();
+				}
 				{
 					std::stringstream sbuf(line.substr(equalsAt + 1));
 					option->fSetMe(sbuf, source);
@@ -877,25 +948,6 @@ namespace options {
 		static OptionHelp gHelp;
 
 
-		/// special class for options which never have a value setting in cfg files
-		template <typename T> class supressed : public single<T> {
-		  public:
-			template <class ... Types> supressed (Types ... args) :
-				single<T>(args...) {
-			};
-			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
-				single<T>::fWriteCfgLines(aStream, "# ");
-			}
-		};
-
-		/// standard option to suppress parsing of config files within config files
-		class NoCfgFileRecursion: public supressed<bool> {
-		  public:
-			NoCfgFileRecursion():
-				supressed('\0', "noCfgFileRecursion", "do not read config files recursively, must be set before use") {
-			};
-		};
-		static NoCfgFileRecursion gNoCfgFileRecursion;
 
 
 /// special derived class used to write out config files
@@ -926,7 +978,7 @@ namespace options {
 				parser::fGetInstance()->fReadCfgFile(*this, aSource, mayBeMissing);
 			};
 			void fWriteCfgLines(std::ostream& aStream, const char */*aPrefix*/) const override {
-				single<std::string>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "" : "# ");
+				single<std::string>::fWriteCfgLines(aStream, gNoCfgFileRecursion ? "# " : "");
 			};
 		};
 		static OptionReadCfgFile<false> gReadCfgFile("readCfgFile", "read a config file");

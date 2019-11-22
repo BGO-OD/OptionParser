@@ -29,6 +29,7 @@
 #include <iterator>
 #include <algorithm>
 #include <list>
+#include <system_error>
 
 /// \namespace options
 /// all of the option parser stuff is contained in the namespace options.

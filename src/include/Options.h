@@ -553,6 +553,7 @@ namespace options {
 		single(char aShortName, const std::string& aLongName, const std::string& aExplanation) :
 			internal::typed_base<T>(aShortName, aLongName, aExplanation, 1) {
 		};
+		single(const single&) = delete;
 
 		T operator=(const T& aValue) {
 			T& thisAsReference(*this);
@@ -600,6 +601,7 @@ namespace options {
 			base(aShortName, aLongName, aExplanation, 0),
 			lDefault(aDefault) {
 		}
+		single(const single&) = delete;
 		bool operator=(const bool& aValue) {
 			lValue = aValue;
 			return lValue;
@@ -675,6 +677,7 @@ namespace options {
 				this->insert(this->end(), defaultValue);
 			}
 		}
+		map(const map&) = delete;
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=key" << parser::fGetInstance()->fGetSecondaryAssignment() << "value\n";
@@ -792,6 +795,7 @@ namespace options {
 				this->push_back(defaultValue);
 			}
 		}
+		container(const container&) = delete;
 		void fWriteCfgLines(std::ostream& aStream, const char *aPrefix) const override {
 			if (this->empty()) {
 				aStream << aPrefix << this->lLongName << "=value\n";

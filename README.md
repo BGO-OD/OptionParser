@@ -9,3 +9,5 @@
 -->
 
 templated C++ command line option parser with executable to be used in shell scripts
+
+Doxygen documentation is available at [here](https://bgo-od.github.io/OptionParser/).

@@ -5,7 +5,7 @@ LABEL description="Doxygen documentation generation"
 
 RUN apt update && apt install -y \
     build-essential bash cmake \
-    doxygen && \
+    doxygen graphviz && \
     rm -rf /var/lib/apt/lists/*
 
 ADD run_action.sh /run_action.sh

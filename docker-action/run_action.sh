@@ -5,7 +5,7 @@ mkdir /opt/OptionParser
 mkdir build
 pushd build
 
-cmake -DCMAKE_INSTALL_PREFIX=/opt/OptionParser ..
+cmake -DCMAKE_INSTALL_PREFIX=/opt/OptionParser -DINSTALL_DOCUMENTATION=on ..
 make
 make doc
 make install

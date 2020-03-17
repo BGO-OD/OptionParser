@@ -1,0 +1,7 @@
+<map id="options::single&lt; bool &gt;" name="options::single&lt; bool &gt;">
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1OptionHelp.html" title="special derived class used to give help " alt="" coords="15,169,151,211"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1supressed.html" title="options::internal::\lsupressed\&lt; bool \&gt;" alt="" coords="175,169,322,211"/>
+<area shape="rect" id="node2" href="$classoptions_1_1fundamental__wrapper.html" title="options::fundamental\l_wrapper\&lt; bool \&gt;" alt="" coords="5,5,167,47"/>
+<area shape="rect" id="node3" href="$classoptions_1_1base.html" title="base class for options " alt="" coords="191,13,301,39"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1NoCfgFileRecursion.html" title="standard option to suppress parsing of config files within config files " alt="" coords="175,259,322,300"/>
+</map>

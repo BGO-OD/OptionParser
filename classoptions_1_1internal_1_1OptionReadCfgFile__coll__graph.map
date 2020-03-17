@@ -1,0 +1,7 @@
+<map id="options::internal::OptionReadCfgFile&lt; mayBeMissing &gt;" name="options::internal::OptionReadCfgFile&lt; mayBeMissing &gt;">
+<area shape="rect" id="node2" href="$classoptions_1_1single.html" title="options::single\&lt; std\l::string \&gt;" alt="" coords="920,94,1072,135"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1typed__base.html" title="options::internal::\ltyped_base\&lt; std::string \&gt;" alt="" coords="647,145,839,186"/>
+<area shape="rect" id="node5" href="$classoptions_1_1base.html" title="base class for options " alt="" coords="457,152,567,179"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from ..." alt="" coords="220,145,356,186"/>
+<area shape="rect" id="node7" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from " alt="" coords="5,145,141,186"/>
+</map>

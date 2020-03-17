@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node2" href="$classoptions_1_1internal_1_1optionError.html" title="options::internal::\loptionError" alt="" coords="164,39,300,80"/>
+<area shape="rect" id="node3" href="$classoptions_1_1internal_1_1conversionError.html" title="options::internal::\lconversionError" alt="" coords="348,5,484,47"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1rangeError.html" title="options::internal::\lrangeError" alt="" coords="348,71,484,112"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1typedRangeError.html" title="options::internal::\ltypedRangeError\&lt; T \&gt;" alt="" coords="532,71,701,112"/>
+</map>

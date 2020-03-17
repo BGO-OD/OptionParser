@@ -10,19 +10,20 @@ namespace options {
 		public internal::typed_base<std::regex, true>,
 		public originalStringKeeper {
 		typedef std::string rangeValueType;
+		std::regex::flag_type regexOption;
 	  public:
-		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "") :
-			internal::typed_base<std::regex, true>(aShortName, aLongName, aExplanation, 1) {
+		single(char aShortName, const std::string& aLongName, const std::string& aExplanation, const std::string& aDefault = "", std::regex::flag_type aRegexOption = std::regex::ECMAScript) :
+			internal::typed_base<std::regex, true>(aShortName, aLongName, aExplanation, 1),
+			regexOption(aRegexOption) {
 			if (! aDefault.empty() ) {
-				std::regex& dieses(*this);
-				dieses = aDefault;
+				assign(aDefault, std::regex::optimize | regexOption);
 			}
 			lOriginalString = aDefault;
 		}
 		void fSetMe(std::istream& aStream, const internal::sourceItem& aSource) override {
 			using escapedIO::operator>>;
 			aStream >> lOriginalString;
-			static_cast<std::regex*>(this)->assign(lOriginalString);
+			assign(lOriginalString, std::regex::optimize | regexOption);
 			fSetSource(aSource);
 		}
 		void fCheckRange() const override {

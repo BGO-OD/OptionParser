@@ -866,6 +866,9 @@ namespace options {
 		std::string lOriginalString;
 	  public:
 		void fWriteOriginalString(std::ostream& aStream) const;
+		const std::string& fGetOriginalString() const {
+			return lOriginalString;
+		};
 	};
 
 

@@ -134,16 +134,62 @@ namespace options {
 		}
 		return aStream;
 	}
-	template <typename T> std::istream& operator>>(std::istream& aStream, postFixedNumber<T>& aNumber) {
+	template <typename T> typename std::enable_if<std::is_integral<T>::value, std::istream&>::type operator>>(std::istream& aStream, postFixedNumber<T>& aNumber) {
 		T n;
 		aStream >> n;
 		if (!aStream.eof()) {
 			auto c = aStream.peek();
-			static std::string gMultipliers("kMGTPEZY");
+			static std::string gMultipliers("kMGTPEZYRQ");
 			auto m = gMultipliers.find(c);
 			if (m != std::string::npos) {
-				aStream.get();
+				aStream.get(); // dispose mutiplier postfix
 				n = n << ((m + 1) * 10);
+			}
+		}
+		aNumber = n;
+		return aStream;
+	};
+	template <typename T> typename std::enable_if<std::is_floating_point<T>::value, std::istream&>::type operator>>(std::istream& aStream, postFixedNumber<T>& aNumber) {
+		T n;
+		aStream >> n;
+		if (!aStream.eof()) {
+			auto c = aStream.peek();
+			static std::string gMultipliers("kMGTPEZYRQ");
+			static std::map<const char, double> gDividers{{'d',10.},
+			                                                          {'c',100.},
+			                                                          {'m',1000.},
+			                                                          {'u',1000000.},
+			                                                          {'n',1000000000.},
+			                                                          {'p',1000000000000.},
+			                                                          {'f',1000000000000000.},
+			                                                          {'a',1000000000000000000.},
+			                                                          {'z',1000000000000000000000.},
+			                                                          {'y',1000000000000000000000000.},
+			                                                          {'r',1000000000000000000000000000.},
+			                                                          {'q',1000000000000000000000000000000.},
+			};
+			auto m = gMultipliers.find(c);
+			if (m != std::string::npos) {
+				aStream.get(); // dispose mutiplier postfix
+				if (!aStream.eof()) {
+					c = aStream.peek();
+					if (c == 'i') { // use binary multiplier
+						aStream.get(); // dispose of the 'i'
+						n *= 1ull << ((m + 1) * 10);
+						aNumber = n;
+						return aStream;
+					}
+				}
+				for (unsigned i = 0; i <= m; i++) {
+					n *= 1000;
+				}
+			} else {
+				const auto& divider = gDividers.find(c);
+				if (divider != gDividers.end()) {
+					aStream.get(); // dispose mutiplier postfix
+					n = n / divider->second;
+				}
+				
 			}
 		}
 		aNumber = n;

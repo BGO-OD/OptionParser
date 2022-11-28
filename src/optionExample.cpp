@@ -18,6 +18,7 @@ int main(int argc, const char *argv[]) {
 	options::single<double> evenMoreComplexDescription('\0', "EvenMoreComplexDescription", "very complicated example option with very long explanation containing averylongwordwhichisunbreakableandthustriggersforcefulwordwrappinginaninconvenientplacetokeepthingssomehowatleastabitreadable.", 21.);
 
 	options::single<options::postFixedNumber<size_t>> size('\0', "size", "a size");
+	options::single<options::postFixedNumber<double>> dpost('\0', "dpost", "double postfiexd");
 	options::single<std::chrono::system_clock::time_point> date('\0', "date", "a date");
 	options::single<std::chrono::duration<long>> dur('\0', "dur", "a duration");
 	options::single<bool> lateOption('\0', "lateOption", "try to book an option late", false);
@@ -70,6 +71,13 @@ int main(int argc, const char *argv[]) {
 
 	if (lateOption) {
 		options::single<bool> optionLate('\0', "lateOptionTest", "option booked late", false);
+	}
+
+	if (size.fIsSet()) {
+		std::cout << "size is " << size << "\n";
+	}
+	if (dpost.fIsSet()) {
+		std::cout << "dpost is " << dpost << "\n";
 	}
 
 	return number;

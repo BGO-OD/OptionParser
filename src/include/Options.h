@@ -134,6 +134,12 @@ namespace options {
 		}
 		return aStream;
 	}
+	template <typename T> typename std::enable_if<std::is_signed<T>::value, bool>::type wouldOverflow(T value) {
+		return std::numeric_limits<T>::max() / 1024 < std::abs(value);
+	}
+	template <typename T> typename std::enable_if<std::is_unsigned<T>::value, bool>::type wouldOverflow(T value) {
+		return std::numeric_limits<T>::max() / 1024 < value;
+	}
 	template <typename T> typename std::enable_if<std::is_integral<T>::value, std::istream&>::type operator>>(std::istream& aStream, postFixedNumber<T>& aNumber) {
 		T n;
 		aStream >> n;
@@ -145,15 +151,16 @@ namespace options {
 				aStream.get(); // dispose multiplier postfix
 				auto n0 = n;
 				for (unsigned i = 0; i <= m; i++) {
-					auto N = n * 1024;
-					if (N < n) {
+					if (wouldOverflow(n)) {
 						std::string msg("postfix ");
 						msg += c;
 						msg += " to big with prefix ";
 						msg += std::to_string(n0);
+						msg += ", max value is ";
+						msg += std::to_string(std::numeric_limits<T>::max());
 						throw std::overflow_error(msg);
 					}
-					n = N;
+					n *= 1024;
 				}
 			}
 		}

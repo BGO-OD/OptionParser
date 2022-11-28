@@ -1,0 +1,9 @@
+<map id="options::single&lt; std::regex &gt;" name="options::single&lt; std::regex &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="877,73,1029,115"/>
+<area shape="rect" id="node2" title=" " alt="" coords="679,15,766,42"/>
+<area shape="rect" id="node3" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="632,66,813,122"/>
+<area shape="rect" id="node4" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="459,81,568,107"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="221,73,357,115"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="5,73,141,115"/>
+<area shape="rect" id="node7" href="$classoptions_1_1originalStringKeeper.html" title=" " alt="" coords="617,146,828,173"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="options::ForeignOption" name="options::ForeignOption">
+<area shape="rect" id="node1" title="special type of option that is not really parsed but used to feed an additional option parser" alt="" coords="5,292,175,319"/>
+<area shape="rect" id="node2" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="35,216,145,243"/>
+<area shape="rect" id="node3" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="22,112,158,153"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="22,7,158,48"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="options::internal::baseForContainer&lt; T &gt;" name="options::internal::baseForContainer&lt; T &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="37,397,212,439"/>
+<area shape="rect" id="node2" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="5,292,244,348"/>
+<area shape="rect" id="node3" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="70,216,179,243"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="57,112,193,153"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="57,7,193,48"/>
+</map>

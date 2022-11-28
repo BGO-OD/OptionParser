@@ -1,0 +1,39 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="31,527,141,553"/>
+<area shape="rect" id="node2" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="228,5,440,61"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="243,283,425,339"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="233,413,435,469"/>
+<area shape="rect" id="node8" href="$classoptions_1_1ForeignOption.html" title="special type of option that is not really parsed but used to feed an additional option parser" alt="" coords="249,624,419,651"/>
+<area shape="rect" id="node9" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="215,725,453,781"/>
+<area shape="rect" id="node23" href="$classoptions_1_1single_3_01bool_01_4.html" title="class specialisation for options of type bool" alt="" coords="247,969,421,996"/>
+<area shape="rect" id="node3" href="$classoptions_1_1single_3_01std_1_1chrono_1_1system__clock_1_1time__point_01_4.html" title=" " alt="" coords="506,116,677,172"/>
+<area shape="rect" id="node5" href="$classoptions_1_1single_3_01std_1_1regex_01_4.html" title=" " alt="" coords="515,290,667,331"/>
+<area shape="rect" id="node7" href="$classoptions_1_1single_3_01std_1_1chrono_1_1duration_3_01Rep_00_01Period_01_4_01_4.html" title="template specialisation for options that are std::chrono::durations" alt="" coords="501,441,681,497"/>
+<area shape="rect" id="node10" href="$classoptions_1_1single.html" title=" " alt="" coords="515,609,667,650"/>
+<area shape="rect" id="node14" href="$classoptions_1_1internal_1_1baseForContainer.html" title=" " alt="" coords="504,674,679,715"/>
+<area shape="rect" id="node18" href="$classoptions_1_1internal_1_1baseForMap.html" title=" " alt="" coords="522,791,661,833"/>
+<area shape="rect" id="node21" href="$classoptions_1_1single.html" title="generic option class with any type that can be used with std::istream and std::ostream" alt="" coords="514,908,669,935"/>
+<area shape="rect" id="node11" href="$classoptions_1_1internal_1_1supressed.html" title=" " alt="" coords="773,561,955,602"/>
+<area shape="rect" id="node13" href="$classoptions_1_1internal_1_1OptionReadCfgFile.html" title="special derived class used to read in config files" alt="" coords="729,626,999,667"/>
+<area shape="rect" id="node12" href="$classoptions_1_1internal_1_1OptionWriteCfgFile.html" title="special derived class used to write out config files" alt="" coords="1047,561,1192,602"/>
+<area shape="rect" id="node15" href="$classoptions_1_1container.html" title="template for container&#45;based options." alt="" coords="795,721,933,762"/>
+<area shape="rect" id="node16" href="$classarrayOption.html" title=" " alt="" coords="1051,705,1188,732"/>
+<area shape="rect" id="node17" href="$classlistOption.html" title=" " alt="" coords="1058,756,1181,783"/>
+<area shape="rect" id="node19" href="$classoptions_1_1map.html" title="template for map&#45;based options." alt="" coords="756,811,972,837"/>
+<area shape="rect" id="node20" href="$classmapOption.html" title=" " alt="" coords="1053,811,1185,837"/>
+<area shape="rect" id="node22" href="$classoptions_1_1internal_1_1supressed.html" title="special class for options which never have a value setting in cfg files" alt="" coords="796,899,932,941"/>
+<area shape="rect" id="node24" href="$classoptions_1_1internal_1_1supressed.html" title=" " alt="" coords="518,962,665,1003"/>
+<area shape="rect" id="node26" href="$classoptions_1_1internal_1_1OptionHelp.html" title="special derived class used to give help" alt="" coords="523,1027,659,1069"/>
+<area shape="rect" id="node25" href="$classoptions_1_1internal_1_1NoCfgFileRecursion.html" title="standard option to suppress parsing of config files within config files" alt="" coords="789,965,939,1006"/>
+<area shape="rect" id="node27" title=" " alt="" coords="256,493,412,520"/>
+<area shape="rect" id="node28" href="$classoptions_1_1fundamental__wrapper.html" title=" " alt="" coords="5,962,167,1003"/>
+<area shape="rect" id="node29" title=" " alt="" coords="552,857,631,884"/>
+<area shape="rect" id="node30" href="$classoptions_1_1originalStringKeeper.html" title=" " alt="" coords="229,232,439,259"/>
+<area shape="rect" id="node31" title=" " alt="" coords="291,363,377,389"/>
+<area shape="rect" id="node32" title=" " alt="" coords="259,86,409,127"/>
+<area shape="rect" id="node33" title=" " alt="" coords="255,675,413,701"/>
+<area shape="rect" id="node34" title=" " alt="" coords="255,908,413,935"/>
+<area shape="rect" id="node35" href="$classoptions_1_1valuePrinter.html" title=" " alt="" coords="249,544,419,600"/>
+<area shape="rect" id="node36" href="$classoptions_1_1valuePrinter.html" title=" " alt="" coords="251,152,417,208"/>
+<area shape="rect" id="node37" title=" " alt="" coords="546,740,637,767"/>
+</map>

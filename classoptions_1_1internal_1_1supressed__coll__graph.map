@@ -1,0 +1,9 @@
+<map id="options::internal::supressed&lt; T &gt;" name="options::internal::supressed&lt; T &gt;">
+<area shape="rect" id="node1" title="special class for options which never have a value setting in cfg files" alt="" coords="1109,87,1245,128"/>
+<area shape="rect" id="node2" href="$classoptions_1_1single.html" title="generic option class with any type that can be used with std::istream and std::ostream" alt="" coords="905,94,1060,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="631,5,842,105"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="617,130,856,186"/>
+<area shape="rect" id="node5" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="459,145,568,171"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="221,137,357,179"/>
+<area shape="rect" id="node7" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="5,137,141,179"/>
+</map>

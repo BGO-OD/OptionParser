@@ -1,0 +1,4 @@
+<map id="options::internal::sourceItem" name="options::internal::sourceItem">
+<area shape="rect" id="node1" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="5,112,141,153"/>
+<area shape="rect" id="node2" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="5,7,141,48"/>
+</map>

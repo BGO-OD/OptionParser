@@ -1,0 +1,7 @@
+<map id="options::internal::optionError" name="options::internal::optionError">
+<area shape="rect" id="node1" title=" " alt="" coords="55,305,191,347"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,216,144,243"/>
+<area shape="rect" id="node3" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="168,216,277,243"/>
+<area shape="rect" id="node4" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="155,112,291,153"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="155,7,291,48"/>
+</map>

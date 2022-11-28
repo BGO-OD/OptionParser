@@ -1,0 +1,4 @@
+<map id="options::OptionsForTApplication" name="options::OptionsForTApplication">
+<area shape="rect" id="node1" title="specific class to give the options for a TApplication as ForeignApplicationOptions to the option pars..." alt="" coords="5,95,233,121"/>
+<area shape="rect" id="node2" href="$classoptions_1_1ForeignApplicationOptions.html" title="class to hold a list of options that are to be handled by a foreign option parser" alt="" coords="20,5,219,47"/>
+</map>

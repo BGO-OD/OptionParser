@@ -1,0 +1,8 @@
+<map id="options::internal::OptionHelp" name="options::internal::OptionHelp">
+<area shape="rect" id="node1" title="special derived class used to give help" alt="" coords="34,383,170,424"/>
+<area shape="rect" id="node2" href="$classoptions_1_1single_3_01bool_01_4.html" title="class specialisation for options of type bool" alt="" coords="15,307,189,333"/>
+<area shape="rect" id="node3" href="$classoptions_1_1fundamental__wrapper.html" title=" " alt="" coords="5,216,167,257"/>
+<area shape="rect" id="node4" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="191,223,301,250"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1sourceItem.html" title="class to remember from which line (or item) of a file/line an option was set from" alt="" coords="178,112,314,153"/>
+<area shape="rect" id="node6" href="$classoptions_1_1internal_1_1sourceFile.html" title="class to remember the file (or cmd line) an option was set from" alt="" coords="178,7,314,48"/>
+</map>

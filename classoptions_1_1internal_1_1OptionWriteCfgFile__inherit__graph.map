@@ -1,0 +1,8 @@
+<map id="options::internal::OptionWriteCfgFile" name="options::internal::OptionWriteCfgFile">
+<area shape="rect" id="node1" title="special derived class used to write out config files" alt="" coords="896,97,1041,138"/>
+<area shape="rect" id="node2" href="$classoptions_1_1internal_1_1supressed.html" title=" " alt="" coords="665,97,848,138"/>
+<area shape="rect" id="node3" href="$classoptions_1_1single.html" title=" " alt="" coords="465,97,617,138"/>
+<area shape="rect" id="node4" title=" " alt="" coords="163,5,417,120"/>
+<area shape="rect" id="node5" href="$classoptions_1_1internal_1_1typed__base.html" title=" " alt="" coords="171,144,409,200"/>
+<area shape="rect" id="node6" href="$classoptions_1_1base.html" title="base class for options" alt="" coords="5,159,115,185"/>
+</map>

@@ -142,8 +142,19 @@ namespace options {
 			static std::string gMultipliers("kMGTPEZYRQ");
 			auto m = gMultipliers.find(c);
 			if (m != std::string::npos) {
-				aStream.get(); // dispose mutiplier postfix
-				n = n << ((m + 1) * 10);
+				aStream.get(); // dispose multiplier postfix
+				auto n0 = n;
+				for (unsigned i = 0; i <= m; i++) {
+					auto N = n * 1024;
+					if (N < n) {
+						std::string msg("postfix ");
+						msg += c;
+						msg += " to big with prefix ";
+						msg += std::to_string(n0);
+						throw std::overflow_error(msg);
+					}
+					n = N;
+				}
 			}
 		}
 		aNumber = n;
@@ -156,37 +167,36 @@ namespace options {
 			auto c = aStream.peek();
 			static std::string gMultipliers("kMGTPEZYRQ");
 			static std::map<const char, double> gDividers{{'d',10.},
-			                                                          {'c',100.},
-			                                                          {'m',1000.},
-			                                                          {'u',1000000.},
-			                                                          {'n',1000000000.},
-			                                                          {'p',1000000000000.},
-			                                                          {'f',1000000000000000.},
-			                                                          {'a',1000000000000000000.},
-			                                                          {'z',1000000000000000000000.},
-			                                                          {'y',1000000000000000000000000.},
-			                                                          {'r',1000000000000000000000000000.},
-			                                                          {'q',1000000000000000000000000000000.},
+			                                              {'c',100.},
+			                                              {'m',1000.},
+			                                              {'u',1000000.},
+			                                              {'n',1000000000.},
+			                                              {'p',1000000000000.},
+			                                              {'f',1000000000000000.},
+			                                              {'a',1000000000000000000.},
+			                                              {'z',1000000000000000000000.},
+			                                              {'y',1000000000000000000000000.},
+			                                              {'r',1000000000000000000000000000.},
+			                                              {'q',1000000000000000000000000000000.},
 			};
 			auto m = gMultipliers.find(c);
 			if (m != std::string::npos) {
-				aStream.get(); // dispose mutiplier postfix
+				aStream.get(); // dispose multiplier postfix
+				auto factor = 1000;
 				if (!aStream.eof()) {
 					c = aStream.peek();
 					if (c == 'i') { // use binary multiplier
 						aStream.get(); // dispose of the 'i'
-						n *= 1ull << ((m + 1) * 10);
-						aNumber = n;
-						return aStream;
+						factor = 1024;
 					}
 				}
 				for (unsigned i = 0; i <= m; i++) {
-					n *= 1000;
+					n *= factor;
 				}
 			} else {
 				const auto& divider = gDividers.find(c);
 				if (divider != gDividers.end()) {
-					aStream.get(); // dispose mutiplier postfix
+					aStream.get(); // dispose divider postfix
 					n = n / divider->second;
 				}
 				
